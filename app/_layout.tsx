@@ -34,12 +34,6 @@ export default function PublicLayout() {
       >
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" />
-        <Stack.Screen
-          name="(protected)"
-          options={{
-            headerShown: false,
-          }}
-        />
       </Stack>
       <StatusBar style="auto" />
     </>
