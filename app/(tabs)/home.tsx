@@ -14,7 +14,9 @@ export default function HomeScreen() {
         {/* Sección de bienvenida */}
         <View style={styles.welcomeSection}>
           <Image
-            source={{ uri: "https://via.placeholder.com/50" }}
+            source={{
+              uri: "https://randomuser.me/api/portraits/women/43.jpg",
+            }}
             style={styles.profileImage}
           />
           <View>
@@ -88,9 +90,14 @@ const styles = StyleSheet.create({
   welcomeSection: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E8ECF4",
+    backgroundColor: colors.white,
     padding: 20,
     borderRadius: 10,
+    elevation: 3,
+    shadowColor: colors.border,
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 2,
   },
   profileImage: {
     width: 50,
@@ -99,16 +106,15 @@ const styles = StyleSheet.create({
     marginRight: 15,
   },
   welcomeText: {
-    fontSize: 18,
-    fontWeight: "bold",
+    ...typography.bold.large,
   },
   username: {
-    color: "#595959",
+    color: colors.gray,
+    ...typography.regular.big,
   },
   categoryTitle: {
+    ...typography.bold.large,
     marginTop: 20,
-    fontSize: 18,
-    fontWeight: "bold",
   },
   categoriesContainer: {
     flexDirection: "row",
@@ -118,21 +124,21 @@ const styles = StyleSheet.create({
   },
   card: {
     width: "48%",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.white,
     padding: 20,
     borderRadius: 10,
     marginTop: 20,
     alignItems: "center",
-    shadowColor: colors.gray,
+    shadowColor: colors.border,
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 2,
-    elevation: 2,
+    elevation: 3,
   },
   cardImage: {
     width: 120,
     height: 90,
-    marginBottom: 15,
+    marginBottom: 20,
     resizeMode: "contain",
   },
   cardContent: {
@@ -143,8 +149,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   cardText: {
-    fontWeight: "bold",
-    color: "#292929",
+    color: colors.darkGray,
+    ...typography.bold.regular,
     flex: 1,
   },
 });
