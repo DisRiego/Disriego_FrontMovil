@@ -8,4 +8,5 @@ export const colors = {
   border: "#C9CDD5", // Bordes claros
   base: "#F9F9FA", // Fondo
   white: "#FFFFFF", // Blanco
+  error: "#B3261E", //Rojo
 };
