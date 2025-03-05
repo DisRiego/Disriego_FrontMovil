@@ -1,11 +1,20 @@
 import React, { useState } from "react";
-import { View, Text, Alert, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import { colors } from "../../config/theme";
-import { typography } from "../../config/typography";
-import Button from "../../components/Button";
-import CustomInput from "../../components/CustomInput";
-import Header from "../../components/Header";
+import {
+  View,
+  Text,
+  Alert,
+  StyleSheet,
+  SafeAreaView,
+  Image,
+  ScrollView,
+} from "react-native";
+import { colors } from "@/config/theme";
+import { typography } from "@/config/typography";
+import Button from "@/components/Button";
+import CustomInput from "@/components/CustomInput";
+import Header from "@/components/Header";
+import LoginButton from "@/components/LoginButton";
 
 const API_URL = "https://disriego-backend.onrender.com";
 
@@ -36,7 +45,7 @@ export default function LoginScreen() {
 
       if (response.ok) {
         Alert.alert("Éxito", "Login exitoso");
-        router.replace("/(protected)");
+        router.replace("/completeInfo");
       } else {
         Alert.alert("Error", data.detail || "Datos inválidos");
       }
@@ -48,64 +57,99 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.formContainer}>
-        <Text style={[typography.semibold.big, { color: colors.darkGray }]}>
-          Iniciar Sesión
-        </Text>
-        <Text style={[typography.medium.regular, { color: colors.gray }]}>
-          Por favor, introduce tu correo y contraseña para acceder a tu cuenta
-        </Text>
-
-        <CustomInput
-          placeholder="Correo Electrónico"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <CustomInput
-          placeholder="Contraseña"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
-
-        {/* Ajuste para centrar el texto */}
-        <View style={styles.forgotPasswordContainer}>
-          <Text style={[typography.medium.regular, { color: colors.gray }]}>
-            Olvidaste la contraseña?
-            <Text
-              style={[typography.medium.regular, styles.link]}
-              onPress={() => router.push("/forgotPassword")}
-            >
-              {" "}
-              Haz clic aquí
+    <SafeAreaView style={styles.safeArea}>
+      <Header />
+      <View style={styles.container}>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <View style={styles.formContainer}>
+            <Text style={[typography.semibold.big, { color: colors.darkGray }]}>
+              Iniciar Sesión
             </Text>
-          </Text>
-        </View>
-      </View>
+            <Text style={[typography.medium.regular, { color: colors.gray }]}>
+              Por favor, introduce tu correo y contraseña para acceder a tu
+              cuenta
+            </Text>
 
-      <View style={styles.footerContainer}>
-        <Button
-          text={loading ? "Cargando..." : "Iniciar Sesión"}
-          onPress={handleLogin}
-          disabled={loading}
-        />
+            <CustomInput
+              placeholder="Correo Electrónico"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+            />
+            <CustomInput
+              placeholder="Contraseña"
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
 
-        <Text style={[typography.medium.regular, { color: colors.gray }]}>
-          No tienes una cuenta?
-          <Text style={styles.link} onPress={() => router.push("/register")}>
-            {" "}
-            Regístrate aquí
-          </Text>
-        </Text>
+            {/* Ajuste para centrar el texto */}
+            <View style={styles.forgotPasswordContainer}>
+              <Text style={[typography.medium.regular, { color: colors.gray }]}>
+                Olvidaste la contraseña?
+                <Text
+                  style={[typography.medium.regular, styles.link]}
+                  onPress={() => router.push("/forgotPassword")}
+                >
+                  {" "}
+                  Haz clic aquí
+                </Text>
+              </Text>
+            </View>
+
+            <Image
+              source={require("../../assets/images/divisor.png")}
+              style={styles.divisor}
+            />
+
+            <View style={styles.loginWrapper}>
+              <LoginButton
+                text="Ingresa con Google"
+                icon={require("../../assets/images/googleLogo.png")}
+                onPress={() => console.log("Google Login")}
+              />
+
+              <LoginButton
+                text="Ingresa con Outlook"
+                icon={require("../../assets/images/outlookLogo.png")}
+                onPress={() => console.log("Outlook Login")}
+              />
+            </View>
+          </View>
+
+          <View style={styles.footerContainer}>
+            <Button
+              text={loading ? "Cargando..." : "Iniciar Sesión"}
+              onPress={handleLogin}
+              disabled={loading}
+            />
+
+            <Text style={[typography.medium.regular, { color: colors.gray }]}>
+              No tienes una cuenta?
+              <Text
+                style={styles.link}
+                onPress={() => router.push("/register")}
+              >
+                {" "}
+                Regístrate aquí
+              </Text>
+            </Text>
+          </View>
+        </ScrollView>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.base,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+  },
   container: {
     flex: 1,
     alignItems: "center",
@@ -125,7 +169,11 @@ const styles = StyleSheet.create({
   forgotPasswordContainer: {
     width: "100%",
     alignItems: "center",
-    marginTop: 10,
+    marginVertical: 4,
+  },
+  loginWrapper: {
+    marginTop: 4,
+    width: "100%",
   },
   footerContainer: {
     width: "100%",
@@ -138,5 +186,10 @@ const styles = StyleSheet.create({
   link: {
     ...typography.bold.regular,
     color: colors.accent,
+  },
+  divisor: {
+    width: "100%",
+    height: 18,
+    resizeMode: "contain",
   },
 });
