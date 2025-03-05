@@ -1,15 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
+import { View, StyleSheet, SafeAreaView } from "react-native";
+import { useRouter } from "expo-router";
+import { colors } from "@/config/theme";
 import StatusCard from "@/components/StatusCard";
-import { View, StyleSheet, Text } from "react-native";
-import { colors } from "../../config/theme";
-import { typography } from "../../config/typography";
-import Button from "../../components/Button";
+import Button from "@/components/Button";
+import Header from "@/components/Header";
 
 interface UpdateSuccessProps {
   status?: "exito" | "error";
   message?: string;
   description?: string;
-  onPress: () => void;
 }
 
 const UpdateSuccess: React.FC<UpdateSuccessProps> = ({
@@ -17,34 +17,52 @@ const UpdateSuccess: React.FC<UpdateSuccessProps> = ({
   message = status === "exito"
     ? "¡Actualización exitosa!"
     : "Error en la actualización",
-  description = status === "error"
+  description = status === "exito"
     ? "Los cambios han sido guardados correctamente."
     : "Hubo un problema al guardar los cambios. Por favor, inténtalo de nuevo.",
-  onPress,
 }) => {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handlePress = () => {
+    if (isLoading) return;
+    setIsLoading(true);
+    setTimeout(() => {
+      router.push(status === "exito" ? "/home" : "/completeInfo");
+      setIsLoading(false);
+    }, 500);
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.formContainer}>
-        <StatusCard
-          status={status}
-          message={message}
-          description={description}
-          onPress={onPress}
-        />
+    <SafeAreaView style={styles.safeArea}>
+      <Header />
+      <View style={styles.container}>
+        <View style={styles.formContainer}>
+          <StatusCard
+            status={status}
+            message={message}
+            description={description}
+          />
+        </View>
+        <View style={styles.footerContainer}>
+          <Button
+            text={status === "exito" ? "Siguiente" : "Reintentar"}
+            onPress={handlePress}
+            disabled={isLoading}
+          />
+        </View>
       </View>
-      <View style={styles.footerContainer}>
-        <Button
-          text={status === "error" ? "Siguiente" : "Reintentar"}
-          onPress={onPress}
-        />
-      </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
 export default UpdateSuccess;
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.base,
+  },
   container: {
     flex: 1,
     alignItems: "center",

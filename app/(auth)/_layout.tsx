@@ -7,7 +7,7 @@ import { useFonts } from "expo-font";
 
 SplashScreen.preventAutoHideAsync();
 
-export default function PrivateLayout() {
+export default function AuthLayout() {
   const [loaded] = useFonts({
     RobotoBold: require("../../assets/fonts/Roboto-Bold.ttf"),
     RobotoSemiBold: require("../../assets/fonts/Roboto-SemiBold.ttf"),
@@ -26,7 +26,7 @@ export default function PrivateLayout() {
 
   return (
     <>
-      <Stack screenOptions={{ headerShown: true }} />
+      <Stack screenOptions={{ headerShown: false }} />
     </>
   );
 }

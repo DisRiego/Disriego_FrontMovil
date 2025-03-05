@@ -1,33 +1,29 @@
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
 import React from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, Image, StyleSheet } from "react-native";
 
 interface StatusCardProps {
   status: "exito" | "error";
   message: string;
   description: string;
-  onPress: () => void;
 }
 
 const StatusCard: React.FC<StatusCardProps> = ({
   status,
   message,
   description,
-  onPress,
 }) => {
   const imageSource =
     status === "exito"
       ? require("../assets/images/success.png")
       : require("../assets/images/error.png");
 
-  const textColor = status === "exito" ? "#155724" : "#721C24";
-
   return (
-    <View style={[styles.container]}>
+    <View style={styles.container}>
       <Image source={imageSource} style={styles.icon} />
-      <Text style={[styles.message]}>{message}</Text>
-      <Text style={[styles.description]}>{description}</Text>
+      <Text style={styles.message}>{message}</Text>
+      <Text style={styles.description}>{description}</Text>
     </View>
   );
 };

@@ -1,72 +1,87 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import CustomInput from "../../components/CustomInput";
-import Button from "../../components/Button";
-import Header from "../../components/Header";
 import { useRouter } from "expo-router";
-import { colors } from "../../config/theme";
-import { typography } from "../../config/typography";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+} from "react-native";
+import { colors } from "@/config/theme";
+import { typography } from "@/config/typography";
+import Button from "@/components/Button";
+import CustomInput from "@/components/CustomInput";
+import Header from "@/components/Header";
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
   const router = useRouter();
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
       <Header />
-      <View style={{ height: 20 }} />
-      <Text style={styles.title}>¿Olvidaste tu contraseña?</Text>
-      <Text style={styles.subtitle}>
-        No te preocupes, Ingresa tu correo para recibir un enlace de recuperación.
-      </Text>
+      <View style={styles.container}>
+        <View style={styles.formContainer}>
+          <Text style={[typography.semibold.big, { color: colors.darkGray }]}>
+            ¿Olvidaste tu contraseña?
+          </Text>
+          <Text style={[typography.medium.regular, { color: colors.gray }]}>
+            No te preocupes, Ingresa tu correo para recibir un enlace de
+            recuperación.
+          </Text>
 
-      <CustomInput
-        placeholder="Ingresa tu correo electrónico"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
+          <CustomInput
+            placeholder="Ingresa tu correo electrónico"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+          />
 
-      <Button text="Enviar enlace" onPress={() => console.log("Enviar email")} />
+          <Button
+            text="Enviar enlace"
+            onPress={() => console.log("Enviar email")}
+          />
+        </View>
 
-      {/* ⬇️ Ubicar en la parte inferior */}
-      <View style={styles.footerContainer}>
-        <Text style={[typography.medium.regular, { color: colors.gray }]}>
-        Volver al inicio de sesión?{" "}
-        <Text style={styles.link} onPress={() => router.replace("/login")}>
-        Haz clic aquí
-        </Text>
-        </Text>
+        {/* Ubicar en la parte inferior */}
+
+        <View style={styles.footerContainer}>
+          <Text style={[typography.medium.regular, { color: colors.gray }]}>
+            Volver al inicio de sesión?{" "}
+            <Text style={styles.link} onPress={() => router.replace("/login")}>
+              Haz clic aquí
+            </Text>
+          </Text>
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.base,
+  },
   container: {
     flex: 1,
     alignItems: "center",
     justifyContent: "flex-start",
-    paddingHorizontal: 20,
-    paddingTop: 40,
     backgroundColor: colors.base,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    alignSelf: "flex-start",
-    marginBottom: 10,
-    marginLeft: 10,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "left",
-    marginBottom: 20,
+  formContainer: {
+    flex: 1,
+    gap: 14,
+    width: "100%",
+    paddingTop: 24,
+    paddingHorizontal: 20,
+    alignItems: "flex-start",
+    justifyContent: "flex-start",
+    backgroundColor: colors.base,
   },
   footerContainer: {
     position: "absolute",
-    bottom: 20,
+    bottom: 32,
     width: "100%",
     alignItems: "center",
   },
