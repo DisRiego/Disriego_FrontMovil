@@ -8,6 +8,7 @@ export const typography = {
   },
   semibold: {
     big: { fontFamily: "RobotoSemiBold", fontSize: 20 },
+    large: { fontFamily: "RobotoSemiBold", fontSize: 18 },
     medium: { fontFamily: "RobotoSemiBold", fontSize: 16 },
     small: { fontFamily: "RobotoSemiBold", fontSize: 12 },
   },
