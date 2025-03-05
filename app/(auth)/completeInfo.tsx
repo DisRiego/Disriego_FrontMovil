@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    //paddingVertical: 8,
+    paddingVertical: 16,
   },
   container: {
     flex: 1,
@@ -224,8 +224,8 @@ const styles = StyleSheet.create({
   footerContainer: {
     width: "100%",
     marginTop: 2,
-    paddingTop: 24,
-    paddingBottom: 32,
+    paddingTop: 32,
+    paddingBottom: 8,
     paddingHorizontal: 20,
     alignItems: "center",
   },
@@ -288,10 +288,10 @@ const styles = StyleSheet.create({
   },
   addressInput: {
     minHeight: 50,
-    maxHeight: 100, // Limita la expansión vertical
+    maxHeight: 100,
     textAlignVertical: "top",
-    minWidth: "100%", // Mantiene el ancho del input controlado
-    flexShrink: 1, // Evita que el input haga crecer el contenedor
+    minWidth: "100%",
+    flexShrink: 1,
   },
 
   input: {
