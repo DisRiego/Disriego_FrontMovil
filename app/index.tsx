@@ -5,50 +5,55 @@ import {
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
+  ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { colors } from "@/config/theme";
+import { typography } from "@/config/typography";
 
 export default function WelcomeScreen() {
   const router = useRouter();
 
   return (
     <SafeAreaView style={styles.safeContainer}>
-      <View style={styles.container}>
-        {/* Logo más pequeño */}
-        <Image
-          source={require("../assets/images/logo.png")}
-          style={styles.logo}
-        />
+      <ScrollView contentContainerStyle={{ height: "100%" }}>
+        <View style={styles.container}>
+          {/* Logo más pequeño */}
+          <Image
+            source={require("../assets/images/logo.png")}
+            style={styles.logo}
+          />
 
-        {/* Imagen principal más grande */}
-        <Image
-          source={require("../assets/images/welcome.png")}
-          style={styles.image}
-        />
+          {/* Imagen principal más grande */}
+          <Image
+            source={require("../assets/images/welcome.png")}
+            style={styles.image}
+          />
 
-        <Text style={styles.title}>
-          Bienvenido a <Text style={styles.brand}>DisRiego!</Text>
-        </Text>
+          <Text style={styles.title}>
+            Bienvenido a <Text style={styles.brand}>DisRiego!</Text>
+          </Text>
 
-        <Text style={styles.subtitle}>
-          Para acceder a todas las funcionalidades de la aplicación, por favor
-          regístrate o inicia sesión con tu cuenta.
-        </Text>
+          <Text style={styles.subtitle}>
+            Para acceder a todas las funcionalidades, por favor regístrate o
+            inicia sesión con tu cuenta.
+          </Text>
 
-        <TouchableOpacity
-          style={styles.registerButton}
-          onPress={() => router.push("/register")}
-        >
-          <Text style={styles.registerText}>Registrarse</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.registerButton}
+            onPress={() => router.push("/register")}
+          >
+            <Text style={styles.registerText}>Registrarse</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.loginButton}
-          onPress={() => router.push("/login")}
-        >
-          <Text style={styles.loginText}>Iniciar Sesión</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={styles.loginButton}
+            onPress={() => router.push("/login")}
+          >
+            <Text style={styles.loginText}>Iniciar Sesión</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -56,7 +61,7 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: colors.white,
   },
   container: {
     flex: 1,
@@ -65,69 +70,66 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   logo: {
-    width: 130, // Logo más pequeño
+    width: 130,
     height: 33,
     resizeMode: "contain",
     marginBottom: 25,
   },
   image: {
-    width: 400, // Imagen más grande
+    width: 400,
     height: 350,
     resizeMode: "contain",
     marginBottom: 15,
   },
   title: {
+    ...typography.bold.big,
     fontSize: 27,
-    fontFamily: "RobotoSemiBold",
     textAlign: "center",
     marginBottom: 5,
   },
   brand: {
-    color: "#2A6041",
+    color: colors.primary,
   },
   subtitle: {
-    fontSize: 15,
-    fontFamily: "RobotoRegular",
+    ...typography.medium.regular,
+    color: colors.gray,
     textAlign: "center",
-    color: "#666",
-    marginBottom: 25,
     paddingHorizontal: 15,
+    marginBottom: 25,
   },
   registerButton: {
     width: "90%",
     padding: 15,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 10,
     alignItems: "center",
-    marginBottom: 20,
-    backgroundColor: "#fff",
-    shadowColor: "#ccc",
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 15,
+    backgroundColor: colors.base,
+    shadowColor: colors.border,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowRadius: 3,
+    elevation: 3,
+    marginBottom: 20,
   },
   registerText: {
-    color: "#595959",
-    fontSize: 18,
-    fontFamily: "RobotoSemiBold",
+    ...typography.semibold.large,
+    color: colors.gray,
   },
   loginButton: {
     width: "90%",
     padding: 15,
-    backgroundColor: "#C3E37C",
-    borderRadius: 10,
     alignItems: "center",
-    shadowColor: "#C3E37C",
+    borderRadius: 15,
+    backgroundColor: colors.tertiary,
+    shadowColor: colors.tertiary,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowRadius: 3,
+    elevation: 3,
   },
   loginText: {
-    color: "#2A6041",
-    fontSize: 18,
-    fontFamily: "RobotoSemiBold",
+    ...typography.semibold.large,
+    color: colors.primary,
   },
 });
