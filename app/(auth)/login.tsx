@@ -45,7 +45,7 @@ export default function LoginScreen() {
 
       if (response.ok) {
         Alert.alert("Éxito", "Login exitoso");
-        router.replace("/completeInfo");
+        router.replace("/home"); //completeInfo
       } else {
         Alert.alert("Error", data.detail || "Datos inválidos");
       }
