@@ -1,25 +1,23 @@
-import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
-  TouchableOpacity,
   ScrollView,
+  SafeAreaView,
+  TouchableOpacity,
+  StyleSheet,
+  StatusBar,
+  Platform,
   Image,
 } from "react-native";
-import { AntDesign } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { typography } from "@/config/typography";
+import React, { useEffect, useState } from "react";
 import { colors } from "@/config/theme";
-import CustomInput from "@/components/CustomInput";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { AntDesign } from "@expo/vector-icons";
+import { typography } from "@/config/typography";
 import { Svg, Circle, Text as SvgText } from "react-native-svg";
-import DropdownPicker from "@/components/Dropdown";
 import { getUserData } from "@/services/auth";
+import CustomInput from "@/components/CustomInput";
 
-/**
- * Obtiene las iniciales del nombre del usuario
- */
 const getInitials = (name?: string) => {
   if (!name || name.trim().length === 0) return "";
   const parts = name.split(" ");
@@ -28,9 +26,6 @@ const getInitials = (name?: string) => {
     : parts[0][0].toUpperCase();
 };
 
-/**
- * Genera un color basado en el nombre del usuario
- */
 const getColorFromName = (name: string) => {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
@@ -39,11 +34,15 @@ const getColorFromName = (name: string) => {
   return `hsl(${hash % 360}, 60%, 50%)`;
 };
 
-const UpdateProfile = () => {
+const SeeProfile = () => {
   const router = useRouter();
   const [selectedGender, setSelectedGender] = useState("");
   const [direccion, setDireccion] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [numeroDocumento, setNumeroDocumento] = useState("");
+  const [correo, setCorreo] = useState("");
+  const [tipoPersona, setTipoPersona] = useState("");
+  const [tipoDocumento, setTipoDocumento] = useState("");
   const [user, setUser] = useState<{
     name: string;
     email: string;
@@ -63,10 +62,13 @@ const UpdateProfile = () => {
           profile_picture: userData.profile_picture || null,
         });
 
-        // Asignar datos a los campos de entrada
         setDireccion(userData.address || "");
         setTelefono(userData.phone || "");
         setSelectedGender(userData.gender_name || "");
+        setTipoDocumento(userData.type_document_name || "");
+        setNumeroDocumento(userData.document_number?.toString() || "");
+        setCorreo(userData.email || "");
+        setTipoPersona(userData.roles?.[0] || "Desconocido");
       }
       setLoading(false);
     };
@@ -90,7 +92,6 @@ const UpdateProfile = () => {
 
           <View style={styles.pictureContainer}>
             {profilePicture && !imageLoaded ? (
-              // Mientras la imagen carga, muestra el círculo de color sin iniciales
               <Svg height="60" width="60" style={{ marginBottom: 8 }}>
                 <Circle
                   cx="30"
@@ -100,7 +101,6 @@ const UpdateProfile = () => {
                 />
               </Svg>
             ) : profilePicture ? (
-              // Si hay imagen y cargó correctamente, se muestra
               <Image
                 source={{ uri: profilePicture }}
                 style={styles.profileImage}
@@ -108,16 +108,15 @@ const UpdateProfile = () => {
                 onError={() => setImageLoaded(false)}
               />
             ) : (
-              // Si no hay imagen, se muestra el círculo de color con las iniciales
               <Svg
-                height="45"
-                width="45"
+                width={60}
+                height={60}
                 style={{ marginRight: 15, marginBottom: 12 }}
               >
                 <Circle
-                  cx="22"
-                  cy="22"
-                  r="22"
+                  cx="28"
+                  cy="28"
+                  r="28"
                   fill={
                     loading
                       ? colors.base
@@ -126,10 +125,10 @@ const UpdateProfile = () => {
                 />
                 {!loading && user?.name && (
                   <SvgText
-                    x="22"
-                    y="27"
+                    x="30"
+                    y="33"
                     textAnchor="middle"
-                    fontSize="14"
+                    fontSize="16"
                     fill="white"
                     fontWeight="bold"
                   >
@@ -146,11 +145,47 @@ const UpdateProfile = () => {
 
           <View style={styles.formContainer}>
             <View style={{ width: "100%" }}>
+              <Text style={styles.label}>Tipo de Documento</Text>
+              <CustomInput
+                placeholder="Tipo de Documento"
+                value={tipoDocumento}
+                editable={false}
+              />
+            </View>
+
+            <View style={{ width: "100%" }}>
+              <Text style={styles.label}>Número de Documento</Text>
+              <CustomInput
+                placeholder="Número de Documento"
+                value={numeroDocumento}
+                editable={false}
+              />
+            </View>
+
+            <View style={{ width: "100%" }}>
+              <Text style={styles.label}>Correo Electrónico</Text>
+              <CustomInput
+                placeholder="Correo Electrónico"
+                value={correo}
+                editable={false}
+              />
+            </View>
+
+            <View style={{ width: "100%" }}>
+              <Text style={styles.label}>Tipo de Persona</Text>
+              <CustomInput
+                placeholder="Tipo de Persona"
+                value={tipoPersona}
+                editable={false}
+              />
+            </View>
+
+            <View style={{ width: "100%" }}>
               <Text style={styles.label}>Dirección</Text>
               <CustomInput
                 placeholder="Dirección"
                 value={direccion}
-                onChangeText={setDireccion}
+                editable={false}
               />
             </View>
 
@@ -159,24 +194,16 @@ const UpdateProfile = () => {
               <CustomInput
                 placeholder="Teléfono"
                 value={telefono}
-                onChangeText={(text) => {
-                  const numericValue = text.replace(/[^0-9]/g, "");
-                  setTelefono(numericValue);
-                }}
-                keyboardType="numeric"
+                editable={false}
               />
             </View>
 
             <View style={{ width: "100%" }}>
               <Text style={styles.label}>Género</Text>
-              <DropdownPicker
-                selectedValue={selectedGender}
-                onValueChange={(itemValue) => setSelectedGender(itemValue)}
-                options={[
-                  { label: "Masculino", value: "Masculino" },
-                  { label: "Femenino", value: "Femenino" },
-                  { label: "Otro", value: "Otro" },
-                ]}
+              <CustomInput
+                placeholder="Género"
+                value={selectedGender}
+                editable={false}
               />
             </View>
           </View>
@@ -190,6 +217,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.base,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
   scrollContainer: {
     flexGrow: 1,
@@ -208,7 +236,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     alignItems: "flex-start",
     justifyContent: "flex-start",
-    backgroundColor: colors.base,
   },
   customHeader: {
     flexDirection: "row",
@@ -218,7 +245,6 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 10,
     paddingHorizontal: 20,
-    backgroundColor: colors.base,
   },
   backButton: {
     padding: 8,
@@ -246,9 +272,8 @@ const styles = StyleSheet.create({
   },
   pictureContainer: {
     alignItems: "center",
-    justifyContent: "center",
     marginVertical: 20,
   },
 });
 
-export default UpdateProfile;
+export default SeeProfile;

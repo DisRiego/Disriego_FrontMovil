@@ -124,7 +124,7 @@ const Profile = () => {
               </>
             )}
           </View>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/profile/seeProfile")}>
             <Ionicons name="eye" size={28} color={colors.gray} />
           </TouchableOpacity>
         </View>
