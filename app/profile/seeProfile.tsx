@@ -171,14 +171,14 @@ const SeeProfile = () => {
               />
             </View>
 
-            <View style={{ width: "100%" }}>
+            {/*<View style={{ width: "100%" }}>
               <Text style={styles.label}>Tipo de Persona</Text>
               <CustomInput
                 placeholder="Tipo de Persona"
                 value={tipoPersona}
                 editable={false}
               />
-            </View>
+            </View>*/}
 
             <View style={{ width: "100%" }}>
               <Text style={styles.label}>Dirección</Text>
