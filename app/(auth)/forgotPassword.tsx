@@ -30,7 +30,7 @@ export default function ForgotPasswordScreen() {
     try {
       // Primero, obtener el token de recuperación desde el backend
       const response = await axios.post(
-        `${API_URL}/users/request-reset-password`,
+        `${API_URL}/auth/request-reset-password`,
         {
           email,
         }
@@ -47,7 +47,7 @@ export default function ForgotPasswordScreen() {
         template_params: {
           to_name: "Usuario",
           to_email: email,
-          message: `disriego://resetPassword?token=${resetToken}`,
+          message: `http://localhost:5173/login/resetpassword/${resetToken}`,
 
           reply_to: email,
         },

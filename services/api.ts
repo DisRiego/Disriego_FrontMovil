@@ -1,6 +1,6 @@
 import axios from "axios";
 import { getToken } from "./auth";
-import { API_URL } from "./config"; // Importar API_URL desde config.ts
+import { API_URL } from "./config";
 
 const api = axios.create({
   baseURL: API_URL,

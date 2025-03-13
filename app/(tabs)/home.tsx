@@ -1,28 +1,90 @@
+import React, { useEffect, useState } from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
-import React from "react";
+import { getUserData } from "@/services/auth";
+import { Svg, Circle, Text as SvgText } from "react-native-svg";
+
+/**
+ * Obtiene las iniciales del nombre del usuario
+ */
+const getInitials = (name: string) => {
+  if (!name) return "";
+  const parts = name.split(" ");
+  return parts.length > 1
+    ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+    : parts[0][0].toUpperCase();
+};
+
+/**
+ * Genera un color basado en el nombre del usuario
+ */
+const getColorFromName = (name: string) => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return `hsl(${hash % 360}, 60%, 50%)`;
+};
 
 export default function HomeScreen() {
   const router = useRouter();
+  const [username, setUsername] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const user = await getUserData();
+      if (user) {
+        setUsername(`${user.name} ${user.first_last_name}`);
+        setProfileImage(user.profile_picture || null);
+      } else {
+        setUsername("Usuario");
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         {/* Sección de bienvenida */}
         <View style={styles.welcomeSection}>
-          <Image
-            source={{
-              uri: "https://randomuser.me/api/portraits/women/43.jpg",
-            }}
-            style={styles.profileImage}
-          />
+          {profileImage ? (
+            <Image source={{ uri: profileImage }} style={styles.profileImage} />
+          ) : username ? (
+            <Svg height="45" width="45" style={{ marginRight: 15 }}>
+              <Circle
+                cx="22"
+                cy="22"
+                r="22"
+                fill={getColorFromName(username || "Usuario")}
+              />
+
+              <SvgText
+                x="23"
+                y="27"
+                textAnchor="middle"
+                fontSize="16"
+                fill="white"
+                fontWeight="bold"
+              >
+                {getInitials(username || "Usuario")}
+              </SvgText>
+            </Svg>
+          ) : (
+            // Mostrar un círculo gris como placeholder
+            <Svg height="45" width="45" style={{ marginRight: 15 }}>
+              <Circle cx="22" cy="22" r="22" fill={colors.white} />
+            </Svg>
+          )}
           <View>
             <Text style={styles.welcomeText}>¡Bienvenido!</Text>
-            <Text style={styles.username}>[Nombre Usuario]</Text>
+            <Text style={styles.username}>{username}</Text>
           </View>
         </View>
 
@@ -88,6 +150,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
+
   welcomeSection: {
     flexDirection: "row",
     alignItems: "center",
@@ -101,8 +164,8 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   profileImage: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 40,
     borderRadius: 25,
     marginRight: 15,
   },

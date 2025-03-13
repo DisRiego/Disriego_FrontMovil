@@ -1,68 +1,147 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import { API_URL } from "./config"; // Importar API_URL desde config.ts
+import { API_URL } from "./config";
+import { jwtDecode } from "jwt-decode";
 
+interface User {
+  gender: string;
+  id: number;
+  email: string;
+  name: string;
+  first_last_name: string;
+  second_last_name?: string | null;
+  address?: string;
+  profile_picture?: string | null;
+  phone?: string;
+  status_name: string;
+  roles: { id: number; name: string }[];
+}
+
+// Cache en memoria para evitar llamadas innecesarias a AsyncStorage
+let tokenCache: string | null = null;
+let emailCache: string | null = null;
+
+// 🔹 Obtener los headers con token automáticamente
+const getAuthHeaders = async () => {
+  const token = await getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+// 🔹 Iniciar sesión y almacenar token en AsyncStorage + memoria
 export const login = async (email: string, password: string) => {
   try {
-    const response = await axios.post(`${API_URL}/users/login`, {
+    const response = await axios.post(`${API_URL}/auth/login`, {
       email,
       password,
     });
 
-    // Verificar si la respuesta tiene el access_token esperado
-    if (response.data && response.data.access_token) {
-      const { access_token } = response.data;
-      await AsyncStorage.setItem("token", access_token); // Guardar el token
-      return access_token;
-    } else {
-      throw new Error("Credenciales incorrectas."); // Lanzar un error si el token no se encuentra
-    }
-  } catch (error: any) {
-    // Manejo de errores específicos: si el error es 401, significa que las credenciales son incorrectas
-    if (error.response && error.response.status === 401) {
+    if (!response.data?.access_token) {
       throw new Error("Credenciales incorrectas.");
     }
 
-    // Manejo de errores genéricos
+    tokenCache = response.data.access_token; // Cache en memoria
+    emailCache = email;
+
+    if (tokenCache) {
+      await AsyncStorage.multiSet([
+        ["token", tokenCache],
+        ["email", email],
+      ]);
+    } else {
+      throw new Error("Token is null");
+    }
+
+    return tokenCache;
+  } catch (error: any) {
     console.error("Error en login:", error);
-    throw new Error("Ocurrió un error inesperado.");
+    throw new Error(
+      error.response?.status === 401
+        ? "Credenciales incorrectas."
+        : error.response?.data?.message || "Ocurrió un error inesperado."
+    );
   }
 };
 
-export const getToken = async () => {
-  return await AsyncStorage.getItem("token");
+// 🔹 Obtener el token desde memoria o AsyncStorage (si es necesario)
+export const getToken = async (): Promise<string | null> => {
+  if (tokenCache) return tokenCache;
+
+  try {
+    tokenCache = await AsyncStorage.getItem("token");
+    return tokenCache;
+  } catch (error) {
+    console.error("Error al obtener el token:", error);
+    return null;
+  }
 };
 
+// 🔹 Obtener el email del usuario desde memoria o AsyncStorage
+export const getEmail = async (): Promise<string | null> => {
+  if (emailCache) return emailCache;
+
+  try {
+    emailCache = await AsyncStorage.getItem("email");
+    return emailCache;
+  } catch (error) {
+    console.error("Error al obtener el email:", error);
+    return null;
+  }
+};
+
+// 🔹 Cerrar sesión y limpiar memoria + AsyncStorage
 export const logout = async () => {
   try {
-    // Obtener el token almacenado
-    const token = await AsyncStorage.getItem("token");
-
-    // Si no hay token, no podemos proceder
+    const token = await getToken();
     if (!token) {
-      console.log("No hay token para cerrar sesión");
+      console.warn("Intento de logout sin token almacenado.");
       return;
     }
 
-    // Enviar solicitud al backend para revocar el token
-    const response = await axios.post(
-      `${API_URL}/users/logout`, // Asegúrate de que la URL sea la correcta
+    await axios.post(
+      `${API_URL}/auth/logout`,
       {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`, // Pasar el token en el encabezado
-        },
-      }
+      { headers: await getAuthHeaders() }
     );
 
-    if (response.data.message === "Cierre de sesión exitoso") {
-      // Eliminar el token de AsyncStorage después de que el backend lo haya revocado
-      await AsyncStorage.removeItem("token");
-      console.log("Cierre de sesión exitoso");
-    } else {
-      console.error("Error al cerrar sesión: ", response.data);
-    }
+    await AsyncStorage.multiRemove(["token", "email"]);
+    tokenCache = null;
+    emailCache = null;
+    console.log("Cierre de sesión exitoso.");
   } catch (error) {
     console.error("Error al cerrar sesión:", error);
+  }
+};
+
+// 🔹 Interfaz del token decodificado
+interface DecodedToken {
+  id: number;
+  email: string;
+  exp: number; // Expiración del token
+}
+
+export const getUserData = async () => {
+  try {
+    const token = await getToken();
+    if (!token) throw new Error("No hay token disponible");
+
+    const decoded: DecodedToken = jwtDecode(token);
+    const userId = decoded.id;
+    if (!userId) throw new Error("El token no contiene un ID válido");
+
+    const response = await axios.get(`${API_URL}/users/${userId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    console.log("Datos del usuario recibidos:", response.data);
+
+    // Acceder al primer elemento del array dentro de "data"
+    const user = response.data?.data?.[0] || null;
+    return user;
+  } catch (error: any) {
+    console.error(
+      "Error obteniendo datos del usuario:",
+      error.response?.data || error.message
+    );
+    return null;
   }
 };
