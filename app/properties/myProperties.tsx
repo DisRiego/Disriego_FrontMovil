@@ -5,25 +5,42 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import React, { Component } from "react";
 import { colors } from "@/config/theme";
-import { AntDesign } from "@expo/vector-icons";
-import { router } from "expo-router";
 import { typography } from "@/config/typography";
 import CustomHeader from "@/components/CustomHeader";
 import SearchBar from "@/components/SearchBar";
 import FilterButton from "@/components/FilterButton";
 import PropertyCard from "@/components/PropertyCard";
+import PropertyDetailsModal from "@/components/PropertyDetailsModal";
 
 export class MyProperties extends Component {
   state = {
     searchText: "",
+    modalVisible: false,
+    selectedProperty: null,
+  };
+
+  openModal = (property: {
+    name: string;
+    id: string;
+    folio: string;
+    latitud: string;
+    longitud: string;
+    extension: string;
+  }) => {
+    this.setState({ modalVisible: true, selectedProperty: property });
+  };
+
+  closeModal = () => {
+    this.setState({ modalVisible: false, selectedProperty: null });
   };
 
   render() {
+    const { searchText, modalVisible, selectedProperty } = this.state;
+
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
@@ -37,33 +54,51 @@ export class MyProperties extends Component {
                 En esta sección podrás visualizar la información de los predios
                 y lotes vinculados a su documento.
               </Text>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 10,
-                }}
-              >
+              <View style={styles.searchContainer}>
                 <SearchBar
-                  searchText={this.state.searchText}
+                  searchText={searchText}
                   onSearchChange={(text) => this.setState({ searchText: text })}
                 />
                 <FilterButton onPress={() => console.log("Abrir filtros")} />
               </View>
               <View style={styles.formContainer}>
                 <PropertyCard
-                  name={"Nombre del Predio"}
-                  id={"123"}
-                  folio={"Matrícula Inmobiliaria"}
-                  extension={"200 m²"}
-                  onPress={function (): void {
-                    throw new Error("Function not implemented.");
-                  }}
+                  name="Nombre del Predio"
+                  id="123"
+                  folio="Matrícula Inmobiliaria"
+                  extension="200 m²"
+                  onPress={() =>
+                    this.openModal({
+                      name: "Nombre del Predio",
+                      id: "123",
+                      folio: "Matrícula Inmobiliaria",
+                      latitud: "4.123456",
+                      longitud: "-74.123456",
+                      extension: "200 m²",
+                    })
+                  }
                 />
               </View>
             </View>
           </ScrollView>
         </View>
+
+        {/* Renderiza el modal cuando hay un predio seleccionado */}
+        {selectedProperty && (
+          <PropertyDetailsModal
+            name={""}
+            id={""}
+            folio={""}
+            latitud={""}
+            longitud={""}
+            extension={""}
+            isVisible={modalVisible}
+            onClose={this.closeModal}
+            {...(selectedProperty && typeof selectedProperty === "object"
+              ? selectedProperty
+              : {})}
+          />
+        )}
       </SafeAreaView>
     );
   }
