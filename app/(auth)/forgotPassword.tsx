@@ -15,7 +15,7 @@ import { typography } from "@/config/typography";
 import Button from "@/components/Button";
 import CustomInput from "@/components/CustomInput";
 import Header from "@/components/Header";
-import { API_URL } from "@/services/config";
+import { API_FRONT, API_URL } from "@/services/config";
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
@@ -47,7 +47,7 @@ export default function ForgotPasswordScreen() {
         template_params: {
           to_name: "Usuario",
           to_email: email,
-          message: `http://localhost:5173/login/resetpassword/${resetToken}`,
+          message: `${API_FRONT}/login/resetpassword/${resetToken}`,
 
           reply_to: email,
         },

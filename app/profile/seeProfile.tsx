@@ -17,6 +17,7 @@ import { typography } from "@/config/typography";
 import { Svg, Circle, Text as SvgText } from "react-native-svg";
 import { getUserData } from "@/services/auth";
 import CustomInput from "@/components/CustomInput";
+import CustomHeader from "@/components/CustomHeader";
 
 const getInitials = (name?: string) => {
   if (!name || name.trim().length === 0) return "";
@@ -80,16 +81,8 @@ const SeeProfile = () => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <View style={styles.customHeader}>
-            <TouchableOpacity
-              onPress={() => router.push("/(tabs)/profile")}
-              style={styles.backButton}
-            >
-              <AntDesign name="left" size={22} color={colors.gray} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Ver perfil</Text>
-          </View>
-
+          {/* Encabezado reutilizable */}
+          <CustomHeader title="Ver perfil" backRoute="/(tabs)/profile" />
           <View style={styles.pictureContainer}>
             {profilePicture && !imageLoaded ? (
               <Svg height="60" width="60" style={{ marginBottom: 8 }}>
@@ -237,24 +230,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     justifyContent: "flex-start",
   },
-  customHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    paddingTop: 20,
-    paddingBottom: 10,
-    paddingHorizontal: 20,
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: "center",
-    ...typography.medium.big,
-    color: colors.darkGray,
-  },
+
   label: {
     marginBottom: 8,
     ...typography.medium.regular,

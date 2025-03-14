@@ -117,7 +117,7 @@ const menuItems = [
   {
     id: 1,
     label: "Mis predios y lotes",
-    route: "/home/properties",
+    route: "/properties/myProperties",
     image: require("../../assets/images/properties.png"),
   },
   {

@@ -21,13 +21,13 @@ interface User {
 let tokenCache: string | null = null;
 let emailCache: string | null = null;
 
-// 🔹 Obtener los headers con token automáticamente
+// Obtener los headers con token automáticamente
 const getAuthHeaders = async () => {
   const token = await getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-// 🔹 Iniciar sesión y almacenar token en AsyncStorage + memoria
+// Iniciar sesión y almacenar token en AsyncStorage + memoria
 export const login = async (email: string, password: string) => {
   try {
     const response = await axios.post(`${API_URL}/auth/login`, {
@@ -62,7 +62,7 @@ export const login = async (email: string, password: string) => {
   }
 };
 
-// 🔹 Obtener el token desde memoria o AsyncStorage (si es necesario)
+// Obtener el token desde memoria o AsyncStorage (si es necesario)
 export const getToken = async (): Promise<string | null> => {
   if (tokenCache) return tokenCache;
 
@@ -75,7 +75,7 @@ export const getToken = async (): Promise<string | null> => {
   }
 };
 
-// 🔹 Obtener el email del usuario desde memoria o AsyncStorage
+// Obtener el email del usuario desde memoria o AsyncStorage
 export const getEmail = async (): Promise<string | null> => {
   if (emailCache) return emailCache;
 
@@ -88,7 +88,7 @@ export const getEmail = async (): Promise<string | null> => {
   }
 };
 
-// 🔹 Cerrar sesión y limpiar memoria + AsyncStorage
+// Cerrar sesión y limpiar memoria + AsyncStorage
 export const logout = async () => {
   try {
     const token = await getToken();
@@ -112,7 +112,7 @@ export const logout = async () => {
   }
 };
 
-// 🔹 Interfaz del token decodificado
+// Interfaz del token decodificado
 interface DecodedToken {
   id: number;
   email: string;
