@@ -6,7 +6,7 @@ import { typography } from "@/config/typography";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
-interface PropertyDetailsModalProps {
+interface LotDetailsModalProps {
   isVisible: boolean;
   onClose: () => void;
   name: string;
@@ -15,9 +15,11 @@ interface PropertyDetailsModalProps {
   latitude: string;
   longitude: string;
   extension: string;
+  cropType: string;
+  paymentInterval: string;
 }
 
-export default function PropertyDetailsModal({
+export default function LotDetailsModal({
   isVisible,
   onClose,
   name,
@@ -26,8 +28,10 @@ export default function PropertyDetailsModal({
   latitude,
   longitude,
   extension,
-}: PropertyDetailsModalProps) {
-  const router = useRouter(); // ✅ Ahora el router está bien definido
+  cropType,
+  paymentInterval,
+}: LotDetailsModalProps) {
+  const router = useRouter();
 
   return (
     <Modal isVisible={isVisible} style={styles.modal} onBackdropPress={onClose}>
@@ -55,6 +59,7 @@ export default function PropertyDetailsModal({
             <Text style={styles.value}>{real_estate_registration_number}</Text>
           </View>
           <View style={styles.separator} />
+
           <View style={styles.row}>
             <Text style={styles.label}>Latitud</Text>
             <Text style={styles.value}>{latitude}</Text>
@@ -69,7 +74,16 @@ export default function PropertyDetailsModal({
             <Text style={styles.label}>Extensión (m²)</Text>
             <Text style={styles.value}>{extension}</Text>
           </View>
-          <View style={styles.separator} />
+
+          <View style={styles.row}>
+            <Text style={styles.label}>Tipo de Cultivo</Text>
+            <Text style={styles.value}>{cropType}</Text>
+          </View>
+
+          <View style={styles.row}>
+            <Text style={styles.label}>Intervalo de Pago</Text>
+            <Text style={styles.value}>{paymentInterval}</Text>
+          </View>
         </View>
 
         {/* Botones */}
@@ -81,9 +95,9 @@ export default function PropertyDetailsModal({
           <TouchableOpacity
             style={styles.detailsButton}
             onPress={() => {
-              onClose(); // Cierra el modal antes de navegar
+              onClose();
               router.push({
-                pathname: "/properties/detailsProperties",
+                pathname: "/lots/detailsLot",
                 params: {
                   id,
                   name,
@@ -91,6 +105,8 @@ export default function PropertyDetailsModal({
                   latitude,
                   longitude,
                   extension,
+                  cropType,
+                  paymentInterval,
                 },
               });
             }}

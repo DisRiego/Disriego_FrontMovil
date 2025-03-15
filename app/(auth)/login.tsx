@@ -191,7 +191,10 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.base },
-  scrollContainer: { flexGrow: 1 },
+  scrollContainer: {
+    flexGrow: 1,
+    paddingBottom: 24,
+  },
   container: {
     flex: 1,
     alignItems: "center",

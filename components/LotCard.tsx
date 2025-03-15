@@ -4,25 +4,21 @@ import { colors } from "@/config/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { typography } from "@/config/typography";
 
-interface PropertyCardProps {
+interface LotCardProps {
   name: string;
   id: string;
-  folio?: string;
   extension?: string;
-  latitud?: string;
-  longitud?: string;
+  cropType?: string;
   onPress?: () => void;
 }
 
-export default function PropertyCard({
+export default function LotCard({
   name,
   id,
-  folio,
   extension,
-  latitud,
-  longitud,
+  cropType,
   onPress,
-}: PropertyCardProps) {
+}: LotCardProps) {
   const Container = onPress ? TouchableOpacity : View;
 
   return (
@@ -39,13 +35,6 @@ export default function PropertyCard({
       <Text style={styles.idText}>#{id}</Text>
 
       {/* Información opcional */}
-      {folio && (
-        <View style={styles.infoRow}>
-          <Text style={styles.label}>Folio Matrícula</Text>
-          <Text style={styles.value}>{folio}</Text>
-        </View>
-      )}
-
       {extension && (
         <View style={styles.infoRow}>
           <Text style={styles.label}>Extensión (m²)</Text>
@@ -53,17 +42,10 @@ export default function PropertyCard({
         </View>
       )}
 
-      {latitud && (
+      {cropType && (
         <View style={styles.infoRow}>
-          <Text style={styles.label}>Latitud</Text>
-          <Text style={styles.value}>{latitud}</Text>
-        </View>
-      )}
-
-      {longitud && (
-        <View style={styles.infoRow}>
-          <Text style={styles.label}>Longitud</Text>
-          <Text style={styles.value}>{longitud}</Text>
+          <Text style={styles.label}>Tipo Cultivo</Text>
+          <Text style={styles.value}>{cropType}</Text>
         </View>
       )}
     </Container>
