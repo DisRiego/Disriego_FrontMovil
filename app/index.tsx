@@ -1,57 +1,96 @@
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   Image,
   StyleSheet,
-  TouchableOpacity,
   SafeAreaView,
   ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
+import NavigationButton from "@/components/NavigationButton";
+import { getToken } from "@/services/auth";
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = await getToken();
+      setIsAuthenticated(!!token); // Si hay token, está autenticado
+    };
+
+    checkAuth();
+  }, []);
+
+  const handleContinue = () => {
+    // Redirige a la pantalla principal (por ejemplo, "home")
+    router.replace("/(tabs)/home");
+  };
+
+  if (isAuthenticated === null) {
+    return null; // Muestra nada hasta que se verifique el estado de autenticación
+  }
 
   return (
     <SafeAreaView style={styles.safeContainer}>
       <ScrollView contentContainerStyle={{ height: "100%" }}>
         <View style={styles.container}>
-          {/* Logo más pequeño */}
+          {/* Logo */}
           <Image
             source={require("../assets/images/logo.png")}
             style={styles.logo}
           />
 
-          {/* Imagen principal más grande */}
+          {/* Imagen principal */}
           <Image
             source={require("../assets/images/welcome.png")}
             style={styles.image}
           />
 
-          <Text style={styles.title}>
-            Bienvenido a <Text style={styles.brand}>DisRiego!</Text>
-          </Text>
+          {/* Mensaje de bienvenida */}
+          <Text style={styles.title}>¡Bienvenido a DisRiego!</Text>
 
           <Text style={styles.subtitle}>
-            Para acceder a todas las funcionalidades, por favor regístrate o
-            inicia sesión con tu cuenta.
+            {isAuthenticated
+              ? "¡Ya estás autenticado! Haz clic en 'Continuar' para acceder."
+              : "Para acceder a todas las funcionalidades, por favor regístrate o inicia sesión con tu cuenta."}
           </Text>
 
-          <TouchableOpacity
-            style={styles.registerButton}
-            onPress={() => router.push("/register")}
-          >
-            <Text style={styles.registerText}>Registrarse</Text>
-          </TouchableOpacity>
+          {isAuthenticated ? (
+            // Botón de Continuar cuando está autenticado
+            <NavigationButton
+              text="Continuar"
+              color={colors.tertiary}
+              textColor={colors.primary}
+              borderColor={colors.secondary}
+              onPress={handleContinue}
+              route="/(tabs)/home"
+            />
+          ) : (
+            <>
+              {/* Botón de Registro */}
+              <NavigationButton
+                text="Registrarse"
+                color={colors.base}
+                textColor={colors.gray}
+                borderColor={colors.border}
+                route="/register"
+              />
 
-          <TouchableOpacity
-            style={styles.loginButton}
-            onPress={() => router.push("/login")}
-          >
-            <Text style={styles.loginText}>Iniciar Sesión</Text>
-          </TouchableOpacity>
+              {/* Botón de Inicio de Sesión */}
+              <NavigationButton
+                text="Iniciar Sesión"
+                color={colors.tertiary}
+                textColor={colors.primary}
+                borderColor={colors.tertiary}
+                route="/login"
+              />
+            </>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -76,8 +115,8 @@ const styles = StyleSheet.create({
     marginBottom: 25,
   },
   image: {
-    width: 400,
-    height: 350,
+    width: 300,
+    height: 320,
     resizeMode: "contain",
     marginBottom: 15,
   },
@@ -85,51 +124,14 @@ const styles = StyleSheet.create({
     ...typography.bold.big,
     fontSize: 27,
     textAlign: "center",
-    marginBottom: 5,
+    marginBottom: 10,
   },
-  brand: {
-    color: colors.primary,
-  },
+
   subtitle: {
-    ...typography.medium.regular,
+    ...typography.regular.large,
     color: colors.gray,
     textAlign: "center",
-    paddingHorizontal: 15,
-    marginBottom: 25,
-  },
-  registerButton: {
-    width: "90%",
-    padding: 15,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 15,
-    backgroundColor: colors.base,
-    shadowColor: colors.border,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
-    marginBottom: 20,
-  },
-  registerText: {
-    ...typography.semibold.large,
-    color: colors.gray,
-  },
-  loginButton: {
-    width: "90%",
-    padding: 15,
-    alignItems: "center",
-    borderRadius: 15,
-    backgroundColor: colors.tertiary,
-    shadowColor: colors.tertiary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  loginText: {
-    ...typography.semibold.large,
-    color: colors.primary,
+    paddingHorizontal: 24,
+    marginBottom: 50,
   },
 });
