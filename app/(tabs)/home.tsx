@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     ...typography.regular.big,
   },
   categoryTitle: {
-    ...typography.bold.large,
+    ...typography.semibold.large,
     marginTop: 20,
   },
   categoriesContainer: {

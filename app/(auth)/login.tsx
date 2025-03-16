@@ -10,6 +10,10 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Keyboard,
+  Platform,
 } from "react-native";
 import { login } from "@/services/auth";
 import { colors } from "@/config/theme";
@@ -82,108 +86,125 @@ export default function LoginScreen() {
     <SafeAreaView style={styles.safeArea}>
       <Header />
       <View style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <View style={styles.formContainer}>
-            <Text style={[typography.semibold.big, { color: colors.darkGray }]}>
-              Iniciar Sesión
-            </Text>
-            <Text style={[typography.medium.regular, { color: colors.gray }]}>
-              Por favor, introduce tu correo y contraseña para acceder a tu
-              cuenta.
-            </Text>
-
-            <CustomInput
-              placeholder="Correo Electrónico"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                setEmailError(false);
-              }}
-              placeholderTextColor={emailError ? colors.error : colors.gray}
-              style={[emailError && styles.inputError]}
-            />
-
-            <CustomInput
-              placeholder="Contraseña"
-              secureTextEntry={!showPassword}
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                setPasswordError(false);
-              }}
-              placeholderTextColor={passwordError ? colors.error : colors.gray}
-              style={[passwordError && styles.inputError]}
-              iconRight={
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff size={20} color={colors.border} />
-                  ) : (
-                    <Eye size={20} color={colors.border} />
-                  )}
-                </TouchableOpacity>
-              }
-            />
-
-            <View style={styles.forgotPasswordContainer}>
-              <Text style={[typography.medium.regular, { color: colors.gray }]}>
-                ¿Olvidaste la contraseña?
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <KeyboardAvoidingView
+            style={styles.container}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+          >
+            <ScrollView contentContainerStyle={styles.scrollContainer}>
+              <View style={styles.formContainer}>
                 <Text
-                  style={[typography.medium.regular, styles.link]}
-                  onPress={() => router.push("/forgotPassword")}
+                  style={[typography.semibold.big, { color: colors.darkGray }]}
                 >
-                  {" "}
-                  Haz clic aquí
+                  Iniciar Sesión
                 </Text>
-              </Text>
-            </View>
+                <Text
+                  style={[typography.medium.regular, { color: colors.gray }]}
+                >
+                  Por favor, introduce tu correo y contraseña para acceder a tu
+                  cuenta.
+                </Text>
 
-            <Image
-              source={require("../../assets/images/divisor.png")}
-              style={styles.divisor}
-            />
+                <CustomInput
+                  placeholder="Correo Electrónico"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={email}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    setEmailError(false);
+                  }}
+                  placeholderTextColor={emailError ? colors.error : colors.gray}
+                  style={[emailError && styles.inputError]}
+                />
 
-            <View style={styles.loginWrapper}>
-              <LoginButton
-                text="Ingresa con Google"
-                icon={require("../../assets/images/googleLogo.png")}
-                onPress={() => console.log("Google Login")}
-              />
-              <LoginButton
-                text="Ingresa con Outlook"
-                icon={require("../../assets/images/outlookLogo.png")}
-                onPress={() => console.log("Outlook Login")}
-              />
-            </View>
-          </View>
+                <CustomInput
+                  placeholder="Contraseña"
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    setPasswordError(false);
+                  }}
+                  placeholderTextColor={
+                    passwordError ? colors.error : colors.gray
+                  }
+                  style={[passwordError && styles.inputError]}
+                  iconRight={
+                    <TouchableOpacity
+                      onPress={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff size={20} color={colors.border} />
+                      ) : (
+                        <Eye size={20} color={colors.border} />
+                      )}
+                    </TouchableOpacity>
+                  }
+                />
 
-          <View style={styles.footerContainer}>
-            <Button
-              text={
-                loading ? (
-                  <ActivityIndicator size={28} color={colors.primary} />
-                ) : (
-                  "Iniciar Sesión"
-                )
-              }
-              onPress={handleLogin}
-              disabled={loading}
-            />
-            <Text style={[typography.medium.regular, { color: colors.gray }]}>
-              ¿No tienes una cuenta?
-              <Text
-                style={styles.link}
-                onPress={() => router.push("/register")}
-              >
-                {" "}
-                Regístrate aquí
-              </Text>
-            </Text>
-          </View>
-        </ScrollView>
+                <View style={styles.forgotPasswordContainer}>
+                  <Text
+                    style={[typography.medium.regular, { color: colors.gray }]}
+                  >
+                    ¿Olvidaste la contraseña?
+                    <Text
+                      style={[typography.medium.regular, styles.link]}
+                      onPress={() => router.push("/forgotPassword")}
+                    >
+                      {" "}
+                      Haz clic aquí
+                    </Text>
+                  </Text>
+                </View>
+
+                <Image
+                  source={require("../../assets/images/divisor.png")}
+                  style={styles.divisor}
+                />
+
+                <View style={styles.loginWrapper}>
+                  <LoginButton
+                    text="Ingresa con Google"
+                    icon={require("../../assets/images/googleLogo.png")}
+                    onPress={() => console.log("Google Login")}
+                  />
+                  <LoginButton
+                    text="Ingresa con Outlook"
+                    icon={require("../../assets/images/outlookLogo.png")}
+                    onPress={() => console.log("Outlook Login")}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.footerContainer}>
+                <Button
+                  text={
+                    loading ? (
+                      <ActivityIndicator size={28} color={colors.primary} />
+                    ) : (
+                      "Iniciar Sesión"
+                    )
+                  }
+                  onPress={handleLogin}
+                  disabled={loading}
+                />
+                <Text
+                  style={[typography.medium.regular, { color: colors.gray }]}
+                >
+                  ¿No tienes una cuenta?
+                  <Text
+                    style={styles.link}
+                    onPress={() => router.push("/register")}
+                  >
+                    {" "}
+                    Regístrate aquí
+                  </Text>
+                </Text>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </TouchableWithoutFeedback>
       </View>
     </SafeAreaView>
   );
@@ -214,7 +235,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginVertical: 4,
   },
-  loginWrapper: { marginTop: 4, width: "100%" },
+  loginWrapper: {
+    marginTop: 4,
+    width: "100%",
+  },
   footerContainer: {
     width: "100%",
     marginTop: 2,
@@ -223,7 +247,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     alignItems: "center",
   },
-  link: { ...typography.bold.regular, color: colors.accent },
-  divisor: { width: "100%", height: 18, resizeMode: "contain" },
-  inputError: { borderColor: colors.error },
+  link: {
+    ...typography.bold.regular,
+    color: colors.accent,
+  },
+  divisor: {
+    width: "100%",
+    height: 18,
+    resizeMode: "contain",
+  },
+  inputError: {
+    borderColor: colors.error,
+  },
 });

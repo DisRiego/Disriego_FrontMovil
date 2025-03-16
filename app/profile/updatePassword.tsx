@@ -7,15 +7,24 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
 } from "react-native";
+import axios from "axios";
 import { AntDesign } from "@expo/vector-icons";
-import { router, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { typography } from "@/config/typography";
 import { colors } from "@/config/theme";
 import Button from "@/components/Button";
 import CustomInput from "@/components/CustomInput";
 import { SafeAreaView } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { usePasswordValidation } from "@/hooks/passwordValidation";
+import { API_URL } from "@/services/config";
+import { getUserData } from "@/services/auth";
+import CustomHeader from "@/components/CustomHeader";
 
 const UpdatePassword = () => {
   const router = useRouter();
@@ -31,7 +40,7 @@ const UpdatePassword = () => {
     handleConfirmPasswordChange,
   } = usePasswordValidation();
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if (!newPassword || !confirmPassword) {
       Alert.alert("Error", "Todos los campos son obligatorios.");
       return;
@@ -47,127 +56,182 @@ const UpdatePassword = () => {
       return;
     }
 
-    console.log("Contraseña actualizada correctamente");
+    setLoading(true);
+
+    try {
+      const user = await getUserData(); // Obtenemos el usuario desde el token
+      if (!user) {
+        Alert.alert("Error", "No se pudo obtener la información del usuario.");
+        setLoading(false);
+        return;
+      }
+
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        Alert.alert("Error", "No se encontró un token de autenticación.");
+        setLoading(false);
+        return;
+      }
+
+      await axios.post(
+        `${API_URL}/users/${user.id}/change-password`, // Usamos user.id en la URL
+        {
+          old_password: currentPassword,
+          new_password: newPassword,
+          confirm_password: confirmPassword,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      Alert.alert("Éxito", "Contraseña actualizada correctamente.");
+      router.push("/(tabs)/profile");
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        (error as any).response?.data?.message ||
+          "No se pudo actualizar la contraseña."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <View style={styles.customHeader}>
-            <TouchableOpacity
-              onPress={() => router.push("/(tabs)/profile")}
-              style={styles.backButton}
-            >
-              <AntDesign name="left" size={22} color={colors.gray} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Actualizar contraseña</Text>
-          </View>
-
-          <View style={styles.formContainer}>
-            <Text style={[typography.medium.medium, { color: colors.gray }]}>
-              Ingresa los datos requeridos a continuación para actualizar tu
-              contraseña
-            </Text>
-
-            <View style={{ width: "100%" }}>
-              <Text style={styles.label}>Contraseña actual</Text>
-              <CustomInput
-                placeholder="Contraseña actual"
-                value={currentPassword}
-                onChangeText={setCurrentPassword}
-                secureTextEntry
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <KeyboardAvoidingView
+          style={styles.container}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <View style={styles.container}>
+            <ScrollView contentContainerStyle={styles.scrollContainer}>
+              <CustomHeader
+                title="Actualizar contraseña"
+                backRoute="/(tabs)/profile"
               />
-            </View>
 
-            <View style={{ width: "100%" }}>
-              <Text style={styles.label}>Contraseña nueva</Text>
-              <CustomInput
-                placeholder="Contraseña nueva"
-                value={newPassword}
-                onChangeText={(text) =>
-                  handlePasswordChange(text, setNewPassword)
-                }
-                secureTextEntry
-                style={errors.password ? styles.errorInput : undefined}
-                placeholderTextColor={
-                  errors.password ? colors.error : colors.gray
-                }
-              />
-              {errors.password && newPassword.length > 0 && (
-                <Text style={styles.errorText}>
-                  La contraseña no cumple con los requisitos.
+              <View style={styles.formContainer}>
+                <Text style={[typography.regular.big, { color: colors.gray }]}>
+                  Ingresa los datos requeridos a continuación para actualizar tu
+                  contraseña.
                 </Text>
-              )}
-            </View>
 
-            <View style={{ width: "100%" }}>
-              <Text style={styles.label}>Confirmar contraseña</Text>
-              <CustomInput
-                placeholder="Confirmar contraseña"
-                value={confirmPassword}
-                onChangeText={(text) =>
-                  handleConfirmPasswordChange(
-                    text,
-                    newPassword,
-                    setConfirmPassword
-                  )
-                }
-                secureTextEntry
-                style={errors.confirmPassword ? styles.errorInput : undefined}
-                placeholderTextColor={
-                  errors.confirmPassword ? colors.error : colors.gray
-                }
-              />
-              {errors.confirmPassword && confirmPassword.length > 0 && (
-                <Text style={styles.errorText}>
-                  Las contraseñas no coinciden.
-                </Text>
-              )}
-            </View>
+                <View style={{ width: "100%" }}>
+                  <Text style={styles.label}>Contraseña actual</Text>
+                  <CustomInput
+                    placeholder="Contraseña actual"
+                    value={currentPassword}
+                    onChangeText={setCurrentPassword}
+                    secureTextEntry
+                  />
+                </View>
 
-            <View style={styles.validationContainer}>
-              <Text style={styles.validationText}>
-                <AntDesign
-                  name="exclamationcircle"
-                  size={14}
-                  color={colors.gray}
-                />{" "}
-                Al menos 12 caracteres
-              </Text>
-              <Text style={styles.validationText}>
-                <AntDesign
-                  name="exclamationcircle"
-                  size={14}
-                  color={colors.gray}
-                />{" "}
-                Al menos 1 número
-              </Text>
-              <Text style={styles.validationText}>
-                <AntDesign
-                  name="exclamationcircle"
-                  size={14}
-                  color={colors.gray}
-                />{" "}
-                Mayúsculas y minúsculas
-              </Text>
-            </View>
+                <View style={{ width: "100%" }}>
+                  <Text style={styles.label}>Contraseña nueva</Text>
+                  <CustomInput
+                    placeholder="Contraseña nueva"
+                    value={newPassword}
+                    onChangeText={(text) =>
+                      handlePasswordChange(text, setNewPassword)
+                    }
+                    secureTextEntry
+                    style={errors.password ? styles.errorInput : undefined}
+                    placeholderTextColor={
+                      errors.password ? colors.error : colors.gray
+                    }
+                  />
+                  {errors.password && newPassword.length > 0 && (
+                    <Text style={styles.errorText}>
+                      La contraseña no cumple con los requisitos.
+                    </Text>
+                  )}
+                </View>
+
+                <View style={{ width: "100%" }}>
+                  <Text style={styles.label}>Confirmar contraseña</Text>
+                  <CustomInput
+                    placeholder="Confirmar contraseña"
+                    value={confirmPassword}
+                    onChangeText={(text) =>
+                      handleConfirmPasswordChange(
+                        text,
+                        newPassword,
+                        setConfirmPassword
+                      )
+                    }
+                    secureTextEntry
+                    style={
+                      errors.confirmPassword ? styles.errorInput : undefined
+                    }
+                    placeholderTextColor={
+                      errors.confirmPassword ? colors.error : colors.gray
+                    }
+                  />
+                  {errors.confirmPassword && confirmPassword.length > 0 && (
+                    <Text style={styles.errorText}>
+                      Las contraseñas no coinciden.
+                    </Text>
+                  )}
+                </View>
+
+                <View style={styles.validationContainer}>
+                  <Text style={styles.validationText}>
+                    <AntDesign
+                      name="exclamationcircle"
+                      size={14}
+                      color={colors.gray}
+                    />{" "}
+                    Al menos 12 caracteres
+                  </Text>
+                  <Text style={styles.validationText}>
+                    <AntDesign
+                      name="exclamationcircle"
+                      size={14}
+                      color={colors.gray}
+                    />{" "}
+                    Al menos 1 número
+                  </Text>
+                  <Text style={styles.validationText}>
+                    <AntDesign
+                      name="exclamationcircle"
+                      size={14}
+                      color={colors.gray}
+                    />{" "}
+                    Mayúsculas y minúsculas
+                  </Text>
+                  <Text style={styles.validationText}>
+                    <AntDesign
+                      name="exclamationcircle"
+                      size={14}
+                      color={colors.gray}
+                    />{" "}
+                    Minimo un caracter especial
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.footerContainer}>
+                <Button
+                  text={
+                    loading ? (
+                      <ActivityIndicator size={28} color={colors.primary} />
+                    ) : (
+                      "Guardar cambios"
+                    )
+                  }
+                  onPress={handleSaveChanges}
+                  disabled={loading}
+                />
+              </View>
+            </ScrollView>
           </View>
-
-          <View style={styles.footerContainer}>
-            <Button
-              text={
-                loading ? (
-                  <ActivityIndicator size={28} color={colors.primary} />
-                ) : (
-                  "Guardar cambios"
-                )
-              }
-              onPress={handleSaveChanges}
-            />
-          </View>
-        </ScrollView>
-      </View>
+        </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 };
@@ -197,25 +261,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     backgroundColor: colors.base,
   },
-  customHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    paddingTop: 20,
-    paddingBottom: 10,
-    paddingHorizontal: 20,
-    backgroundColor: colors.base,
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: "center",
-    ...typography.medium.big,
-    color: colors.darkGray,
-  },
   label: {
     marginBottom: 8,
     ...typography.medium.regular,
@@ -234,7 +279,7 @@ const styles = StyleSheet.create({
     width: "100%",
     marginTop: 2,
     paddingTop: 24,
-    paddingBottom: 32,
+    paddingBottom: 8,
     paddingHorizontal: 20,
     alignItems: "center",
   },
@@ -243,7 +288,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: colors.error,
-
     ...typography.medium.regular,
   },
 });

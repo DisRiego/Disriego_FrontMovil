@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Stack, useRouter } from "expo-router";
+import { KeyboardAvoidingView, Platform } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import { getToken } from "@/services/auth"; // Importa la función que obtiene el token
 
@@ -28,5 +29,12 @@ export default function AuthLayout() {
     return null; // Muestra una pantalla vacía mientras se verifica el token
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1 }}
+    >
+      <Stack screenOptions={{ headerShown: false }} />
+    </KeyboardAvoidingView>
+  );
 }

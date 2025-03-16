@@ -40,6 +40,7 @@ export default function MyProperties() {
   useEffect(() => {
     axios
       .get(`${API_URL}/properties`)
+
       .then((response) => {
         // console.log("Respuesta del backend:", response.data.data);
         setProperties(response.data.data as Property[]);

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,13 +7,16 @@ import {
   StyleSheet,
   Platform,
   StatusBar,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
+import axios from "axios";
 import CustomHeader from "@/components/CustomHeader";
 import PropertyCard from "@/components/PropertyCard";
-import LotCard from "@/components/LotCard"; // 🔹 Importamos LotCard
+import LotCard from "@/components/LotCard";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
+import { API_URL } from "@/services/config";
 
 export default function DetailsProperties() {
   // Obtener los parámetros pasados en la navegación
@@ -24,28 +27,35 @@ export default function DetailsProperties() {
     latitude,
     longitude,
     extension,
-    lots, // Se espera un array de lotes
   } = useLocalSearchParams();
 
-  // Depuración: Mostrar el valor original de `lots`
-  console.log("Valor de lots antes de parsear:", lots);
+  // Estado para almacenar los lotes
+  const [lotsArray, setLotsArray] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Asegurar que `lots` sea un array (puede venir como string en la navegación)
-  let lotsArray = [];
-  try {
-    lotsArray = lots ? JSON.parse(lots as string) : [];
-  } catch (error) {
-    console.error("Error al parsear lots:", error);
-  }
+  // Función para obtener los lotes del predio desde el backend
+  const fetchLots = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/properties/${id}/lots/`);
+      setLotsArray(response.data.data || []); // Asignar los lotes al estado
+    } catch (err) {
+      console.error("Error al obtener los lotes:", err);
+      setError("No se pudieron cargar los lotes.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Depuración: Mostrar el valor después de parsear
-  console.log("Valor de lotsArray después de parsear:", lotsArray);
+  useEffect(() => {
+    fetchLots();
+  }, []);
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {/* Encabezado personalizado con botón de volver */}
+          {/* Encabezado con botón de volver */}
           <CustomHeader title="Detalles del predio" backRoute="/(tabs)/home" />
 
           {/* Descripción */}
@@ -68,31 +78,41 @@ export default function DetailsProperties() {
             </View>
           </View>
 
+          {/* Sección de lotes */}
           <View style={styles.subtContainer}>
             <Text style={[typography.medium.large, { color: colors.darkGray }]}>
               Lotes asignados al predio
             </Text>
 
-            {/* Tarjetas de los lotes */}
-            <View style={styles.lotContainer}>
-              {lotsArray.length > 0 ? (
-                lotsArray.map((lot: any) => (
-                  <LotCard
-                    key={lot.id}
-                    id={lot.id}
-                    extension={lot.extension}
-                    cropType={lot.cropType}
-                    name={""}
-                  />
-                ))
-              ) : (
-                <Text
-                  style={[typography.regular.medium, { color: colors.gray }]}
-                >
-                  No hay lotes asignados a este predio.
-                </Text>
-              )}
-            </View>
+            {loading ? (
+              <ActivityIndicator size="large" color={colors.primary} />
+            ) : error ? (
+              <Text
+                style={[typography.regular.medium, { color: colors.error }]}
+              >
+                {error}
+              </Text>
+            ) : (
+              <View style={styles.lotContainer}>
+                {lotsArray.length > 0 ? (
+                  lotsArray.map((lot) => (
+                    <LotCard
+                      key={lot.id}
+                      id={lot.id}
+                      extension={lot.extension}
+                      cropType={lot.cropType}
+                      name={lot.name}
+                    />
+                  ))
+                ) : (
+                  <Text
+                    style={[typography.regular.medium, { color: colors.gray }]}
+                  >
+                    No hay lotes asignados a este predio.
+                  </Text>
+                )}
+              </View>
+            )}
           </View>
         </ScrollView>
       </View>

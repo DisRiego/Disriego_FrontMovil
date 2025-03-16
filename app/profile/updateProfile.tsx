@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Svg, Circle, Text as SvgText } from "react-native-svg";
 import DropdownPicker from "@/components/Dropdown";
 import { getUserData } from "@/services/auth";
+import CustomHeader from "@/components/CustomHeader";
 
 /**
  * Obtiene las iniciales del nombre del usuario
@@ -78,15 +79,7 @@ const UpdateProfile = () => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <View style={styles.customHeader}>
-            <TouchableOpacity
-              onPress={() => router.push("/(tabs)/profile")}
-              style={styles.backButton}
-            >
-              <AntDesign name="left" size={22} color={colors.gray} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Ver perfil</Text>
-          </View>
+          <CustomHeader title="Ver perfil" backRoute="/(tabs)/profile" />
 
           <View style={styles.pictureContainer}>
             {profilePicture && !imageLoaded ? (
@@ -210,25 +203,6 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     justifyContent: "flex-start",
     backgroundColor: colors.base,
-  },
-  customHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    paddingTop: 20,
-    paddingBottom: 10,
-    paddingHorizontal: 20,
-    backgroundColor: colors.base,
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: "center",
-    ...typography.medium.big,
-    color: colors.darkGray,
   },
   label: {
     marginBottom: 8,
