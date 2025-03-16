@@ -2,7 +2,7 @@
   "expo": {
     "name": "DisRiego_FrontMovil",
     "slug": "DisRiego_FrontMovil",
-    "scheme": "DisRiego",
+    "scheme": "disriego",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -20,7 +20,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.disriego.frontmovil"
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
