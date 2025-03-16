@@ -31,6 +31,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     marginBottom: 15,
     height: 55,
+    flexShrink: 1, // Evita que el texto haga crecer el input
+    overflow: "hidden", // Asegura que el contenido no desborde
   },
   icon: {
     width: 24,
