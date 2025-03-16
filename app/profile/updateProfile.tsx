@@ -1,106 +1,177 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
-  KeyboardAvoidingView,
   ScrollView,
-  TouchableWithoutFeedback,
-  Keyboard,
+  Image,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { AntDesign } from "@expo/vector-icons";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
 import { typography } from "@/config/typography";
 import { colors } from "@/config/theme";
-import Button from "@/components/Button";
-import DropdownPicker from "@/components/Dropdown";
 import CustomInput from "@/components/CustomInput";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Svg, Circle, Text as SvgText } from "react-native-svg";
+import DropdownPicker from "@/components/Dropdown";
+import { getUserData } from "@/services/auth";
+import CustomHeader from "@/components/CustomHeader";
+
+/**
+ * Obtiene las iniciales del nombre del usuario
+ */
+const getInitials = (name?: string) => {
+  if (!name || name.trim().length === 0) return "";
+  const parts = name.split(" ");
+  return parts.length > 1
+    ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+    : parts[0][0].toUpperCase();
+};
+
+/**
+ * Genera un color basado en el nombre del usuario
+ */
+const getColorFromName = (name: string) => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return `hsl(${hash % 360}, 60%, 50%)`;
+};
 
 const UpdateProfile = () => {
   const router = useRouter();
   const [selectedGender, setSelectedGender] = useState("");
   const [direccion, setDireccion] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [user, setUser] = useState<{
+    name: string;
+    email: string;
+    profile_picture?: string | null;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const profilePicture = user?.profile_picture || null;
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const userData = await getUserData();
+      if (userData) {
+        setUser({
+          name: `${userData.name} ${userData.first_last_name}`,
+          email: userData.email,
+          profile_picture: userData.profile_picture || null,
+        });
+
+        // Asignar datos a los campos de entrada
+        setDireccion(userData.address || "");
+        setTelefono(userData.phone || "");
+        setSelectedGender(userData.gender_name || "");
+      }
+      setLoading(false);
+    };
+
+    fetchUserData();
+  }, []);
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <ScrollView
-            contentContainerStyle={styles.scrollContainer}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View style={styles.container}>
-              <View style={styles.customHeader}>
-                <TouchableOpacity
-                  onPress={() => router.push("/(tabs)/profile")}
-                  style={styles.backButton}
-                >
-                  <AntDesign name="left" size={22} color="black" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Editar Datos</Text>
-              </View>
+      <View style={styles.container}>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <CustomHeader title="Ver perfil" backRoute="/(tabs)/profile" />
 
-              <View style={styles.content}>
-                <Image
-                  source={{
-                    uri: "https://randomuser.me/api/portraits/women/43.jpg",
-                  }}
-                  style={styles.avatar}
+          <View style={styles.pictureContainer}>
+            {profilePicture && !imageLoaded ? (
+              <Svg height="60" width="60" style={{ marginBottom: 8 }}>
+                <Circle
+                  cx="30"
+                  cy="30"
+                  r="30"
+                  fill={getColorFromName(user?.name || "Usuario")}
                 />
-                <Text style={styles.name}>Laura Martinez</Text>
-
-                <Text style={styles.label}>Dirección</Text>
-                <View style={styles.inputWithIcon}>
-                  <CustomInput
-                    placeholder="Cll 44 #24-41"
-                    value={direccion}
-                    onChangeText={setDireccion}
-                  />
-                  <TouchableOpacity style={styles.editIcon} onPress={() => {}}>
-                    <MaterialIcons name="edit" size={24} color="black" />
-                  </TouchableOpacity>
-                </View>
-
-                <Text style={styles.label}>Teléfono</Text>
-                <View style={styles.inputWithIcon}>
-                  <CustomInput
-                    placeholder="3124447777"
-                    value={telefono}
-                    onChangeText={(text) => {
-                      const numericValue = text.replace(/[^0-9]/g, ""); // Filtra solo números
-                      setTelefono(numericValue);
-                    }}
-                    keyboardType="numeric"
-                  />
-                  <TouchableOpacity style={styles.editIcon} onPress={() => {}}>
-                    <MaterialIcons name="edit" size={24} color="black" />
-                  </TouchableOpacity>
-                </View>
-
-                <Text style={styles.label}>Género</Text>
-                <DropdownPicker
-                  selectedValue={selectedGender}
-                  onValueChange={(itemValue) => setSelectedGender(itemValue)}
-                  options={[
-                    { label: "Masculino", value: "Masculino" },
-                    { label: "Femenino", value: "Femenino" },
-                    { label: "Otro", value: "Otro" },
-                  ]}
+              </Svg>
+            ) : profilePicture ? (
+              <Image
+                source={{ uri: profilePicture }}
+                style={styles.profileImage}
+                onLoad={() => setImageLoaded(true)}
+                onError={() => setImageLoaded(false)}
+              />
+            ) : (
+              <Svg
+                width={60}
+                height={60}
+                style={{ marginRight: 15, marginBottom: 12 }}
+              >
+                <Circle
+                  cx="28"
+                  cy="28"
+                  r="28"
+                  fill={
+                    loading
+                      ? colors.base
+                      : getColorFromName(user?.name || "Usuario")
+                  }
                 />
-              </View>
+                {!loading && user?.name && (
+                  <SvgText
+                    x="30"
+                    y="33"
+                    textAnchor="middle"
+                    fontSize="16"
+                    fill="white"
+                    fontWeight="bold"
+                  >
+                    {getInitials(user.name)}
+                  </SvgText>
+                )}
+              </Svg>
+            )}
 
-              <View style={styles.buttonContainer}>
-                <Button text="Actualizar" onPress={() => {}} />
-              </View>
+            <View>
+              <Text style={styles.username}>{user?.name}</Text>
             </View>
-          </ScrollView>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+          </View>
+
+          <View style={styles.formContainer}>
+            <View style={{ width: "100%" }}>
+              <Text style={styles.label}>Dirección</Text>
+              <CustomInput
+                placeholder="Dirección"
+                value={direccion}
+                onChangeText={setDireccion}
+              />
+            </View>
+
+            <View style={{ width: "100%" }}>
+              <Text style={styles.label}>Teléfono</Text>
+              <CustomInput
+                placeholder="Teléfono"
+                value={telefono}
+                onChangeText={(text) => {
+                  const numericValue = text.replace(/[^0-9]/g, "");
+                  setTelefono(numericValue);
+                }}
+                keyboardType="numeric"
+              />
+            </View>
+
+            <View style={{ width: "100%" }}>
+              <Text style={styles.label}>Género</Text>
+              <DropdownPicker
+                selectedValue={selectedGender}
+                onValueChange={(itemValue) => setSelectedGender(itemValue)}
+                options={[
+                  { label: "Masculino", value: "Masculino" },
+                  { label: "Femenino", value: "Femenino" },
+                  { label: "Otro", value: "Otro" },
+                ]}
+              />
+            </View>
+          </View>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };
@@ -112,66 +183,43 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
+    paddingBottom: 24,
   },
   container: {
     flex: 1,
-    paddingTop: 16,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
-    backgroundColor: "#F9F9FA",
-  },
-  customHeader: {
-    flexDirection: "row",
     alignItems: "center",
-    marginTop: 20,
-    marginBottom: 20,
+    justifyContent: "flex-start",
+    backgroundColor: colors.base,
   },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
+  formContainer: {
     flex: 1,
-    textAlign: "center",
-    ...typography.medium.big,
-    color: colors.darkGray,
-    marginRight: 40,
-  },
-  content: {
-    flex: 1,
-  },
-  name: {
-    textAlign: "center",
-    marginBottom: 20,
-    ...typography.medium.medium,
-    color: colors.darkGray,
+    gap: 16,
+    width: "100%",
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    alignItems: "flex-start",
+    justifyContent: "flex-start",
+    backgroundColor: colors.base,
   },
   label: {
-    marginBottom: 5,
-    ...typography.medium.medium,
+    marginBottom: 8,
+    ...typography.medium.regular,
     color: colors.gray,
   },
-  inputWithIcon: {
-    position: "relative",
-    marginBottom: 15,
+  username: {
+    color: colors.darkGray,
+    ...typography.medium.medium,
   },
-  editIcon: {
-    position: "absolute",
-    right: 10,
-    top: "50%",
-    transform: [{ translateY: -10 }],
+  profileImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 10,
+    marginRight: 10,
   },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 50,
-    alignSelf: "center",
-    marginBottom: 10,
-    borderWidth: 2,
-    borderColor: "#ccc",
-  },
-  buttonContainer: {
+  pictureContainer: {
     alignItems: "center",
-    marginTop: 20,
+    justifyContent: "center",
+    marginVertical: 20,
   },
 });
 
