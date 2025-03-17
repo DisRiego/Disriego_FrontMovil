@@ -23,6 +23,9 @@ jobs:
       - name: 📂 Instalar dependencias
         run: npm ci
 
+      - name: 📂 Crear directorio de reportes
+        run: mkdir -p reports
+
       - name: 🚀 Ejecutar pruebas con Jest
         run: npx jest --ci --reporters=default --reporters=jest-html-reporter
 
