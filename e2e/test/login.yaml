@@ -1,0 +1,27 @@
+appId: com.yeisondi.DisRiego_FrontMovil
+---
+# 1️⃣ Abrir la app y esperar la pantalla de bienvenida
+- launchApp
+- waitForAnimationToEnd
+- assertVisible: "Bienvenido a DisRiego!"
+
+# 2️⃣ Navegar al Login
+- tapOn: "Iniciar Sesión"
+- waitForAnimationToEnd
+- assertVisible: "Iniciar Sesión"
+
+# 3️⃣ Llenar el formulario
+- tapOn: "Correo Electrónico"
+- inputText: "admin@example.com"
+- tapOn: "Contraseña"
+- inputText: "123456"
+- tapOn: "Iniciar Sesión"
+
+# 4️⃣ Verificar si el login fue exitoso
+- waitForAnimationToEnd
+- assertVisible: "Inicio" # La pantalla de home debería tener este texto
+- takeScreenshot: "login_success"
+
+# 5️⃣ Capturar errores si el login falla
+- assertVisible: "Error"
+- takeScreenshot: "login_error"

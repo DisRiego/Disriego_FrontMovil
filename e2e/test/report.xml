@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<testsuites>
+  <testsuite name="Test Suite" device="emulator-5556" tests="1" failures="1" time="94">
+    <testcase id="login" name="login" classname="login" time="94" status="ERROR">
+      <failure>Assertion is false: "Inicio" is visible</failure>
+    </testcase>
+  </testsuite>
+</testsuites>
