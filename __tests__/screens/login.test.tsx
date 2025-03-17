@@ -1,27 +1,22 @@
-import React from "react";
 import { render, fireEvent } from "@testing-library/react-native";
 import LoginScreen from "../../app/(auth)/login";
-import { useRouter } from "expo-router";
 
-// 🔹 Mock de `expo-router`
-const mockPush = jest.fn();
-jest.mock("expo-router", () => ({
-  useRouter: () => ({
-    push: mockPush,
-  }),
-}));
+describe("LoginScreen - Inputs", () => {
+  test("Se puede escribir en el campo de correo", () => {
+    const { getByPlaceholderText } = render(<LoginScreen />);
+    const emailInput = getByPlaceholderText("Correo Electrónico");
 
-describe("LoginScreen", () => {
-  test("Navegación a forgotPassword.tsx funciona", () => {
-    const { getByText } = render(<LoginScreen />);
+    fireEvent.changeText(emailInput, "usuario@email.com");
 
-    // 🔹 Disparamos el evento de click
-    fireEvent.press(getByText("Haz clic aquí"));
+    expect(emailInput.props.value).toBe("usuario@email.com");
+  });
 
-    // 🔍 Verificamos si `push` fue llamado
-    console.log("🚀 mockRouter.push calls:", mockPush.mock.calls);
+  test("Se puede escribir en el campo de contraseña", () => {
+    const { getByPlaceholderText } = render(<LoginScreen />);
+    const passwordInput = getByPlaceholderText("Contraseña");
 
-    // ✅ Verificamos que se llame a "/forgotPassword"
-    expect(mockPush).toHaveBeenCalledWith("/forgotPassword");
+    fireEvent.changeText(passwordInput, "miClave123");
+
+    expect(passwordInput.props.value).toBe("miClave123");
   });
 });

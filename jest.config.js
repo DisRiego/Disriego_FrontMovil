@@ -27,11 +27,7 @@ module.exports = {
       "jest-html-reporter",
       {
         pageTitle: "Jest Test Report",
-        outputPath: path.join(
-          __dirname,
-          "reports",
-          `jest-report-${process.env.TEST_FILE}.html`
-        ),
+        outputPath: path.join(__dirname, "reports", "jest-report.html"),
         includeFailureMsg: true,
         includeSuiteFailure: true,
         sort: "titleAsc",
