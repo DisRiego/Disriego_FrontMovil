@@ -40,15 +40,22 @@ export default function MyProperties() {
   useEffect(() => {
     axios
       .get(`${API_URL}/properties`)
-
       .then((response) => {
-        // console.log("Respuesta del backend:", response.data.data);
+        //console.log("Datos recibidos:", response.data.data);
         setProperties(response.data.data as Property[]);
       })
       .catch((error) => console.error("Error cargando propiedades", error));
   }, []);
 
-  // Funciones para abrir/cerrar el modal
+  // 📌 Filtrar propiedades según búsqueda por nombre, folio o ID
+  const filteredProperties = properties.filter((property) =>
+    [property.name, property.real_estate_registration_number, property.id].some(
+      (value) =>
+        value && String(value).toLowerCase().includes(searchText.toLowerCase())
+    )
+  );
+
+  // 📌 Funciones para abrir/cerrar el modal
   const openModal = (property: Property) => {
     setSelectedProperty(property);
     setModalVisible(true);
@@ -77,8 +84,8 @@ export default function MyProperties() {
               <FilterButton onPress={() => console.log("Abrir filtros")} />
             </View>
             <View style={styles.formContainer}>
-              {properties.length > 0 ? (
-                properties.map((property) => (
+              {filteredProperties.length > 0 ? (
+                filteredProperties.map((property) => (
                   <PropertyCard
                     key={property.id}
                     name={property.name}
@@ -141,10 +148,9 @@ const styles = StyleSheet.create({
     alignItems: "stretch",
   },
   searchContainer: {
+    width: "100%",
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    paddingHorizontal: 20,
-    marginBottom: 10,
   },
 });

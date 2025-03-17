@@ -8,18 +8,19 @@ import {
   Platform,
   StatusBar,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import axios from "axios";
 import CustomHeader from "@/components/CustomHeader";
 import PropertyCard from "@/components/PropertyCard";
 import LotCard from "@/components/LotCard";
+import LotDetailsModal from "@/components/LotDetailsModal"; // Importar el modal
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
 import { API_URL } from "@/services/config";
 
 export default function DetailsProperties() {
-  // Obtener los parámetros pasados en la navegación
   const {
     id,
     name,
@@ -29,16 +30,17 @@ export default function DetailsProperties() {
     extension,
   } = useLocalSearchParams();
 
-  // Estado para almacenar los lotes
   const [lotsArray, setLotsArray] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Función para obtener los lotes del predio desde el backend
+  const [selectedLot, setSelectedLot] = useState<any | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+
   const fetchLots = async () => {
     try {
       const response = await axios.get(`${API_URL}/properties/${id}/lots/`);
-      setLotsArray(response.data.data || []); // Asignar los lotes al estado
+      setLotsArray(response.data.data || []);
     } catch (err) {
       console.error("Error al obtener los lotes:", err);
       setError("No se pudieron cargar los lotes.");
@@ -55,17 +57,14 @@ export default function DetailsProperties() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {/* Encabezado con botón de volver */}
           <CustomHeader title="Detalles del predio" backRoute="/(tabs)/home" />
 
-          {/* Descripción */}
           <View style={styles.textContainer}>
             <Text style={[typography.regular.big, { color: colors.gray }]}>
               En esta sección podrás visualizar información sobre el predio{" "}
               {name}.
             </Text>
 
-            {/* Tarjeta con la información del predio */}
             <View style={styles.propContainer}>
               <PropertyCard
                 name={name as string}
@@ -78,7 +77,6 @@ export default function DetailsProperties() {
             </View>
           </View>
 
-          {/* Sección de lotes */}
           <View style={styles.subtContainer}>
             <Text style={[typography.medium.large, { color: colors.darkGray }]}>
               Lotes asignados al predio
@@ -102,6 +100,10 @@ export default function DetailsProperties() {
                       extension={lot.extension}
                       cropType={lot.cropType}
                       name={lot.name}
+                      onPress={() => {
+                        setSelectedLot(lot);
+                        setModalVisible(true);
+                      }}
                     />
                   ))
                 ) : (
@@ -116,6 +118,23 @@ export default function DetailsProperties() {
           </View>
         </ScrollView>
       </View>
+
+      {modalVisible && selectedLot && (
+        <LotDetailsModal
+          isVisible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          id={selectedLot.id}
+          name={selectedLot.name}
+          real_estate_registration_number={
+            selectedLot.real_estate_registration_number
+          }
+          latitude={selectedLot.latitude}
+          longitude={selectedLot.longitude}
+          extension={selectedLot.extension}
+          cropType={selectedLot.cropType}
+          paymentInterval={selectedLot.paymentInterval}
+        />
+      )}
     </SafeAreaView>
   );
 }

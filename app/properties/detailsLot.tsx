@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import CustomHeader from "@/components/CustomHeader";
-import PropertyCard from "@/components/PropertyCard";
+import LotCard from "@/components/LotCard";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
 
@@ -43,29 +43,16 @@ export default function DetailsLots() {
 
             {/* Tarjeta con la información del lote */}
             <View style={styles.propContainer}>
-              <PropertyCard
+              <LotCard
                 name={name as string}
                 id={id as string}
                 folio={real_estate_registration_number as string}
                 extension={extension as string}
                 latitud={latitude as string}
                 longitud={longitude as string}
+                cropType={cropType as string}
+                paymentInterval={paymentInterval as string}
               />
-            </View>
-
-            {/* Detalles adicionales del lote */}
-            <View style={styles.detailsContainer}>
-              <View style={styles.row}>
-                <Text style={styles.label}>Tipo de Cultivo</Text>
-                <Text style={styles.value}>{cropType}</Text>
-              </View>
-
-              <View style={styles.separator} />
-
-              <View style={styles.row}>
-                <Text style={styles.label}>Intervalo de Pago</Text>
-                <Text style={styles.value}>{paymentInterval}</Text>
-              </View>
             </View>
           </View>
         </ScrollView>
