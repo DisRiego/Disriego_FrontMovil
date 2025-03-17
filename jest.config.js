@@ -1,13 +1,19 @@
+const path = require("path");
+
 module.exports = {
   preset: "jest-expo",
+  setupFiles: [
+    "<rootDir>/node_modules/react-native-gesture-handler/jestSetup.js",
+  ],
+  setupFilesAfterEnv: [
+    "<rootDir>/jest.setup.js",
+    "@testing-library/jest-native/extend-expect",
+  ],
+  testEnvironment: "jsdom",
   transformIgnorePatterns: [
     "node_modules/(?!(react-native|@react-native|expo-router|expo-asset|expo-constants|expo-font|expo-linking|expo-modules-core|expo-status-bar|expo)/)",
   ],
   testPathIgnorePatterns: ["<rootDir>/__tests__/setupTests.ts"],
-  setupFiles: [
-    "<rootDir>/node_modules/react-native-gesture-handler/jestSetup.js",
-    "<rootDir>/jest.setup.js"
-  ],  
   moduleNameMapper: {
     "\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$":
       "<rootDir>/__mocks__/fileMock.js",
@@ -21,10 +27,13 @@ module.exports = {
       "jest-html-reporter",
       {
         pageTitle: "Jest Test Report",
-        outputPath: "reports/jest-report.html",
+        outputPath: path.join(
+          __dirname,
+          "reports",
+          `jest-report-${process.env.TEST_FILE}.html`
+        ),
         includeFailureMsg: true,
         includeSuiteFailure: true,
-        append: true, // 🔹 Evita sobrescribir el archivo, acumula resultados
         sort: "titleAsc",
       },
     ],
