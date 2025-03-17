@@ -74,7 +74,7 @@ export default function LotDetailsModal({
             <Text style={styles.label}>Extensión (m²)</Text>
             <Text style={styles.value}>{extension}</Text>
           </View>
-
+          <View style={styles.separator} />
           <View style={styles.row}>
             <Text style={styles.label}>Tipo de Cultivo</Text>
             <Text style={styles.value}>{cropType}</Text>
@@ -84,6 +84,7 @@ export default function LotDetailsModal({
             <Text style={styles.label}>Intervalo de Pago</Text>
             <Text style={styles.value}>{paymentInterval}</Text>
           </View>
+          <View style={styles.separator} />
         </View>
 
         {/* Botones */}
@@ -95,9 +96,9 @@ export default function LotDetailsModal({
           <TouchableOpacity
             style={styles.detailsButton}
             onPress={() => {
-              onClose();
+              onClose(); // Cierra el modal antes de navegar
               router.push({
-                pathname: "/lots/detailsLot",
+                pathname: "/properties/detailsLot",
                 params: {
                   id,
                   name,

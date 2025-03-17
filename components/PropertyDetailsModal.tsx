@@ -27,7 +27,7 @@ export default function PropertyDetailsModal({
   longitude,
   extension,
 }: PropertyDetailsModalProps) {
-  const router = useRouter(); // ✅ Ahora el router está bien definido
+  const router = useRouter(); //
 
   return (
     <Modal isVisible={isVisible} style={styles.modal} onBackdropPress={onClose}>
