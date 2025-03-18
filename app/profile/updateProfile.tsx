@@ -1,22 +1,20 @@
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Image,
-} from "react-native";
-import { AntDesign } from "@expo/vector-icons";
+import { View, Text, StyleSheet, ScrollView, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { typography } from "@/config/typography";
 import { colors } from "@/config/theme";
 import CustomInput from "@/components/CustomInput";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Svg, Circle, Text as SvgText } from "react-native-svg";
 import DropdownPicker from "@/components/Dropdown";
 import { getUserData } from "@/services/auth";
 import CustomHeader from "@/components/CustomHeader";
+import { Svg, Circle, Text as SvgText } from "react-native-svg";
+import {
+  getCountries,
+  getStates,
+  getCities,
+  getCountryPhoneCode,
+} from "@/services/location";
 
 /**
  * Obtiene las iniciales del nombre del usuario
@@ -42,7 +40,6 @@ const getColorFromName = (name: string) => {
 
 const UpdateProfile = () => {
   const router = useRouter();
-  const [selectedGender, setSelectedGender] = useState("");
   const [direccion, setDireccion] = useState("");
   const [telefono, setTelefono] = useState("");
   const [user, setUser] = useState<{
@@ -50,9 +47,21 @@ const UpdateProfile = () => {
     email: string;
     profile_picture?: string | null;
   } | null>(null);
-  const [loading, setLoading] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
   const profilePicture = user?.profile_picture || null;
+  const [loading, setLoading] = useState(true);
+
+  // Estados para País, Estado, Ciudad y Código de País
+  const [countries, setCountries] = useState<{ name: string; iso2: string }[]>(
+    []
+  );
+  const [states, setStates] = useState<{ name: string; iso2: string }[]>([]);
+  const [cities, setCities] = useState<{ name: string; id: string }[]>([]);
+  const [phoneCode, setPhoneCode] = useState("");
+
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [selectedState, setSelectedState] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -67,20 +76,42 @@ const UpdateProfile = () => {
         // Asignar datos a los campos de entrada
         setDireccion(userData.address || "");
         setTelefono(userData.phone || "");
-        setSelectedGender(userData.gender_name || "");
       }
       setLoading(false);
     };
 
+    const fetchCountries = async () => {
+      const data = await getCountries();
+      setCountries(data);
+    };
+
     fetchUserData();
+    fetchCountries();
   }, []);
+
+  const fetchStates = async (countryCode: string) => {
+    setSelectedState("");
+    setSelectedCity("");
+    setCities([]);
+
+    const data = await getStates(countryCode);
+    setStates(data);
+
+    const code = await getCountryPhoneCode(countryCode);
+    setPhoneCode(code);
+  };
+
+  const fetchCities = async (countryCode: string, stateCode: string) => {
+    setSelectedCity("");
+    const data = await getCities(countryCode, stateCode);
+    setCities(data);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <CustomHeader title="Ver perfil" backRoute="/(tabs)/profile" />
-
+          <CustomHeader title="Actualizar perfil" backRoute="/(tabs)/profile" />
           <View style={styles.pictureContainer}>
             {profilePicture && !imageLoaded ? (
               <Svg height="60" width="60" style={{ marginBottom: 8 }}>
@@ -135,6 +166,7 @@ const UpdateProfile = () => {
           </View>
 
           <View style={styles.formContainer}>
+            {/* 📌 Dirección */}
             <View style={{ width: "100%" }}>
               <Text style={styles.label}>Dirección</Text>
               <CustomInput
@@ -144,29 +176,64 @@ const UpdateProfile = () => {
               />
             </View>
 
+            {/* 📌 País */}
+            <View style={{ width: "100%" }}>
+              <Text style={styles.label}>País</Text>
+              <DropdownPicker
+                selectedValue={selectedCountry}
+                onValueChange={(value) => {
+                  setSelectedCountry(value);
+                  fetchStates(value);
+                }}
+                options={countries.map((country) => ({
+                  label: country.name,
+                  value: country.iso2,
+                }))}
+              />
+            </View>
+
+            {/* 📌 Departamento */}
+            <View style={{ width: "100%" }}>
+              <Text style={styles.label}>Departamento</Text>
+              <DropdownPicker
+                selectedValue={selectedState}
+                onValueChange={(value) => {
+                  setSelectedState(value);
+                  fetchCities(selectedCountry, value);
+                }}
+                options={states.map((state) => ({
+                  label: state.name,
+                  value: state.iso2,
+                }))}
+                disabled={!selectedCountry}
+              />
+            </View>
+
+            {/* 📌 Ciudad */}
+            <View style={{ width: "100%" }}>
+              <Text style={styles.label}>Ciudad</Text>
+              <DropdownPicker
+                selectedValue={selectedCity}
+                onValueChange={setSelectedCity}
+                options={cities.map((city) => ({
+                  label: city.name,
+                  value: city.id,
+                }))}
+                disabled={!selectedState}
+              />
+            </View>
+
+            {/* 📌 Teléfono con prefijo */}
             <View style={{ width: "100%" }}>
               <Text style={styles.label}>Teléfono</Text>
               <CustomInput
                 placeholder="Teléfono"
                 value={telefono}
-                onChangeText={(text) => {
-                  const numericValue = text.replace(/[^0-9]/g, "");
-                  setTelefono(numericValue);
-                }}
+                onChangeText={(text) =>
+                  setTelefono(text.replace(/[^0-9]/g, ""))
+                }
                 keyboardType="numeric"
-              />
-            </View>
-
-            <View style={{ width: "100%" }}>
-              <Text style={styles.label}>Género</Text>
-              <DropdownPicker
-                selectedValue={selectedGender}
-                onValueChange={(itemValue) => setSelectedGender(itemValue)}
-                options={[
-                  { label: "Masculino", value: "Masculino" },
-                  { label: "Femenino", value: "Femenino" },
-                  { label: "Otro", value: "Otro" },
-                ]}
+                prefix={`+${phoneCode}`}
               />
             </View>
           </View>
@@ -177,14 +244,8 @@ const UpdateProfile = () => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.base,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingBottom: 24,
-  },
+  safeArea: { flex: 1, backgroundColor: colors.base },
+  scrollContainer: { flexGrow: 1, paddingBottom: 24 },
   container: {
     flex: 1,
     alignItems: "center",
@@ -197,14 +258,6 @@ const styles = StyleSheet.create({
     width: "100%",
     paddingVertical: 20,
     paddingHorizontal: 20,
-    alignItems: "flex-start",
-    justifyContent: "flex-start",
-    backgroundColor: colors.base,
-  },
-  label: {
-    marginBottom: 8,
-    ...typography.medium.regular,
-    color: colors.gray,
   },
   username: {
     color: colors.darkGray,
@@ -221,6 +274,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginVertical: 20,
   },
+  label: { marginBottom: 8, ...typography.medium.regular, color: colors.gray },
 });
 
 export default UpdateProfile;
