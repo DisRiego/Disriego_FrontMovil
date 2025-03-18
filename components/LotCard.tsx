@@ -7,16 +7,24 @@ import { typography } from "@/config/typography";
 interface LotCardProps {
   name: string;
   id: string;
+  folio?: string;
   extension?: string;
+  latitud?: string;
+  longitud?: string;
   cropType?: string;
+  paymentInterval?: string;
   onPress?: () => void;
 }
 
 export default function LotCard({
   name,
   id,
+  folio,
   extension,
+  latitud,
+  longitud,
   cropType,
+  paymentInterval,
   onPress,
 }: LotCardProps) {
   const Container = onPress ? TouchableOpacity : View;
@@ -31,23 +39,38 @@ export default function LotCard({
         )}
       </View>
 
-      {/* ID */}
       <Text style={styles.idText}>#{id}</Text>
 
       {/* Información opcional */}
-      {extension && (
-        <View style={styles.infoRow}>
-          <Text style={styles.label}>Extensión (m²)</Text>
-          <Text style={styles.value}>{extension}</Text>
-        </View>
-      )}
+      <View style={styles.infoRow}>
+        <Text style={styles.label}>Folio Matrícula</Text>
+        <Text style={styles.value}>{folio || ""}</Text>
+      </View>
 
-      {cropType && (
-        <View style={styles.infoRow}>
-          <Text style={styles.label}>Tipo Cultivo</Text>
-          <Text style={styles.value}>{cropType}</Text>
-        </View>
-      )}
+      <View style={styles.infoRow}>
+        <Text style={styles.label}>Extensión (m²)</Text>
+        <Text style={styles.value}>{extension || ""}</Text>
+      </View>
+
+      <View style={styles.infoRow}>
+        <Text style={styles.label}>Latitud</Text>
+        <Text style={styles.value}>{latitud || ""}</Text>
+      </View>
+
+      <View style={styles.infoRow}>
+        <Text style={styles.label}>Longitud</Text>
+        <Text style={styles.value}>{longitud || ""}</Text>
+      </View>
+
+      <View style={styles.infoRow}>
+        <Text style={styles.label}>Tipo Cultivo</Text>
+        <Text style={styles.value}>{cropType || "N/A"}</Text>
+      </View>
+
+      <View style={styles.infoRow}>
+        <Text style={styles.label}>Intervalo de Pago</Text>
+        <Text style={styles.value}>{paymentInterval || "N/A"}</Text>
+      </View>
     </Container>
   );
 }
@@ -94,5 +117,10 @@ const styles = StyleSheet.create({
     ...typography.medium.regular,
     fontWeight: "600",
     color: colors.darkGray,
+  },
+  separator: {
+    height: 0.5,
+    backgroundColor: colors.border,
+    marginVertical: 5,
   },
 });
