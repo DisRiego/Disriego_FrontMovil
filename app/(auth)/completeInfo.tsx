@@ -1,66 +1,76 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "expo-router";
 import {
   View,
   Text,
   Alert,
   StyleSheet,
-  TouchableOpacity,
-  Platform,
-  ScrollView,
   SafeAreaView,
+  ScrollView,
+  ActivityIndicator,
+  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Keyboard,
+  Platform,
+  TouchableOpacity,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { colors } from "@/config/theme";
+import { typography } from "@/config/typography";
 import * as ImagePicker from "expo-image-picker";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { colors } from "../../config/theme";
-import { typography } from "../../config/typography";
-import Button from "../../components/Button";
-import CustomInput from "../../components/CustomInput";
+import Button from "@/components/Button";
+import CustomInput from "@/components/CustomInput";
 import DropdownPicker from "@/components/Dropdown";
-import Header from "../../components/Header";
-import { TextInput } from "react-native";
+import Header from "@/components/Header";
+import {
+  getCountries,
+  getStates,
+  getCities,
+  getCountryPhoneCode,
+} from "@/services/location";
 
-export default function completeInfo() {
+export default function CompleteInfo() {
   const router = useRouter();
-  const [birthday, setBirthday] = useState<Date | null>(null);
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
-  const [typePerson, setTypePerson] = useState("");
-  const [gender, setGender] = useState("");
+  const [direccion, setDireccion] = useState("");
+  const [telefono, setTelefono] = useState("");
+
+  const [countries, setCountries] = useState<{ name: string; iso2: string }[]>(
+    []
+  );
+  const [states, setStates] = useState<{ name: string; iso2: string }[]>([]);
+  const [cities, setCities] = useState<{ name: string; id: string }[]>([]);
+  const [phoneCode, setPhoneCode] = useState("");
+
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [selectedState, setSelectedState] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
+  const [loading, setLoading] = useState(false);
   const [imageName, setImageName] = useState<string | null>(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const handleNext = async () => {
-    if (!birthday || !phone || !address || typePerson === "" || gender === "") {
-      Alert.alert(
-        "Campos incompletos",
-        "Por favor, completa todos los campos obligatorios antes de continuar."
-      );
-      return;
-    }
+  useEffect(() => {
+    const fetchCountries = async () => {
+      const data = await getCountries();
+      setCountries(data);
+    };
 
-    try {
-      // Simula el envío de datos al backend
-      const response = await fakeApiCall();
+    fetchCountries();
+  }, []);
 
-      if ((response as { success: boolean }).success) {
-        router.push("/updateSuccess");
-      } else {
-        router.push("/updateError");
-      }
-    } catch (error) {
-      console.error("Error al actualizar:", error);
-      router.push("/updateError");
-    }
+  const fetchStates = async (countryCode: string) => {
+    setSelectedState("");
+    setSelectedCity("");
+    setCities([]);
+
+    const data = await getStates(countryCode);
+    setStates(data);
+
+    const code = await getCountryPhoneCode(countryCode);
+    setPhoneCode(code);
   };
 
-  // Simulación de una API
-  const fakeApiCall = async () => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ success: true }); // true: éxito, false: error
-      }, 1500);
-    });
+  const fetchCities = async (countryCode: string, stateCode: string) => {
+    setSelectedCity("");
+    const data = await getCities(countryCode, stateCode);
+    setCities(data);
   };
 
   const pickImage = async () => {
@@ -77,121 +87,190 @@ export default function completeInfo() {
     }
   };
 
+  const handleRegister = async () => {
+    if (
+      !direccion ||
+      !selectedCountry ||
+      !selectedState ||
+      !selectedCity ||
+      !telefono
+    ) {
+      Alert.alert("Error", "Por favor completa todos los campos.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const payload = {
+        direccion,
+        pais: selectedCountry,
+        departamento: selectedState,
+        ciudad: selectedCity,
+        telefono: `+${phoneCode}${telefono}`,
+      };
+
+      console.log("Datos a enviar:", payload);
+
+      // Aquí puedes hacer la solicitud al backend con Axios:
+      // await axios.post("URL_DEL_BACKEND", payload);
+
+      setTimeout(() => {
+        setLoading(false);
+        Alert.alert("Éxito", "Registro completado correctamente.");
+        router.push("/home");
+      }, 2000);
+    } catch (error) {
+      setLoading(false);
+      Alert.alert(
+        "Error",
+        "Ocurrió un problema al registrarse. Inténtalo de nuevo."
+      );
+      console.error(error);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <Header />
       <View style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <View style={styles.formContainer}>
-            <Text style={styles.title}>Completa tu perfil</Text>
-            <Text style={styles.subtitle}>
-              Para continuar, por favor ingresa los siguientes datos y asegúrate
-              de que tu información sea correcta.
-            </Text>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <KeyboardAvoidingView
+            style={styles.container}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+          >
+            <ScrollView contentContainerStyle={styles.scrollContainer}>
+              <View style={styles.formContainer}>
+                <Text
+                  style={[typography.semibold.big, { color: colors.darkGray }]}
+                >
+                  Completa tu perfil
+                </Text>
+                <Text
+                  style={[typography.medium.regular, { color: colors.gray }]}
+                >
+                  Por favor, ingresa los siguientes datos y asegúrate de que tu
+                  información sea correcta.
+                </Text>
 
-            {/* Fecha de nacimiento */}
-            <TouchableOpacity
-              onPress={() => setShowDatePicker(true)}
-              style={styles.dateInput}
-            >
-              <Text style={styles.dateText}>
-                {birthday
-                  ? birthday.toLocaleDateString()
-                  : "fecha de nacimiento *"}
-              </Text>
-            </TouchableOpacity>
-            {showDatePicker && (
-              <DateTimePicker
-                value={birthday || new Date()}
-                mode="date"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                maximumDate={new Date()} // Evita fechas futuras
-                onChange={(event, selectedDate) => {
-                  setShowDatePicker(false);
-                  if (selectedDate) setBirthday(selectedDate);
-                }}
-              />
-            )}
+                <View style={{ width: "100%" }}>
+                  <Text style={styles.label}>Dirección</Text>
+                  <CustomInput
+                    placeholder="Dirección"
+                    value={direccion}
+                    onChangeText={setDireccion}
+                  />
+                </View>
 
-            <CustomInput
-              placeholder="Teléfono *"
-              keyboardType="phone-pad"
-              value={phone}
-              style={styles.input}
-              onChangeText={(text) => {
-                if (text.length <= 10) {
-                  setPhone(text);
-                }
-              }}
-            />
+                <View style={{ width: "100%" }}>
+                  <Text style={styles.label}>País</Text>
+                  <DropdownPicker
+                    selectedValue={selectedCountry}
+                    onValueChange={(value) => {
+                      setSelectedCountry(value);
+                      fetchStates(value);
+                    }}
+                    options={[
+                      { label: "Selecciona una opción", value: "" }, // Opción predeterminada
+                      ...countries.map((country) => ({
+                        label: country.name,
+                        value: country.iso2,
+                      })),
+                    ]}
+                  />
+                </View>
 
-            <TextInput
-              placeholder="Dirección de correspondencia *"
-              value={address}
-              multiline={true}
-              maxLength={128}
-              onChangeText={setAddress}
-              style={[styles.input, styles.addressInput]}
-            />
+                <View style={{ width: "100%" }}>
+                  <Text style={styles.label}>Departamento</Text>
+                  <DropdownPicker
+                    selectedValue={selectedState}
+                    onValueChange={(value) => {
+                      setSelectedState(value);
+                      fetchCities(selectedCountry, value);
+                    }}
+                    options={[
+                      { label: "Selecciona una opción", value: "" },
+                      ...states.map((state) => ({
+                        label: state.name,
+                        value: state.iso2,
+                      })),
+                    ]}
+                    disabled={!selectedCountry}
+                  />
+                </View>
 
-            <DropdownPicker
-              selectedValue={typePerson}
-              onValueChange={(value) => setTypePerson(value)}
-              options={[
-                { label: "Tipo de persona *", value: "" },
-                { label: "Natural", value: "Natural" },
-                { label: "Jurídico", value: "Juridico" },
-              ]}
-            />
+                <View style={{ width: "100%" }}>
+                  <Text style={styles.label}>Ciudad</Text>
+                  <DropdownPicker
+                    selectedValue={selectedCity}
+                    onValueChange={setSelectedCity}
+                    options={[
+                      { label: "Selecciona una opción", value: "" },
+                      ...cities.map((city) => ({
+                        label: city.name,
+                        value: city.id,
+                      })),
+                    ]}
+                    disabled={!selectedState}
+                  />
+                </View>
 
-            <DropdownPicker
-              selectedValue={gender}
-              onValueChange={(value) => setGender(value)}
-              options={[
-                { label: "Género *", value: "" },
-                { label: "Femenino", value: "Femenino" },
-                { label: "Masculino", value: "Masculino" },
-                { label: "Otro", value: "Otro" },
-              ]}
-            />
+                <View style={{ width: "100%" }}>
+                  <Text style={styles.label}>Teléfono</Text>
+                  <CustomInput
+                    placeholder="Teléfono"
+                    value={telefono}
+                    onChangeText={(text) =>
+                      setTelefono(text.replace(/[^0-9]/g, ""))
+                    }
+                    keyboardType="numeric"
+                    prefix={`+${phoneCode}`}
+                  />
+                </View>
 
-            {/* Seccion de imagen */}
-            <Text style={styles.subtitle}>
-              Subir una foto de perfil (Opcional)
-            </Text>
-            <View style={styles.imageUploadContainer}>
-              <Text style={styles.uploadText}>
-                {imageName
-                  ? "Imagen seleccionada"
-                  : "Selecciona la imagen aquí"}
-              </Text>
-              <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
-                <Text style={styles.uploadText}>Subir</Text>
-              </TouchableOpacity>
-            </View>
+                {/* Seccion de imagen */}
+                <Text style={styles.subtitle}>
+                  Subir una foto de perfil (Opcional)
+                </Text>
+                <View style={styles.imageUploadContainer}>
+                  <Text style={styles.uploadText}>
+                    {imageName
+                      ? "Imagen seleccionada"
+                      : "Selecciona la imagen aquí"}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.uploadButton}
+                    onPress={pickImage}
+                  >
+                    <Text style={styles.uploadText}>Subir</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
 
-            {imageName && <Text style={styles.fileName}>{imageName}</Text>}
-          </View>
-
-          {/* Botón de siguiente */}
-          <View style={styles.footerContainer}>
-            <Button text="Siguiente" onPress={handleNext} />
-          </View>
-        </ScrollView>
+              <View style={styles.footerContainer}>
+                <Button
+                  text={
+                    loading ? (
+                      <ActivityIndicator size={28} color={colors.primary} />
+                    ) : (
+                      "Registrarse"
+                    )
+                  }
+                  onPress={handleRegister}
+                  disabled={loading}
+                />
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </TouchableWithoutFeedback>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.base,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingVertical: 16,
-  },
+  safeArea: { flex: 1, backgroundColor: colors.base },
+  scrollContainer: { flexGrow: 1 },
   container: {
     flex: 1,
     alignItems: "center",
@@ -202,32 +281,41 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 14,
     width: "100%",
+    paddingTop: 24,
     paddingHorizontal: 20,
+    paddingBottom: 8,
     alignItems: "flex-start",
-    justifyContent: "flex-start",
-    backgroundColor: colors.base,
   },
-  inputRow: {
-    flexDirection: "row",
+  footerContainer: {
     width: "100%",
-    justifyContent: "space-between",
+    marginTop: 2,
+    paddingTop: 24,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    alignItems: "center",
   },
-  title: {
-    ...typography.semibold.big,
-    alignSelf: "flex-start",
-  },
+  label: { marginBottom: 8, ...typography.medium.regular, color: colors.gray },
   subtitle: {
     ...typography.medium.regular,
     color: colors.gray,
     textAlign: "left",
   },
-  footerContainer: {
-    width: "100%",
-    marginTop: 2,
-    paddingTop: 32,
-    paddingBottom: 8,
-    paddingHorizontal: 20,
+  imageUploadContainer: {
+    flexDirection: "row",
     alignItems: "center",
+    width: "100%",
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 15,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    color: colors.gray,
+    backgroundColor: colors.white,
+    ...typography.medium.regular,
+    justifyContent: "space-between",
+  },
+  imagePickerButton: {
+    flex: 1,
   },
   uploadButton: {
     paddingVertical: 8,
@@ -247,61 +335,5 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: colors.primary,
     ...typography.medium.regular,
-  },
-  dateInput: {
-    width: "100%",
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 15,
-    backgroundColor: colors.white,
-    justifyContent: "center",
-  },
-  dateText: {
-    color: colors.gray,
-    ...typography.medium.regular,
-  },
-  imageUploadContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    width: "100%",
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 15,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    color: colors.gray,
-    backgroundColor: colors.white,
-    ...typography.medium.regular,
-    justifyContent: "space-between",
-  },
-  imagePickerButton: {
-    flex: 1,
-  },
-
-  disabledButton: {
-    backgroundColor: colors.base,
-  },
-  disabledText: {
-    color: colors.gray,
-  },
-  addressInput: {
-    minHeight: 50,
-    maxHeight: 100,
-    textAlignVertical: "top",
-    minWidth: "100%",
-    flexShrink: 1,
-  },
-
-  input: {
-    height: 50,
-    padding: 15,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 15,
-    backgroundColor: colors.white,
-    ...typography.medium.regular,
-    color: colors.gray,
   },
 });
