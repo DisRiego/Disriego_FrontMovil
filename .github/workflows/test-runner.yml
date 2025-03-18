@@ -23,18 +23,18 @@ jobs:
       - name: 📂 Instalar dependencias
         run: npm ci
 
-      - name: 📂 Crear directorio de reportes (si no existe)
+      - name: 📂 Verificar y crear directorio de reportes
         run: mkdir -p reports
 
       - name: 🚀 Ejecutar pruebas con Jest
-        run: npx jest --ci --runInBand --reporters=default --reporters=jest-html-reporter
+        run: npx jest --ci --reporters=default --reporters=jest-html-reporter
 
-      - name: 🔍 Verificar contenido de reports/
-        run: ls -la reports/
+      - name: 📂 Verificar que el reporte se generó
+        run: ls -lh reports/
 
-      - name: 📄 Guardar reporte de pruebas
+      - name: 📄 Subir reporte de pruebas
         uses: actions/upload-artifact@v4
         with:
           name: jest-test-report
-          path: reports/
+          path: reports/jest-report.html
           retention-days: 7
