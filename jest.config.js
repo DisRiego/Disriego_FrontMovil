@@ -8,6 +8,7 @@ module.exports = {
   setupFilesAfterEnv: [
     "<rootDir>/jest.setup.js",
     "@testing-library/jest-native/extend-expect",
+    "jest-fetch-mock",
   ],
   testEnvironment: "jsdom",
   transformIgnorePatterns: [
