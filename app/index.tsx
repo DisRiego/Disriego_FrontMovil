@@ -78,7 +78,7 @@ export default function WelcomeScreen() {
                 color={colors.base}
                 textColor={colors.gray}
                 borderColor={colors.border}
-                route="/register"
+                route="/validation"
               />
 
               {/* Botón de Inicio de Sesión */}
