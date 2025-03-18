@@ -57,7 +57,10 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("Error", "Faltan campos por completar.");
+      Alert.alert(
+        "Error",
+        "Por favor, completa todos los campos obligatorios."
+      );
       return;
     }
 
@@ -195,7 +198,7 @@ export default function LoginScreen() {
                   ¿No tienes una cuenta?
                   <Text
                     style={styles.link}
-                    onPress={() => router.push("/register")}
+                    onPress={() => router.push("/validation")}
                   >
                     {" "}
                     Regístrate aquí
