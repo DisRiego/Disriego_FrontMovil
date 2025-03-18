@@ -11,9 +11,6 @@
     "test": "jest --watchAll",
     "lint": "expo lint"
   },
-  "jest": {
-    "preset": "jest-expo"
-  },
   "dependencies": {
     "@emailjs/react-native": "^4.2.2",
     "@expo/vector-icons": "^14.0.2",
