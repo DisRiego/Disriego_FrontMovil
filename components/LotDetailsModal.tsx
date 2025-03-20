@@ -17,6 +17,8 @@ interface LotDetailsModalProps {
   extension: string;
   cropType: string;
   paymentInterval: string;
+  plantingDate: string;
+  estimatedHarvestDate: string;
 }
 
 export default function LotDetailsModal({
@@ -30,6 +32,8 @@ export default function LotDetailsModal({
   extension,
   cropType,
   paymentInterval,
+  plantingDate,
+  estimatedHarvestDate,
 }: LotDetailsModalProps) {
   const router = useRouter();
 
@@ -108,6 +112,8 @@ export default function LotDetailsModal({
                   extension,
                   cropType,
                   paymentInterval,
+                  plantingDate, // Agregar
+                  estimatedHarvestDate, // Agregar
                 },
               });
             }}

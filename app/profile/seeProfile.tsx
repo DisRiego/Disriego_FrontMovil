@@ -42,7 +42,6 @@ const SeeProfile = () => {
   const [telefono, setTelefono] = useState("");
   const [numeroDocumento, setNumeroDocumento] = useState("");
   const [correo, setCorreo] = useState("");
-  const [tipoPersona, setTipoPersona] = useState("");
   const [tipoDocumento, setTipoDocumento] = useState("");
   const [user, setUser] = useState<{
     name: string;
@@ -52,6 +51,7 @@ const SeeProfile = () => {
   const [loading, setLoading] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
   const profilePicture = user?.profile_picture || null;
+  const [birthday, setBirthday] = useState("No disponible");
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -69,7 +69,7 @@ const SeeProfile = () => {
         setTipoDocumento(userData.type_document_name || "");
         setNumeroDocumento(userData.document_number?.toString() || "");
         setCorreo(userData.email || "");
-        setTipoPersona(userData.roles?.[0] || "Desconocido");
+        setBirthday(userData.birthday || "No disponible");
       }
       setLoading(false);
     };
@@ -155,6 +155,15 @@ const SeeProfile = () => {
               />
             </View>
 
+            {/*<View style={{ width: "100%" }}>
+              <Text style={styles.label}>Fecha de Nacimiento</Text>
+              <CustomInput
+                placeholder="Fecha de Nacimiento"
+                value={birthday}
+                editable={false}
+              />
+            </View>*/}
+
             <View style={{ width: "100%" }}>
               <Text style={styles.label}>Correo Electrónico</Text>
               <CustomInput
@@ -163,15 +172,6 @@ const SeeProfile = () => {
                 editable={false}
               />
             </View>
-
-            {/*<View style={{ width: "100%" }}>
-              <Text style={styles.label}>Tipo de Persona</Text>
-              <CustomInput
-                placeholder="Tipo de Persona"
-                value={tipoPersona}
-                editable={false}
-              />
-            </View>*/}
 
             <View style={{ width: "100%" }}>
               <Text style={styles.label}>Dirección</Text>
@@ -218,6 +218,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    paddingBottom: 16,
     alignItems: "center",
     justifyContent: "flex-start",
     backgroundColor: colors.base,

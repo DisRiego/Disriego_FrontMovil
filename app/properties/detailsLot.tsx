@@ -11,6 +11,7 @@ import {
 import { useLocalSearchParams } from "expo-router";
 import CustomHeader from "@/components/CustomHeader";
 import LotCard from "@/components/LotCard";
+import LotInfoCard from "@/components/LotInfoCard"; // Nuevo componente
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
 
@@ -19,12 +20,14 @@ export default function DetailsLots() {
   const {
     id,
     name,
-    real_estate_registration_number,
-    latitude,
     longitude,
+    latitude,
+    real_estate_registration_number,
     extension,
     cropType,
     paymentInterval,
+    plantingDate,
+    estimatedHarvestDate,
   } = useLocalSearchParams();
 
   return (
@@ -41,7 +44,7 @@ export default function DetailsLots() {
               {name}.
             </Text>
 
-            {/* Tarjeta con la información del lote */}
+            {/* Primera tarjeta: Nombre, ID, Folio, Extensión */}
             <View style={styles.propContainer}>
               <LotCard
                 name={name as string}
@@ -50,8 +53,19 @@ export default function DetailsLots() {
                 extension={extension as string}
                 latitud={latitude as string}
                 longitud={longitude as string}
+                minimal={false} // Esto controla otras partes visibles
+                showCropType={false} // Nueva prop para ocultar cropType
+              />
+            </View>
+
+            {/* Segunda tarjeta: Intervalo pago, Tipo cultivo, Fechas */}
+            <View style={styles.cropContainer}>
+              <LotInfoCard
                 cropType={cropType as string}
                 paymentInterval={paymentInterval as string}
+                plantingDate={plantingDate as string}
+                estimatedHarvestDate={estimatedHarvestDate as string}
+                onEditPress={() => console.log("Abrir formulario de edición")}
               />
             </View>
           </View>
@@ -81,30 +95,7 @@ const styles = StyleSheet.create({
   propContainer: {
     marginTop: 12,
   },
-  detailsContainer: {
-    backgroundColor: colors.white,
-    padding: 12,
-    borderRadius: 8,
+  cropContainer: {
     marginTop: 12,
-    elevation: 2,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-  },
-  label: {
-    color: colors.darkGray,
-    fontSize: 14,
-  },
-  value: {
-    color: colors.darkGray,
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: 4,
   },
 });

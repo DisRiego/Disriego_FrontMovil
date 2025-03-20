@@ -12,9 +12,9 @@ import axios from "axios";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
 import { API_URL } from "@/services/config";
+import { getUserData } from "@/services/auth";
 import CustomHeader from "@/components/CustomHeader";
 import SearchBar from "@/components/SearchBar";
-import FilterButton from "@/components/FilterButton";
 import PropertyCard from "@/components/PropertyCard";
 import PropertyDetailsModal from "@/components/PropertyDetailsModal";
 
@@ -26,6 +26,7 @@ interface Property {
   latitude: string;
   longitude: string;
   extension: string;
+  user_id: number;
 }
 
 export default function MyProperties() {
@@ -35,16 +36,32 @@ export default function MyProperties() {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(
     null
   );
+  const [userId, setUserId] = useState<number | null>(null);
 
-  // 🚀 Cargar propiedades desde el backend
+  // 🚀 Obtener datos del usuario y propiedades
   useEffect(() => {
-    axios
-      .get(`${API_URL}/properties`)
-      .then((response) => {
-        //console.log("Datos recibidos:", response.data.data);
-        setProperties(response.data.data as Property[]);
-      })
-      .catch((error) => console.error("Error cargando propiedades", error));
+    const fetchProperties = async () => {
+      try {
+        const user = await getUserData();
+        if (!user) throw new Error("No se pudo obtener el usuario");
+
+        setUserId(user.id);
+        console.log(`Obteniendo propiedades para user_id: ${user.id}`);
+
+        const response = await axios.get(
+          `${API_URL}/properties/user/${user.id}`
+        );
+
+        // 🔥 Agregar logs para ver la respuesta de la API
+        console.log("Datos recibidos:", response.data);
+
+        setProperties(response.data.data);
+      } catch (error) {
+        console.error("Error cargando propiedades:", error);
+      }
+    };
+
+    fetchProperties();
   }, []);
 
   // 📌 Filtrar propiedades según búsqueda por nombre, folio o ID
@@ -81,7 +98,6 @@ export default function MyProperties() {
                 searchText={searchText}
                 onSearchChange={setSearchText}
               />
-              <FilterButton onPress={() => console.log("Abrir filtros")} />
             </View>
             <View style={styles.formContainer}>
               {filteredProperties.length > 0 ? (
