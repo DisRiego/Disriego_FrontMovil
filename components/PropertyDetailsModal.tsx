@@ -1,10 +1,11 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import Modal from "react-native-modal";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { generatePropertyPDF } from "@/utils/generatePropertyPDF";
 
 interface PropertyDetailsModalProps {
   isVisible: boolean;
@@ -27,7 +28,7 @@ export default function PropertyDetailsModal({
   longitude,
   extension,
 }: PropertyDetailsModalProps) {
-  const router = useRouter(); //
+  const router = useRouter();
 
   return (
     <Modal isVisible={isVisible} style={styles.modal} onBackdropPress={onClose}>
@@ -74,14 +75,27 @@ export default function PropertyDetailsModal({
 
         {/* Botones */}
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.downloadButton}>
+          <TouchableOpacity
+            style={styles.downloadButton}
+            onPress={() => {
+              generatePropertyPDF({
+                id,
+                name,
+                real_estate_registration_number,
+                latitude,
+                longitude,
+                extension,
+              });
+            }}
+          >
             <AntDesign name="download" size={17} color={colors.darkGray} />
             <Text style={styles.downloadText}>Descargar</Text>
           </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.detailsButton}
             onPress={() => {
-              onClose(); // Cierra el modal antes de navegar
+              onClose();
               router.push({
                 pathname: "/properties/detailsProperties",
                 params: {
@@ -135,7 +149,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   infoContainer: {
-    backgroundColor: colors.white,
     paddingVertical: 10,
   },
   row: {
@@ -166,7 +179,6 @@ const styles = StyleSheet.create({
   downloadButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "transparent",
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: 20,
