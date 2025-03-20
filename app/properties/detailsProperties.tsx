@@ -133,6 +133,8 @@ export default function DetailsProperties() {
           extension={selectedLot.extension}
           cropType={selectedLot.cropType}
           paymentInterval={selectedLot.paymentInterval}
+          propertyId={id as string} // 🔹 Pasamos el ID del predio
+          propertyName={name as string} // 🔹 Pasamos el nombre del predio
         />
       )}
     </SafeAreaView>
