@@ -12,7 +12,7 @@ import React, { useEffect, useState } from "react";
 import { colors } from "@/config/theme";
 import { useRouter } from "expo-router";
 import { Svg, Circle, Text as SvgText } from "react-native-svg";
-import { getUserData } from "@/services/users";
+import { getUserData } from "@/services/auth";
 import CustomInput from "@/components/CustomInput";
 import CustomHeader from "@/components/CustomHeader";
 import { typography } from "@/config/typography";

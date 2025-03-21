@@ -8,7 +8,6 @@ import {
   Image,
   TouchableOpacity,
   Modal,
-  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { typography } from "@/config/typography";
@@ -201,7 +200,7 @@ const UpdateProfile = () => {
       );
 
       if (response.status === 200) {
-        Alert.alert("Éxito", "Imagen de perfil actualizada correctamente.");
+        alert("Imagen de perfil actualizada correctamente");
       } else {
         throw new Error("Error en la actualización de la imagen.");
       }
@@ -221,7 +220,7 @@ const UpdateProfile = () => {
 
           {/* Avatar y nombre del usuario */}
           <View style={styles.pictureContainer}>
-            <TouchableOpacity onPress={handleImagePicker}>
+            <TouchableOpacity onPress={handleImagePicker} disabled={loading}>
               {imageUri ? (
                 <Image source={{ uri: imageUri }} style={styles.profileImage} />
               ) : (
@@ -258,6 +257,7 @@ const UpdateProfile = () => {
               placeholder="Dirección"
               value={direccion}
               onChangeText={setDireccion}
+              editable={!loading}
             />
 
             <Text style={styles.label}>País</Text>
@@ -265,6 +265,7 @@ const UpdateProfile = () => {
               selectedValue={selectedCountry}
               onValueChange={setSelectedCountry}
               options={countryOptions}
+              disabled={loading}
             />
 
             <Text style={styles.label}>Departamento</Text>
@@ -272,7 +273,7 @@ const UpdateProfile = () => {
               selectedValue={selectedState}
               onValueChange={setSelectedState}
               options={stateOptions}
-              disabled={!selectedCountry}
+              disabled={loading || !selectedCountry}
             />
 
             <Text style={styles.label}>Ciudad</Text>
@@ -280,7 +281,7 @@ const UpdateProfile = () => {
               selectedValue={selectedCity}
               onValueChange={setSelectedCity}
               options={cityOptions}
-              disabled={!selectedState}
+              disabled={loading || !selectedState}
             />
 
             <Text style={styles.label}>Teléfono</Text>
@@ -289,6 +290,7 @@ const UpdateProfile = () => {
               value={telefono}
               onChangeText={(text) => setTelefono(text.replace(/[^0-9]/g, ""))}
               keyboardType="numeric"
+              editable={!loading}
             />
           </View>
 
@@ -308,18 +310,12 @@ const UpdateProfile = () => {
         </ScrollView>
       </View>
 
-      {/* Modal de carga - Ahora visible tanto para carga inicial como para subida de imágenes */}
-      <Modal
-        transparent={true}
-        visible={loading || uploadingImage}
-        animationType="fade"
-      >
+      {/* Modal de carga */}
+      <Modal transparent={true} visible={uploadingImage} animationType="fade">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.modalText}>
-              {uploadingImage ? "Cargando imagen..." : "Cargando datos..."}
-            </Text>
+            <Text style={styles.modalText}>Cargando imagen...</Text>
           </View>
         </View>
       </Modal>

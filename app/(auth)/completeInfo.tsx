@@ -30,7 +30,7 @@ import {
 } from "@/services/location";
 import { API_URL } from "@/services/config";
 import axios from "axios";
-import { getUserData } from "@/services/users";
+import { getUserData } from "@/services/auth";
 
 export default function CompleteInfo() {
   const router = useRouter();
