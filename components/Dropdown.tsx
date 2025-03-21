@@ -4,6 +4,7 @@ import { useState } from "react";
 import { colors } from "../config/theme"; // Asegúrate de importar los colores correctamente
 
 interface DropdownPickerProps {
+  testID?: string;
   selectedValue: string;
   onValueChange: (itemValue: string, itemIndex: number) => void;
   options: { label: string; value: string }[];
@@ -17,6 +18,7 @@ export default function DropdownPicker({
   return (
     <View style={styles.pickerContainer}>
       <Picker
+        testID="dropdown-document-type"
         selectedValue={selectedValue}
         onValueChange={onValueChange}
         style={styles.picker}

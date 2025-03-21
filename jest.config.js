@@ -12,7 +12,7 @@ module.exports = {
   ],
   testEnvironment: "jsdom",
   transformIgnorePatterns: [
-    "node_modules/(?!(react-native|@react-native|expo-router|expo-asset|expo-constants|expo-font|expo-linking|expo-modules-core|expo-status-bar|expo)/)",
+    "node_modules/(?!(react-native|@react-native|@react-native-community|expo-router|expo-asset|expo-constants|expo-font|expo-linking|expo-modules-core|expo-status-bar|expo|expo-image-picker)/)",
   ],
   testPathIgnorePatterns: ["<rootDir>/__tests__/setupTests.ts"],
   moduleNameMapper: {

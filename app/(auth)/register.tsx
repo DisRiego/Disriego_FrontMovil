@@ -19,11 +19,16 @@ import Header from "@/components/Header";
 export default function RegisterScreen() {
   const router = useRouter();
   const [documentType, setDocumentType] = useState("CC");
+  const [documentNumber, setDocumentNumber] = useState("");
 
   function handleRegister(): void {
     throw new Error("Function not implemented.");
   }
 
+  function handleDocumentTypeChange(value: string) {
+    console.log("Nuevo tipo de documento seleccionado:", value);
+    setDocumentType(value);
+  }
   return (
     <SafeAreaView style={styles.safeArea}>
       <Header />
@@ -39,8 +44,9 @@ export default function RegisterScreen() {
           <View style={styles.inputRow}>
             <View style={{ width: "30%" }}>
               <DropdownPicker
+                testID="dropdown-document-type"
                 selectedValue={documentType}
-                onValueChange={setDocumentType}
+                onValueChange={handleDocumentTypeChange}
                 options={[
                   { label: "Cedula Ciudadanía", value: "C.C" },
                   { label: "Tarjeta Identidad", value: "T.I" },
@@ -51,6 +57,8 @@ export default function RegisterScreen() {
             <CustomInput
               placeholder="No. de Identificación *"
               style={{ width: "65%" }}
+              value={documentNumber}
+              onChangeText={setDocumentNumber}
             />
           </View>
 
