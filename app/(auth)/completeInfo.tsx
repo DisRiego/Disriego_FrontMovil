@@ -13,6 +13,7 @@ import {
   Keyboard,
   Platform,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
@@ -27,6 +28,9 @@ import {
   getCities,
   getCountryPhoneCode,
 } from "@/services/location";
+import { API_URL } from "@/services/config";
+import axios from "axios";
+import { getUserData } from "@/services/users";
 
 export default function CompleteInfo() {
   const router = useRouter();
@@ -44,12 +48,18 @@ export default function CompleteInfo() {
   const [selectedState, setSelectedState] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const [imageUri, setImageUri] = useState<string | null>(null);
   const [imageName, setImageName] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCountries = async () => {
-      const data = await getCountries();
-      setCountries(data);
+      try {
+        const data = await getCountries();
+        setCountries(data);
+      } catch (error) {
+        console.error("Error al obtener países:", error);
+      }
     };
 
     fetchCountries();
@@ -59,18 +69,25 @@ export default function CompleteInfo() {
     setSelectedState("");
     setSelectedCity("");
     setCities([]);
+    try {
+      const data = await getStates(countryCode);
+      setStates(data);
 
-    const data = await getStates(countryCode);
-    setStates(data);
-
-    const code = await getCountryPhoneCode(countryCode);
-    setPhoneCode(code);
+      const code = await getCountryPhoneCode(countryCode);
+      setPhoneCode(code);
+    } catch (error) {
+      console.error("Error al obtener departamentos:", error);
+    }
   };
 
   const fetchCities = async (countryCode: string, stateCode: string) => {
     setSelectedCity("");
-    const data = await getCities(countryCode, stateCode);
-    setCities(data);
+    try {
+      const data = await getCities(countryCode, stateCode);
+      setCities(data);
+    } catch (error) {
+      console.error("Error al obtener ciudades:", error);
+    }
   };
 
   const pickImage = async () => {
@@ -82,6 +99,7 @@ export default function CompleteInfo() {
     });
 
     if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
       const uriParts = result.assets[0].uri.split("/");
       setImageName(uriParts[uriParts.length - 1]);
     }
@@ -102,31 +120,51 @@ export default function CompleteInfo() {
     setLoading(true);
 
     try {
-      const payload = {
-        direccion,
-        pais: selectedCountry,
-        departamento: selectedState,
-        ciudad: selectedCity,
-        telefono: `+${phoneCode}${telefono}`,
-      };
+      const userData = await getUserData();
+      if (!userData) {
+        throw new Error("No se pudo obtener el ID del usuario.");
+      }
 
-      console.log("Datos a enviar:", payload);
+      const formData = new FormData();
+      formData.append("user_id", userData.id.toString()); // ID del usuario extraído del token
+      formData.append("country", selectedCountry);
+      formData.append("department", selectedState);
+      formData.append("city", selectedCity);
+      formData.append("address", direccion);
+      formData.append("phone", telefono);
 
-      // Aquí puedes hacer la solicitud al backend con Axios:
-      // await axios.post("URL_DEL_BACKEND", payload);
+      if (imageUri && imageName) {
+        formData.append("profile_picture", {
+          uri: imageUri,
+          name: imageName,
+          type: "image/jpeg",
+        } as any);
+      }
 
-      setTimeout(() => {
-        setLoading(false);
-        Alert.alert("Éxito", "Registro completado correctamente.");
-        router.push("/home");
-      }, 2000);
+      console.log(
+        "Enviando datos al backend:",
+        Object.fromEntries(formData as any)
+      );
+
+      const response = await axios.post(
+        `${API_URL}/users/first-login-register`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+
+      console.log("Respuesta del servidor:", response.data);
+      Alert.alert("Éxito", "Registro completado correctamente.");
+      router.push("/home");
     } catch (error) {
-      setLoading(false);
+      console.error("Error al registrar:", error);
       Alert.alert(
         "Error",
         "Ocurrió un problema al registrarse. Inténtalo de nuevo."
       );
-      console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -149,102 +187,81 @@ export default function CompleteInfo() {
                 <Text
                   style={[typography.medium.regular, { color: colors.gray }]}
                 >
-                  Por favor, ingresa los siguientes datos y asegúrate de que tu
-                  información sea correcta.
+                  Ingresa tus datos y asegúrate de que sean correctos.
                 </Text>
 
-                <View style={{ width: "100%" }}>
-                  <Text style={styles.label}>Dirección</Text>
-                  <CustomInput
-                    placeholder="Dirección"
-                    value={direccion}
-                    onChangeText={setDireccion}
-                  />
-                </View>
+                <Text style={styles.label}>Dirección</Text>
+                <CustomInput
+                  placeholder="Dirección"
+                  value={direccion}
+                  onChangeText={setDireccion}
+                />
 
-                <View style={{ width: "100%" }}>
-                  <Text style={styles.label}>País</Text>
-                  <DropdownPicker
-                    selectedValue={selectedCountry}
-                    onValueChange={(value) => {
-                      setSelectedCountry(value);
-                      fetchStates(value);
-                    }}
-                    options={[
-                      { label: "Selecciona una opción", value: "" }, // Opción predeterminada
-                      ...countries.map((country) => ({
-                        label: country.name,
-                        value: country.iso2,
-                      })),
-                    ]}
-                  />
-                </View>
+                <Text style={styles.label}>País</Text>
+                <DropdownPicker
+                  selectedValue={selectedCountry}
+                  onValueChange={(value) => {
+                    setSelectedCountry(value);
+                    fetchStates(value);
+                  }}
+                  options={[
+                    { label: "Selecciona una opción", value: "" },
+                    ...countries.map((c) => ({ label: c.name, value: c.iso2 })),
+                  ]}
+                />
 
-                <View style={{ width: "100%" }}>
-                  <Text style={styles.label}>Departamento</Text>
-                  <DropdownPicker
-                    selectedValue={selectedState}
-                    onValueChange={(value) => {
-                      setSelectedState(value);
-                      fetchCities(selectedCountry, value);
-                    }}
-                    options={[
-                      { label: "Selecciona una opción", value: "" },
-                      ...states.map((state) => ({
-                        label: state.name,
-                        value: state.iso2,
-                      })),
-                    ]}
-                    disabled={!selectedCountry}
-                  />
-                </View>
+                <Text style={styles.label}>Departamento</Text>
+                <DropdownPicker
+                  selectedValue={selectedState}
+                  onValueChange={(value) => {
+                    setSelectedState(value);
+                    fetchCities(selectedCountry, value);
+                  }}
+                  options={[
+                    { label: "Selecciona una opción", value: "" },
+                    ...states.map((s) => ({ label: s.name, value: s.iso2 })),
+                  ]}
+                  disabled={!selectedCountry}
+                />
 
-                <View style={{ width: "100%" }}>
-                  <Text style={styles.label}>Ciudad</Text>
-                  <DropdownPicker
-                    selectedValue={selectedCity}
-                    onValueChange={setSelectedCity}
-                    options={[
-                      { label: "Selecciona una opción", value: "" },
-                      ...cities.map((city) => ({
-                        label: city.name,
-                        value: city.id,
-                      })),
-                    ]}
-                    disabled={!selectedState}
-                  />
-                </View>
+                <Text style={styles.label}>Ciudad</Text>
+                <DropdownPicker
+                  selectedValue={selectedCity}
+                  onValueChange={setSelectedCity}
+                  options={[
+                    { label: "Selecciona una opción", value: "" },
+                    ...cities.map((c) => ({ label: c.name, value: c.id })),
+                  ]}
+                  disabled={!selectedState}
+                />
 
-                <View style={{ width: "100%" }}>
-                  <Text style={styles.label}>Teléfono</Text>
-                  <CustomInput
-                    placeholder="Teléfono"
-                    value={telefono}
-                    onChangeText={(text) =>
-                      setTelefono(text.replace(/[^0-9]/g, ""))
-                    }
-                    keyboardType="numeric"
-                    prefix={`+${phoneCode}`}
-                  />
-                </View>
+                <Text style={styles.label}>Teléfono</Text>
+                <CustomInput
+                  placeholder="Teléfono"
+                  value={telefono}
+                  onChangeText={(text) =>
+                    setTelefono(text.replace(/[^0-9]/g, ""))
+                  }
+                  keyboardType="numeric"
+                />
 
-                {/* Seccion de imagen */}
                 <Text style={styles.subtitle}>
-                  Subir una foto de perfil (Opcional)
+                  Subir foto de perfil (Opcional)
                 </Text>
-                <View style={styles.imageUploadContainer}>
+                {imageUri && (
+                  <Image
+                    source={{ uri: imageUri }}
+                    style={styles.profileImage}
+                  />
+                )}
+                <TouchableOpacity
+                  style={styles.uploadButton}
+                  onPress={pickImage}
+                >
                   <Text style={styles.uploadText}>
-                    {imageName
-                      ? "Imagen seleccionada"
-                      : "Selecciona la imagen aquí"}
+                    {imageName ? "Cambiar imagen" : "Subir imagen"}
                   </Text>
-                  <TouchableOpacity
-                    style={styles.uploadButton}
-                    onPress={pickImage}
-                  >
-                    <Text style={styles.uploadText}>Subir</Text>
-                  </TouchableOpacity>
-                </View>
+                </TouchableOpacity>
               </View>
 
               <View style={styles.footerContainer}>
@@ -325,6 +342,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 18,
     backgroundColor: colors.base,
+  },
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginTop: 10,
   },
   uploadText: {
     ...typography.medium.regular,

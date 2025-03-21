@@ -20,6 +20,9 @@ import CustomInput from "@/components/CustomInput";
 import Header from "@/components/Header";
 import { usePasswordValidation } from "@/hooks/passwordValidation";
 import { AntDesign } from "@expo/vector-icons";
+import axios from "axios";
+import { API_URL } from "@/services/config";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -37,10 +40,9 @@ export default function RegisterScreen() {
     return emailRegex.test(email);
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     Keyboard.dismiss();
 
-    // Verificar si hay campos vacíos
     if (!email || !newPassword || !confirmPassword) {
       Alert.alert(
         "Error",
@@ -49,14 +51,12 @@ export default function RegisterScreen() {
       return;
     }
 
-    // Validar el email
     if (!validateEmail(email)) {
       setEmailError(true);
       Alert.alert("Error", "El correo ingresado no es válido.");
       return;
     }
 
-    // Validar errores de contraseña
     if (errors.password || errors.confirmPassword) {
       Alert.alert(
         "Error",
@@ -67,14 +67,88 @@ export default function RegisterScreen() {
 
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
-      Alert.alert(
-        "Registro exitoso",
-        "Tu cuenta ha sido creada correctamente.",
-        [{ text: "OK", onPress: () => router.push("/home") }]
+    try {
+      const token = await AsyncStorage.getItem("authToken");
+      if (!token) {
+        Alert.alert("Error", "No se encontró el token de validación.");
+        setLoading(false);
+        return;
+      }
+
+      const response = await axios.post(
+        `${API_URL}/users/pre-register/complete`,
+        {
+          token,
+          email,
+          password: newPassword,
+          password_confirmation: confirmPassword,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        }
       );
-    }, 2000);
+
+      if (response.status === 200) {
+        const activationToken = response.data.activation_token;
+        if (activationToken) {
+          await sendActivationEmail(email, activationToken);
+        }
+
+        Alert.alert(
+          "Registro exitoso",
+          "Tu cuenta ha sido creada correctamente. Se ha enviado un correo de activación.",
+          [{ text: "OK", onPress: () => router.push("/home") }]
+        );
+      } else {
+        Alert.alert("Error", "Ocurrió un problema al registrar la cuenta.");
+      }
+    } catch (error) {
+      console.error("Error en la solicitud:", error);
+      Alert.alert("Error", "No se pudo conectar con el servidor.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Enviar el correo de activación
+  const sendActivationEmail = async (
+    email: string,
+    activationToken: string
+  ) => {
+    try {
+      const activationUrl = `https://tu-frontend.com/activate-account/${activationToken}`;
+
+      const payload = {
+        service_id: "service_c35ss8k",
+        template_id: "template_wbz1eil",
+        user_id: "hMGKOWPvqqS5l9Qsf",
+        accessToken: "Qm3WiVQBa3J59N-sE7iKa",
+        template_params: {
+          to_name: "Usuario",
+          to_email: email,
+          message: `Para activar tu cuenta, haz clic en el siguiente enlace: ${activationUrl}`,
+          reply_to: email,
+        },
+      };
+
+      const emailResponse = await fetch(
+        "https://api.emailjs.com/api/v1.0/email/send",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!emailResponse.ok) {
+        throw new Error(await emailResponse.text());
+      }
+    } catch (error) {
+      console.error("Error al enviar el correo:", error);
+    }
   };
 
   return (

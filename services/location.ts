@@ -56,3 +56,40 @@ export const getCountryPhoneCode = async (countryCode: string) => {
     return null;
   }
 };
+
+export const fetchLocationNames = async (
+  countryCode: string,
+  stateCode: string,
+  cityCode: string
+) => {
+  try {
+    const countryRes = await axios.get(`${BASE_URL}/countries/${countryCode}`, {
+      headers,
+    });
+    const countryName = countryRes.data?.name || "Desconocido";
+
+    const stateRes = await axios.get(
+      `${BASE_URL}/countries/${countryCode}/states/${stateCode}`,
+      { headers }
+    );
+    const stateName = stateRes.data?.name || "Desconocido";
+
+    const citiesRes = await axios.get(
+      `${BASE_URL}/countries/${countryCode}/states/${stateCode}/cities`,
+      { headers }
+    );
+
+    const cityName =
+      citiesRes.data?.find((city: any) => String(city.id) === String(cityCode))
+        ?.name || "Desconocido";
+
+    return { country: countryName, department: stateName, city: cityName };
+  } catch (error) {
+    console.error("Error obteniendo nombres de ubicación:", error);
+    return {
+      country: "Desconocido",
+      department: "Desconocido",
+      city: "Desconocido",
+    };
+  }
+};

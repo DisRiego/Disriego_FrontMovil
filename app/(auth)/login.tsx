@@ -35,24 +35,30 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    const checkToken = async () => {
+    const checkLoginStatus = async () => {
       try {
         const token = await AsyncStorage.getItem("token");
+        const firstLogin = await AsyncStorage.getItem("first_login");
+
         console.log(
           "Token almacenado:",
           token ? token : "No hay token guardado"
         );
+        console.log("First Login:", firstLogin);
 
-        // Si hay token almacenado, redirigir al home
         if (token) {
-          router.replace("(tabs)/home");
+          if (firstLogin === "false") {
+            router.replace("/completeInfo");
+          } else {
+            router.replace("(tabs)/home");
+          }
         }
       } catch (error) {
-        console.error("Error al verificar el token:", error);
+        console.error("Error al verificar el estado de sesión:", error);
       }
     };
 
-    checkToken();
+    checkLoginStatus();
   }, [router]);
 
   const handleLogin = async () => {
@@ -66,13 +72,11 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      const token = await login(email, password);
-      console.log("Token obtenido:", token);
+      const { token, first_login } = await login(email, password);
 
       if (token) {
-        await AsyncStorage.setItem("token", token);
         Alert.alert("Éxito", "Inicio de sesión exitoso.");
-        router.replace("(tabs)/home");
+        router.replace(first_login ? "/completeInfo" : "(tabs)/home");
       } else {
         throw new Error("Credenciales incorrectas.");
       }

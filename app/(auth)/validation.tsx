@@ -21,11 +21,13 @@ import CustomInput from "@/components/CustomInput";
 import Header from "@/components/Header";
 import DropdownPicker from "@/components/Dropdown";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { API_URL } from "@/services/config";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
 
 export default function ValidationScreen() {
   const router = useRouter();
 
-  // Estados para almacenar la información del formulario
   const [documentType, setDocumentType] = useState("");
   const [documentNumber, setDocumentNumber] = useState("");
   const [dateIssuanceDocument, setDateIssuanceDocument] = useState<Date | null>(
@@ -34,8 +36,7 @@ export default function ValidationScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Validación del formulario antes de continuar con el registro
-  function handleValidation() {
+  async function handleValidation() {
     if (!documentType || !documentNumber.trim() || !dateIssuanceDocument) {
       Alert.alert(
         "Error",
@@ -43,15 +44,56 @@ export default function ValidationScreen() {
       );
       return;
     }
+
     setLoading(true); // Inicia el estado de carga
 
-    setLoading(false); // Detiene la carga después de la validación
-    Alert.alert("Éxito", "Validación exitosa.", [
-      {
-        text: "Continuar",
-        onPress: () => router.push("/register"),
-      },
-    ]);
+    const documentTypeIdMap: { [key: string]: number } = {
+      "C.C": 1,
+      "C.E": 2,
+      "T.I": 3,
+    };
+
+    const documentTypeId = documentTypeIdMap[documentType];
+
+    try {
+      const response = await axios.post(
+        `${API_URL}/users/pre-register/validate`,
+        {
+          document_type_id: documentTypeId,
+          document_number: documentNumber,
+          date_issuance_document:
+            dateIssuanceDocument.toISOString().split("T")[0] + "T00:00:00",
+        }
+      );
+
+      if (response.data.success) {
+        const token = response.data.token; // Obtén el token
+        await AsyncStorage.setItem("authToken", token); // Guarda el token en AsyncStorage
+
+        Alert.alert("Éxito", "Validación exitosa.", [
+          {
+            text: "Continuar",
+            onPress: () => router.push("/register"), // Redirige al registro
+          },
+        ]);
+      } else {
+        Alert.alert("Error", response.data.message || "Error inesperado.");
+      }
+    } catch (error: any) {
+      console.error("Error en la validación:", error.response?.data || error);
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        "Ocurrió un error inesperado.";
+
+      if (errorMessage) {
+        Alert.alert("Error", errorMessage);
+      } else {
+        Alert.alert("Error", "Error desconocido. Inténtalo de nuevo.");
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -144,7 +186,6 @@ export default function ValidationScreen() {
               onPress={handleValidation}
               disabled={loading}
             />
-
             <Text style={[typography.medium.regular, { color: colors.gray }]}>
               ¿Tienes una cuenta?
               <Text style={styles.link} onPress={() => router.push("/login")}>

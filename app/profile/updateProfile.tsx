@@ -6,7 +6,7 @@ import { colors } from "@/config/theme";
 import CustomInput from "@/components/CustomInput";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DropdownPicker from "@/components/Dropdown";
-import { getUserData } from "@/services/auth";
+import { getUserData } from "@/services/users";
 import CustomHeader from "@/components/CustomHeader";
 import { Svg, Circle, Text as SvgText } from "react-native-svg";
 import {
@@ -14,6 +14,7 @@ import {
   getStates,
   getCities,
   getCountryPhoneCode,
+  fetchLocationNames,
 } from "@/services/location";
 
 /**
@@ -38,6 +39,11 @@ const getColorFromName = (name: string) => {
   return `hsl(${hash % 360}, 60%, 50%)`;
 };
 
+interface City {
+  name: string;
+  id: string;
+}
+
 const UpdateProfile = () => {
   const router = useRouter();
   const [direccion, setDireccion] = useState("");
@@ -56,28 +62,61 @@ const UpdateProfile = () => {
     []
   );
   const [states, setStates] = useState<{ name: string; iso2: string }[]>([]);
-  const [cities, setCities] = useState<{ name: string; id: string }[]>([]);
-  const [phoneCode, setPhoneCode] = useState("");
-
+  const [cities, setCities] = useState<City[]>([]);
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedState, setSelectedState] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
+  const [cityName, setCityName] = useState(""); // Para mostrar el nombre de la ciudad si es necesario
 
   useEffect(() => {
     const fetchUserData = async () => {
-      const userData = await getUserData();
-      if (userData) {
-        setUser({
-          name: `${userData.name} ${userData.first_last_name}`,
-          email: userData.email,
-          profile_picture: userData.profile_picture || null,
-        });
+      try {
+        const userData = await getUserData();
+        if (userData) {
+          setUser({
+            name: `${userData.name} ${userData.first_last_name}`,
+            email: userData.email,
+            profile_picture: userData.profile_picture || null,
+          });
 
-        // Asignar datos a los campos de entrada
-        setDireccion(userData.address || "");
-        setTelefono(userData.phone || "");
+          // Asignar datos a los campos de entrada
+          setDireccion(userData.address || "");
+          setTelefono(userData.phone || "");
+
+          // Establecer los valores iniciales de país y estado
+          if (userData.country) {
+            setSelectedCountry(userData.country);
+            const statesData = await getStates(userData.country);
+            setStates(statesData);
+
+            if (userData.department) {
+              setSelectedState(userData.department);
+              const citiesData = await getCities(
+                userData.country,
+                userData.department
+              );
+              setCities(citiesData);
+
+              if (userData.city) {
+                const cityId = String(userData.city).toLowerCase();
+                const cityFound = citiesData.find(
+                  (city: { id: { toString: () => string }; name: string }) =>
+                    city.id.toString().toLowerCase() === cityId ||
+                    city.name.toLowerCase() === cityId
+                );
+
+                setSelectedCity(
+                  cityFound ? cityFound.id : citiesData[0]?.id || ""
+                );
+              }
+            }
+          }
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error("Error al cargar datos de usuario:", error);
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     const fetchCountries = async () => {
@@ -90,21 +129,30 @@ const UpdateProfile = () => {
   }, []);
 
   const fetchStates = async (countryCode: string) => {
-    setSelectedState("");
-    setSelectedCity("");
-    setCities([]);
+    if (!countryCode) return;
+
+    if (countryCode !== selectedCountry) {
+      setSelectedState("");
+      setSelectedCity("");
+      setCities([]);
+    }
 
     const data = await getStates(countryCode);
     setStates(data);
-
-    const code = await getCountryPhoneCode(countryCode);
-    setPhoneCode(code);
   };
 
   const fetchCities = async (countryCode: string, stateCode: string) => {
-    setSelectedCity("");
+    if (!countryCode || !stateCode) return;
+
+    setCities([]); // Limpiar ciudades antes de cargar nuevas
+
     const data = await getCities(countryCode, stateCode);
     setCities(data);
+
+    // Asignar la ciudad directamente sin esperar 500ms
+    if (data.length > 0) {
+      setSelectedCity(data[0].id.toString()); // O el campo que corresponda
+    }
   };
 
   return (
@@ -215,15 +263,14 @@ const UpdateProfile = () => {
               <DropdownPicker
                 selectedValue={selectedCity}
                 onValueChange={setSelectedCity}
-                options={cities.map((city) => ({
+                options={cities.map((city: City) => ({
                   label: city.name,
                   value: city.id,
                 }))}
-                disabled={!selectedState}
               />
             </View>
 
-            {/* 📌 Teléfono con prefijo */}
+            {/* 📌 Teléfono */}
             <View style={{ width: "100%" }}>
               <Text style={styles.label}>Teléfono</Text>
               <CustomInput
@@ -233,7 +280,6 @@ const UpdateProfile = () => {
                   setTelefono(text.replace(/[^0-9]/g, ""))
                 }
                 keyboardType="numeric"
-                prefix={`+${phoneCode}`}
               />
             </View>
           </View>
