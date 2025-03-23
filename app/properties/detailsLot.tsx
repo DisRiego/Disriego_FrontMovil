@@ -1,3 +1,8 @@
+/**
+ * Componente DetailsLots
+ * Muestra la información detallada de un lote específico
+ * Incluye datos como nombre, ID, folio, extensión, tipo de cultivo, fechas, etc.
+ */
 import React from "react";
 import {
   View,
@@ -11,12 +16,15 @@ import {
 import { useLocalSearchParams } from "expo-router";
 import CustomHeader from "@/components/CustomHeader";
 import LotCard from "@/components/LotCard";
-import LotInfoCard from "@/components/LotInfoCard"; // Nuevo componente
+import LotInfoCard from "@/components/LotInfoCard";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
 
 export default function DetailsLots() {
-  // Obtener los parámetros pasados en la navegación
+  /**
+   * Obtiene los parámetros pasados durante la navegación
+   * Incluye información completa del lote seleccionado
+   */
   const {
     id,
     name,
@@ -37,14 +45,15 @@ export default function DetailsLots() {
           {/* Encabezado personalizado con botón de volver */}
           <CustomHeader title="Detalles del Lote" backRoute="/(tabs)/home" />
 
-          {/* Descripción */}
+          {/* Sección de descripción y tarjetas informativas */}
           <View style={styles.textContainer}>
+            {/* Texto descriptivo de la sección */}
             <Text style={[typography.regular.big, { color: colors.gray }]}>
               En esta sección podrás visualizar información detallada sobre{" "}
               {name}.
             </Text>
 
-            {/* Primera tarjeta: Nombre, ID, Folio, Extensión */}
+            {/* Primera tarjeta: Información básica del lote */}
             <View style={styles.propContainer}>
               <LotCard
                 name={name as string}
@@ -53,12 +62,12 @@ export default function DetailsLots() {
                 extension={extension as string}
                 latitud={latitude as string}
                 longitud={longitude as string}
-                minimal={false} // Esto controla otras partes visibles
-                showCropType={false} // Nueva prop para ocultar cropType
+                minimal={false} // Controla la visibilidad de elementos adicionales
+                showCropType={false} // Oculta el tipo de cultivo en esta tarjeta
               />
             </View>
 
-            {/* Segunda tarjeta: Intervalo pago, Tipo cultivo, Fechas */}
+            {/* Segunda tarjeta: Información del cultivo y fechas */}
             <View style={styles.cropContainer}>
               <LotInfoCard
                 cropType={cropType as string}
@@ -75,6 +84,10 @@ export default function DetailsLots() {
   );
 }
 
+/**
+ * Estilos para el componente DetailsLots
+ * Define la apariencia y estructura de la pantalla de detalles
+ */
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -87,7 +100,6 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 24,
   },
   textContainer: {
     marginVertical: 10,

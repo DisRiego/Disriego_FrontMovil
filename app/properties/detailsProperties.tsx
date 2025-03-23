@@ -1,3 +1,8 @@
+/**
+ * Componente DetailsProperties
+ * Muestra información detallada de un predio y sus lotes asociados
+ * Permite buscar, filtrar y visualizar lotes específicos
+ */
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -17,11 +22,14 @@ import LotCard from "@/components/LotCard";
 import LotDetailsModal from "@/components/LotDetailsModal";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
-import { API_URL } from "@/services/config";
+import { API_URL } from "@env";
 import SearchBar from "@/components/SearchBar";
 import FilterButton from "@/components/FilterButton";
 
 export default function DetailsProperties() {
+  /**
+   * Obtiene los parámetros de navegación con la información básica del predio
+   */
   const {
     id,
     name,
@@ -31,8 +39,10 @@ export default function DetailsProperties() {
     extension,
   } = useLocalSearchParams();
 
+  // Estado para el texto de búsqueda
   const [searchText, setSearchText] = useState("");
 
+  // Estados para almacenar datos de catálogos y lotes
   const [typeCrops, setTypeCrops] = useState<Record<number, string>>({});
   const [paymentIntervals, setPaymentIntervals] = useState<
     Record<number, string>
@@ -40,9 +50,14 @@ export default function DetailsProperties() {
   const [lotsArray, setLotsArray] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Estados para el modal de detalles
   const [selectedLot, setSelectedLot] = useState<any | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
+  /**
+   * Obtiene los catálogos de tipos de cultivo e intervalos de pago
+   */
   const fetchCatalogs = async () => {
     try {
       const [cropsResponse, paymentsResponse] = await Promise.all([
@@ -50,6 +65,7 @@ export default function DetailsProperties() {
         axios.get(`${API_URL}/my-company/payment-intervals`),
       ]);
 
+      // Transforma los arrays en mapas para fácil acceso por ID
       const cropsMap = cropsResponse.data.data.reduce((acc: any, crop: any) => {
         acc[crop.id] = crop.name;
         return acc;
@@ -70,6 +86,9 @@ export default function DetailsProperties() {
     }
   };
 
+  /**
+   * Obtiene los lotes asociados al predio actual
+   */
   const fetchLots = async () => {
     try {
       const response = await axios.get(`${API_URL}/properties/${id}/lots/`);
@@ -83,12 +102,15 @@ export default function DetailsProperties() {
     }
   };
 
+  // Carga los catálogos y lotes al montar el componente
   useEffect(() => {
     fetchCatalogs();
     fetchLots();
   }, []);
 
-  // 📌 Transformar los lotes para reemplazar IDs por nombres
+  /**
+   * Transforma los lotes reemplazando IDs por nombres descriptivos
+   */
   const transformedLots = lotsArray.map((lot) => ({
     ...lot,
     cropType: typeCrops[lot.type_crop_id] || "Desconocido",
@@ -97,7 +119,9 @@ export default function DetailsProperties() {
     estimatedHarvestDate: lot.estimated_harvest_date || "No disponible",
   }));
 
-  // 📌 Filtrar lotes según búsqueda por nombre, folio o ID
+  /**
+   * Filtra lotes según el texto de búsqueda (nombre, folio o ID)
+   */
   const filteredLots = transformedLots.filter((lot) =>
     [lot.name, lot.real_estate_registration_number, lot.id].some(
       (value) =>
@@ -109,82 +133,109 @@ export default function DetailsProperties() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <CustomHeader
-            title="Detalles del predio"
-            backRoute="/properties/myProperties"
-          />
+          <View style={styles.innerContainer}>
+            {/* Encabezado con título y botón de retorno */}
+            <CustomHeader
+              title="Detalles del predio"
+              backRoute="/properties/myProperties"
+            />
 
-          <View style={styles.textContainer}>
-            <Text style={[typography.regular.big, { color: colors.gray }]}>
-              En esta sección podrás visualizar información sobre el predio{" "}
-              {name}.
-            </Text>
-
-            <View style={styles.propContainer}>
-              <PropertyCard
-                name={name as string}
-                id={id as string}
-                folio={real_estate_registration_number as string}
-                extension={extension as string}
-                latitud={latitude as string}
-                longitud={longitude as string}
-              />
-            </View>
-          </View>
-
-          <View style={styles.subtContainer}>
-            <Text style={[typography.medium.large, { color: colors.darkGray }]}>
-              Lotes asignados al predio
-            </Text>
-
-            <View style={styles.searchContainer}>
-              <SearchBar
-                searchText={searchText}
-                onSearchChange={setSearchText}
-              />
-              <FilterButton onPress={() => console.log("Abrir filtros")} />
-            </View>
-
-            {loading ? (
-              <ActivityIndicator size="large" color={colors.primary} />
-            ) : error ? (
-              <Text
-                style={[typography.regular.medium, { color: colors.error }]}
-              >
-                {error}
+            {/* Información del predio */}
+            <View style={styles.textContainer}>
+              <Text style={[typography.regular.big, { color: colors.gray }]}>
+                En esta sección podrás visualizar información sobre el predio{" "}
+                {name}.
               </Text>
-            ) : (
-              <View style={styles.lotContainer}>
-                {filteredLots.length > 0 ? (
-                  filteredLots.map((lot) => (
-                    <LotCard
-                      key={lot.id}
-                      id={lot.id}
-                      extension={lot.extension}
-                      cropType={lot.cropType}
-                      name={lot.name}
-                      plantingDate={lot.plantingDate} // 📌 Nueva prop
-                      estimatedHarvestDate={lot.estimatedHarvestDate} // 📌 Nueva prop
-                      minimal={true}
-                      onPress={() => {
-                        setSelectedLot(lot);
-                        setModalVisible(true);
-                      }}
-                    />
-                  ))
-                ) : (
-                  <Text
-                    style={[typography.regular.medium, { color: colors.gray }]}
-                  >
-                    No hay lotes asignados a este predio.
-                  </Text>
-                )}
+
+              {/* Tarjeta con detalles del predio */}
+              <View style={styles.propContainer}>
+                <PropertyCard
+                  name={name as string}
+                  id={id as string}
+                  folio={real_estate_registration_number as string}
+                  extension={extension as string}
+                  latitud={latitude as string}
+                  longitud={longitude as string}
+                />
               </View>
-            )}
+            </View>
+
+            {/* Sección de lotes asociados */}
+            <View style={styles.subtContainer}>
+              <Text
+                style={[typography.medium.large, { color: colors.darkGray }]}
+              >
+                Lotes asignados al predio
+              </Text>
+
+              {/* Barra de búsqueda y botón de filtros */}
+              <View style={styles.searchContainer}>
+                <SearchBar
+                  searchText={searchText}
+                  onSearchChange={setSearchText}
+                />
+                {/* <FilterButton onPress={() => console.log("Abrir filtros")} /> */}
+              </View>
+
+              {/* Indicador de carga mientras se obtienen los datos */}
+              {loading && (
+                <View style={styles.loaderContainer}>
+                  <ActivityIndicator size="large" color={colors.primary} />
+                </View>
+              )}
+
+              {/* Contenido de lotes o mensaje de error */}
+              {!loading && (
+                <>
+                  {error ? (
+                    <Text
+                      style={[
+                        typography.regular.medium,
+                        { color: colors.error },
+                      ]}
+                    >
+                      {error}
+                    </Text>
+                  ) : (
+                    <View style={styles.lotContainer}>
+                      {filteredLots.length > 0 ? (
+                        filteredLots.map((lot) => (
+                          <LotCard
+                            key={lot.id}
+                            id={lot.id}
+                            extension={lot.extension}
+                            cropType={lot.cropType}
+                            name={lot.name}
+                            folio={lot.real_estate_registration_number}
+                            plantingDate={lot.plantingDate}
+                            estimatedHarvestDate={lot.estimatedHarvestDate}
+                            minimal={true}
+                            onPress={() => {
+                              setSelectedLot(lot);
+                              setModalVisible(true);
+                            }}
+                          />
+                        ))
+                      ) : (
+                        <Text
+                          style={[
+                            typography.regular.medium,
+                            { color: colors.gray },
+                          ]}
+                        >
+                          No hay lotes asignados a este predio.
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                </>
+              )}
+            </View>
           </View>
         </ScrollView>
       </View>
 
+      {/* Modal de detalles del lote seleccionado */}
       {modalVisible && selectedLot && (
         <LotDetailsModal
           isVisible={modalVisible}
@@ -207,6 +258,9 @@ export default function DetailsProperties() {
   );
 }
 
+/**
+ * Estilos para el componente DetailsProperties
+ */
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -215,12 +269,13 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingHorizontal: 20,
     paddingBottom: 16,
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 24,
+  },
+  innerContainer: {
+    paddingHorizontal: 20,
   },
   textContainer: {
     marginVertical: 10,
@@ -240,5 +295,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 12,
     gap: 10,
+  },
+  loaderContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 20,
   },
 });

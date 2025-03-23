@@ -1,3 +1,8 @@
+/**
+ * Componente MyProperties
+ * Muestra un listado de predios asociados al usuario actual
+ * Permite buscar predios por nombre, folio o ID
+ */
 import React, { useEffect, useState } from "react";
 import {
   Platform,
@@ -7,18 +12,22 @@ import {
   StyleSheet,
   Text,
   View,
+  ActivityIndicator,
 } from "react-native";
 import axios from "axios";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
-import { API_URL } from "@/services/config";
+import { API_URL } from "@env";
 import { getUserData } from "@/services/auth";
 import CustomHeader from "@/components/CustomHeader";
 import SearchBar from "@/components/SearchBar";
 import PropertyCard from "@/components/PropertyCard";
 import PropertyDetailsModal from "@/components/PropertyDetailsModal";
 
-// 📌 Definimos la interfaz para los datos de propiedad
+/**
+ * Interfaz para los datos de propiedad
+ * Define la estructura de un predio en la aplicación
+ */
 interface Property {
   id: string;
   name: string;
@@ -30,6 +39,7 @@ interface Property {
 }
 
 export default function MyProperties() {
+  // Estados para manejar las propiedades y la interfaz
   const [properties, setProperties] = useState<Property[]>([]);
   const [searchText, setSearchText] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
@@ -37,34 +47,48 @@ export default function MyProperties() {
     null
   );
   const [userId, setUserId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // 🚀 Obtener datos del usuario y propiedades
+  /**
+   * Efecto para obtener los datos del usuario y sus propiedades
+   * Se ejecuta al montar el componente
+   */
   useEffect(() => {
     const fetchProperties = async () => {
       try {
+        setLoading(true);
+
+        // Obtener datos del usuario actual
         const user = await getUserData();
         if (!user) throw new Error("No se pudo obtener el usuario");
 
         setUserId(user.id);
         console.log(`Obteniendo propiedades para user_id: ${user.id}`);
 
+        // Realizar petición para obtener las propiedades del usuario
         const response = await axios.get(
           `${API_URL}/properties/user/${user.id}`
         );
 
-        // 🔥 Agregar logs para ver la respuesta de la API
+        // Registro para depuración
         console.log("Datos recibidos:", response.data);
 
+        // Guardar propiedades en el estado
         setProperties(response.data.data);
       } catch (error) {
         console.error("Error cargando propiedades:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchProperties();
   }, []);
 
-  // 📌 Filtrar propiedades según búsqueda por nombre, folio o ID
+  /**
+   * Filtra las propiedades según el texto de búsqueda
+   * Busca coincidencias en nombre, folio o ID
+   */
   const filteredProperties = properties.filter((property) =>
     [property.name, property.real_estate_registration_number, property.id].some(
       (value) =>
@@ -72,12 +96,17 @@ export default function MyProperties() {
     )
   );
 
-  // 📌 Funciones para abrir/cerrar el modal
+  /**
+   * Abre el modal con los detalles de la propiedad seleccionada
+   */
   const openModal = (property: Property) => {
     setSelectedProperty(property);
     setModalVisible(true);
   };
 
+  /**
+   * Cierra el modal de detalles
+   */
   const closeModal = () => {
     setSelectedProperty(null);
     setModalVisible(false);
@@ -87,20 +116,32 @@ export default function MyProperties() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
+          {/* Encabezado de la pantalla */}
           <CustomHeader title="Mis predios y lotes" backRoute="/(tabs)/home" />
+
           <View style={styles.textContainer}>
+            {/* Texto descriptivo de la sección */}
             <Text style={[typography.regular.big, { color: colors.gray }]}>
               En esta sección podrás visualizar la información de los predios y
               lotes vinculados a su documento.
             </Text>
+
+            {/* Barra de búsqueda */}
             <View style={styles.searchContainer}>
               <SearchBar
                 searchText={searchText}
                 onSearchChange={setSearchText}
               />
+              {/* <FilterButton onPress={() => console.log("Abrir filtros")} /> */}
             </View>
+
+            {/* Listado de propiedades */}
             <View style={styles.formContainer}>
-              {filteredProperties.length > 0 ? (
+              {loading ? (
+                // Indicador de carga mientras se obtienen los datos
+                <ActivityIndicator size="large" color={colors.primary} />
+              ) : filteredProperties.length > 0 ? (
+                // Mapeo de propiedades si existen resultados
                 filteredProperties.map((property) => (
                   <PropertyCard
                     key={property.id}
@@ -112,6 +153,7 @@ export default function MyProperties() {
                   />
                 ))
               ) : (
+                // Mensaje cuando no hay propiedades
                 <Text style={typography.regular.medium}>
                   No hay propiedades registradas.
                 </Text>
@@ -121,7 +163,7 @@ export default function MyProperties() {
         </ScrollView>
       </View>
 
-      {/* Modal de detalles */}
+      {/* Modal de detalles de la propiedad */}
       {selectedProperty && (
         <PropertyDetailsModal
           isVisible={modalVisible}
@@ -133,6 +175,9 @@ export default function MyProperties() {
   );
 }
 
+/**
+ * Estilos para el componente MyProperties
+ */
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -141,7 +186,6 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 24,
   },
   container: {
     flex: 1,
@@ -162,6 +206,7 @@ const styles = StyleSheet.create({
     width: "100%",
     paddingTop: 8,
     alignItems: "stretch",
+    justifyContent: "center",
   },
   searchContainer: {
     width: "100%",

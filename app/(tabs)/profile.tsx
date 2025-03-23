@@ -1,3 +1,8 @@
+/**
+ * Profile.tsx
+ * Pantalla de perfil de usuario que muestra información personal y opciones de configuración.
+ * Permite ver, editar perfil, cambiar contraseña y cerrar sesión.
+ */
 import {
   View,
   Text,
@@ -16,7 +21,18 @@ import { typography } from "@/config/typography";
 import { Svg, Circle, Text as SvgText } from "react-native-svg";
 
 /**
+ * Estructura de datos de usuario
+ */
+interface UserData {
+  name: string;
+  email: string;
+  profile_picture?: string | null;
+}
+
+/**
  * Obtiene las iniciales del nombre del usuario
+ * @param name Nombre completo del usuario
+ * @returns Iniciales en mayúsculas
  */
 const getInitials = (name: string) => {
   if (!name) return ""; // 'U' de usuario
@@ -27,41 +43,42 @@ const getInitials = (name: string) => {
 };
 
 /**
- * Genera un color basado en el nombre del usuario
+ * Componente principal de perfil
+ * Muestra información del usuario y opciones de configuración
  */
-const getColorFromName = (name: string) => {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const color = `hsl(${hash % 360}, 60%, 50%)`; // Genera un color único
-  return color;
-};
-
 const Profile = () => {
-  const [user, setUser] = useState<{
-    name: string;
-    email: string;
-    profile_picture?: string | null;
-  } | null>(null);
+  // Estados
+  const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
+  /**
+   * Efecto para cargar datos del usuario al iniciar
+   */
   useEffect(() => {
     const fetchUserData = async () => {
-      const userData = await getUserData();
-      if (userData) {
-        setUser({
-          name: `${userData.name} ${userData.first_last_name}`,
-          email: userData.email,
-          profile_picture: userData.profile_picture || null,
-        });
+      try {
+        const userData = await getUserData();
+        if (userData) {
+          setUser({
+            name: `${userData.name} ${userData.first_last_name}`,
+            email: userData.email,
+            profile_picture: userData.profile_picture || null,
+          });
+        }
+      } catch (error) {
+        console.error("Error al obtener datos del usuario:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchUserData();
   }, []);
 
+  /**
+   * Maneja el cierre de sesión
+   */
   const handleLogout = async () => {
     try {
       await logout();
@@ -71,46 +88,62 @@ const Profile = () => {
     }
   };
 
+  /**
+   * Renderiza el avatar del usuario según disponibilidad de imagen
+   * @returns Componente de avatar (imagen o iniciales)
+   */
+  const renderUserAvatar = () => {
+    if (!user) {
+      return (
+        <Svg width={50} height={50} viewBox="0 0 50 50">
+          <Circle cx="25" cy="25" r="25" fill={colors.base} />
+        </Svg>
+      );
+    }
+
+    if (user.profile_picture && imageLoaded) {
+      return (
+        <Image
+          source={{ uri: user.profile_picture }}
+          style={styles.avatar}
+          onLoad={() => setImageLoaded(true)}
+          onError={() => setImageLoaded(false)}
+        />
+      );
+    }
+
+    return (
+      <Svg width={50} height={50} viewBox="0 0 50 50">
+        <Circle
+          cx="25"
+          cy="25"
+          r="25"
+          fill={loading ? colors.base : colors.primary}
+        />
+        <SvgText
+          x="50%"
+          y="50%"
+          textAnchor="middle"
+          dy=".35em"
+          fontSize="18"
+          fontWeight="bold"
+          fill="white"
+        >
+          {getInitials(user.name || "")}
+        </SvgText>
+      </Svg>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        {/* Título */}
         <Text style={[typography.semibold.big, styles.title]}>Mi perfil</Text>
 
         {/* Información del usuario */}
         <View style={styles.userInfo}>
-          {user ? (
-            user.profile_picture ? (
-              <Image
-                source={{ uri: user.profile_picture }}
-                style={styles.avatar}
-              />
-            ) : (
-              <Svg width={50} height={50} viewBox="0 0 50 50">
-                <Circle
-                  cx="25"
-                  cy="25"
-                  r="25"
-                  fill={getColorFromName(user?.name || "")}
-                />
-                <SvgText
-                  x="50%"
-                  y="50%"
-                  textAnchor="middle"
-                  dy=".35em"
-                  fontSize="18"
-                  fontWeight="bold"
-                  fill="white"
-                >
-                  {getInitials(user?.name || "")}
-                </SvgText>
-              </Svg>
-            )
-          ) : (
-            // Mostrar un círculo gris como placeholder
-            <Svg width={50} height={50} viewBox="0 0 50 50">
-              <Circle cx="25" cy="25" r="25" fill={colors.base} />
-            </Svg>
-          )}
+          {renderUserAvatar()}
 
           <View style={styles.userDetails}>
             {loading ? (
@@ -133,6 +166,7 @@ const Profile = () => {
         <View style={styles.generalContainer}>
           <Text style={styles.sectionTitle}>General</Text>
           <View style={styles.card}>
+            {/* Opción Editar Datos */}
             <TouchableOpacity
               style={styles.option}
               onPress={() => router.push("/profile/updateProfile")}
@@ -151,6 +185,7 @@ const Profile = () => {
               <Ionicons name="chevron-forward" size={22} color={colors.gray} />
             </TouchableOpacity>
 
+            {/* Opción Actualizar contraseña */}
             <TouchableOpacity
               style={styles.option}
               onPress={() => router.push("/profile/updatePassword")}
@@ -175,6 +210,7 @@ const Profile = () => {
         <View style={styles.generalContainer}>
           <Text style={styles.sectionTitle}>Preferencias</Text>
           <View style={styles.card}>
+            {/* Opción Accesibilidad */}
             <TouchableOpacity
               style={styles.option}
               onPress={() => router.push("/profile/accesibility")}
@@ -193,6 +229,7 @@ const Profile = () => {
               <Ionicons name="chevron-forward" size={22} color={colors.gray} />
             </TouchableOpacity>
 
+            {/* Opción Cerrar sesión */}
             <TouchableOpacity style={styles.option} onPress={handleLogout}>
               <Ionicons name="log-out-outline" size={24} color={colors.gray} />
               <View style={styles.textContainer}>

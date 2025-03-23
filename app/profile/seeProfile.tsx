@@ -7,39 +7,44 @@ import {
   StyleSheet,
   StatusBar,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import React, { useEffect, useState } from "react";
-import { colors } from "@/config/theme";
 import { useRouter } from "expo-router";
 import { Svg, Circle, Text as SvgText } from "react-native-svg";
 import { getUserData } from "@/services/auth";
+import { fetchLocationNames } from "@/services/location";
 import CustomInput from "@/components/CustomInput";
 import CustomHeader from "@/components/CustomHeader";
+import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
-import { fetchLocationNames } from "@/services/location";
 
-// Función para obtener iniciales del nombre
-const getInitials = (name?: string) => {
-  if (!name || name.trim().length === 0) return "";
-  const parts = name.split(" ");
-  return parts.length > 1
-    ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
-    : parts[0][0].toUpperCase();
-};
-
-// Función para obtener color basado en el nombre
-const getColorFromName = (name: string) => {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return `hsl(${hash % 360}, 60%, 50%)`;
-};
-
+/**
+ * Componente SeeProfile - Muestra la información del perfil del usuario
+ * Permite visualizar datos personales, de contacto y ubicación
+ */
 const SeeProfile = () => {
   const router = useRouter();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [userInitials, setUserInitials] = useState("");
+
+  /**
+   * Obtiene las iniciales del nombre del usuario para mostrar en el avatar
+   * @param name - Nombre completo del usuario
+   * @returns Iniciales en mayúscula
+   */
+  const getInitials = (name: string) => {
+    if (!name || name.trim().length === 0) return "";
+    const parts = name.split(" ");
+    const initials =
+      parts.length > 1
+        ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+        : parts[0][0].toUpperCase();
+
+    console.log("Iniciales generadas en getInitials:", initials);
+    return initials;
+  };
 
   // Estado unificado para los datos del usuario
   const [userData, setUserData] = useState({
@@ -58,47 +63,104 @@ const SeeProfile = () => {
     city: "",
   });
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "No disponible";
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat("es-ES", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    }).format(date);
-  };
-
+  /**
+   * Carga los datos del usuario desde el backend
+   */
   useEffect(() => {
     const fetchUserData = async () => {
-      const data = await getUserData();
-      if (data) {
-        const locationNames = await fetchLocationNames(
-          data.country,
-          data.department,
-          data.city
-        );
+      try {
+        const data = await getUserData();
+        if (data) {
+          const locationNames = await fetchLocationNames(
+            data.country,
+            data.department,
+            data.city
+          );
 
-        setUserData({
-          name: `${data.name} ${data.first_last_name}`,
-          email: data.email,
-          profile_picture: data.profile_picture || null,
-          address: data.address || "",
-          phone: data.phone || "",
-          gender_name: data.gender_name || "",
-          type_document_name: data.type_document_name || "",
-          document_number: data.document_number?.toString() || "",
-          birthday: data.birthday || "No disponible",
-          date_issuance_document: formatDate(data.date_issuance_document),
-          country: locationNames.country,
-          department: locationNames.department,
-          city: locationNames.city,
-        });
+          const fullName = `${data.name} ${data.first_last_name}`;
+          // Calculamos las iniciales aquí y las guardamos en el estado
+          const initials = getInitials(fullName);
+          setUserInitials(initials);
+
+          setUserData({
+            name: fullName,
+            email: data.email,
+            profile_picture: data.profile_picture || null,
+            address: data.address || "",
+            phone: data.phone || "",
+            gender_name: data.gender_name || "",
+            type_document_name: data.type_document_name || "",
+            document_number: data.document_number?.toString() || "",
+            birthday: data.birthday || "No disponible",
+            date_issuance_document: formatDate(data.date_issuance_document),
+            country: locationNames.country,
+            department: locationNames.department,
+            city: locationNames.city,
+          });
+        }
+      } catch (error) {
+        console.error("Error al cargar datos del perfil:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchUserData();
   }, []);
+
+  // Debug el valor del nombre cuando cambia
+  useEffect(() => {
+    console.log("Nombre de usuario actualizado:", userData.name);
+    console.log("Iniciales que se utilizarían:", getInitials(userData.name));
+    // Actualizamos las iniciales cuando cambia el nombre
+    if (userData.name) {
+      setUserInitials(getInitials(userData.name));
+    }
+  }, [userData.name]);
+
+  // Debug el valor de las iniciales cuando cambian
+  useEffect(() => {
+    console.log("Iniciales actualizadas en el estado:", userInitials);
+  }, [userInitials]);
+
+  // Función para renderizar el avatar
+  const renderAvatar = () => {
+    // Si hay una imagen de perfil y está cargada, mostrarla
+    if (userData.profile_picture && imageLoaded) {
+      return (
+        <Image
+          source={{ uri: userData.profile_picture }}
+          style={styles.profileImage}
+          onLoad={() => setImageLoaded(true)}
+          onError={() => setImageLoaded(false)}
+        />
+      );
+    }
+
+    // En cualquier otro caso, mostrar el avatar con iniciales
+    return (
+      <View style={styles.avatarContainer}>
+        <Svg width={60} height={60}>
+          <Circle
+            cx="30"
+            cy="30"
+            r="30"
+            fill={loading ? colors.base : colors.primary}
+          />
+          <SvgText
+            x="30"
+            y="36"
+            textAnchor="middle"
+            fontSize="18"
+            fill="white"
+            fontWeight="bold"
+          >
+            {userInitials}
+          </SvgText>
+        </Svg>
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -110,147 +172,137 @@ const SeeProfile = () => {
           {/* Encabezado */}
           <CustomHeader title="Ver perfil" backRoute="/(tabs)/profile" />
 
-          {/* Avatar del usuario */}
-          <View style={styles.pictureContainer}>
-            {userData.profile_picture && !imageLoaded ? (
-              <Svg height="60" width="60" style={{ marginBottom: 8 }}>
-                <Circle
-                  cx="30"
-                  cy="30"
-                  r="30"
-                  fill={getColorFromName(userData.name || "Usuario")}
-                />
-              </Svg>
-            ) : userData.profile_picture ? (
-              <Image
-                source={{ uri: userData.profile_picture }}
-                style={styles.profileImage}
-                onLoad={() => setImageLoaded(true)}
-                onError={() => setImageLoaded(false)}
-              />
-            ) : (
-              <Svg width={60} height={60} style={{ marginBottom: 12 }}>
-                <Circle
-                  cx="28"
-                  cy="28"
-                  r="28"
-                  fill={loading ? colors.base : getColorFromName(userData.name)}
-                />
-                {!loading && userData.name && (
-                  <SvgText
-                    x="30"
-                    y="33"
-                    textAnchor="middle"
-                    fontSize="16"
-                    fill="white"
-                    fontWeight="bold"
-                  >
-                    {getInitials(userData.name)}
-                  </SvgText>
-                )}
-              </Svg>
-            )}
+          {/* Indicador de carga */}
+          {loading ? (
+            <View style={styles.loaderContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={styles.loaderText}>Cargando datos...</Text>
+            </View>
+          ) : (
+            <>
+              {/* Avatar del usuario */}
+              <View style={styles.pictureContainer}>
+                {renderAvatar()}
+                <Text style={styles.username}>{userData.name}</Text>
+              </View>
 
-            <Text style={styles.username}>{userData.name}</Text>
-          </View>
+              {/* Datos del usuario */}
+              <View style={styles.formContainer}>
+                {/* Sección de datos personales */}
+                <View style={styles.dataContainer}>
+                  <Text style={styles.title}>Datos personales</Text>
+                  <View>
+                    <Text style={styles.label}>Documento de Identidad</Text>
+                    <View style={{ flexDirection: "row", gap: 10 }}>
+                      <View style={{ flex: 2 }}>
+                        <CustomInput
+                          placeholder="Tipo"
+                          value={userData.type_document_name}
+                          editable={false}
+                        />
+                      </View>
+                      <View style={{ flex: 7 }}>
+                        <CustomInput
+                          placeholder="Número"
+                          value={userData.document_number}
+                          editable={false}
+                        />
+                      </View>
+                    </View>
+                  </View>
 
-          {/* Datos del usuario */}
-          <View style={styles.formContainer}>
-            <View style={styles.dataContainer}>
-              <Text style={styles.title}>Datos personales</Text>
-              <View>
-                <Text style={styles.label}>Documento de Identidad</Text>
-                <View style={{ flexDirection: "row", gap: 10 }}>
-                  <View style={{ flex: 2 }}>
+                  <View>
+                    <Text style={styles.label}>Fecha de Nacimiento</Text>
                     <CustomInput
-                      placeholder="Tipo"
-                      value={userData.type_document_name}
+                      placeholder="Fecha de Nacimiento"
+                      value={userData.birthday}
                       editable={false}
                     />
                   </View>
-                  <View style={{ flex: 7 }}>
+
+                  <View>
+                    <Text style={styles.label}>Fecha de Expedición</Text>
                     <CustomInput
-                      placeholder="Número"
-                      value={userData.document_number}
+                      placeholder="Fecha de Expedición"
+                      value={userData.date_issuance_document}
+                      editable={false}
+                    />
+                  </View>
+
+                  <View>
+                    <Text style={styles.label}>Género</Text>
+                    <CustomInput
+                      placeholder="Género"
+                      value={userData.gender_name}
+                      editable={false}
+                    />
+                  </View>
+                </View>
+
+                {/* Sección de datos de contacto */}
+                <View style={styles.dataContainer}>
+                  <Text style={styles.title}>Datos de contacto</Text>
+                  <View>
+                    <Text style={styles.label}>Correo Electrónico</Text>
+                    <CustomInput
+                      placeholder="Correo Electrónico"
+                      value={userData.email}
+                      editable={false}
+                    />
+                  </View>
+
+                  <View>
+                    <Text style={styles.label}>Teléfono</Text>
+                    <CustomInput
+                      placeholder="Teléfono"
+                      value={userData.phone}
+                      editable={false}
+                    />
+                  </View>
+                </View>
+
+                {/* Sección de ubicación */}
+                <View style={styles.dataContainer}>
+                  <Text style={styles.title}>Ubicación</Text>
+                  <View>
+                    <Text style={styles.label}>Dirección</Text>
+                    <CustomInput
+                      placeholder="Dirección"
+                      value={userData.address}
+                      editable={false}
+                    />
+                  </View>
+                  <View>
+                    <Text style={styles.label}>Localización </Text>
+                    <CustomInput
+                      placeholder="Localización"
+                      value={`${userData.country}, ${userData.department}, ${userData.city}`}
                       editable={false}
                     />
                   </View>
                 </View>
               </View>
-
-              <View>
-                <Text style={styles.label}>Fecha de Nacimiento</Text>
-                <CustomInput
-                  placeholder="Fecha de Nacimiento"
-                  value={userData.birthday}
-                  editable={false}
-                />
-              </View>
-
-              <View>
-                <Text style={styles.label}>Fecha de Expedición</Text>
-                <CustomInput
-                  placeholder="Fecha de Expedición"
-                  value={userData.date_issuance_document}
-                  editable={false}
-                />
-              </View>
-
-              <View>
-                <Text style={styles.label}>Género</Text>
-                <CustomInput
-                  placeholder="Género"
-                  value={userData.gender_name}
-                  editable={false}
-                />
-              </View>
-            </View>
-
-            <View style={styles.dataContainer}>
-              <Text style={styles.title}>Datos de contacto</Text>
-              <View>
-                <Text style={styles.label}>Correo Electrónico</Text>
-                <CustomInput
-                  placeholder="Correo Electrónico"
-                  value={userData.email}
-                  editable={false}
-                />
-              </View>
-
-              <View>
-                <Text style={styles.label}>Teléfono</Text>
-                <CustomInput
-                  placeholder="Teléfono"
-                  value={userData.phone}
-                  editable={false}
-                />
-              </View>
-            </View>
-
-            <View style={styles.dataContainer}>
-              <Text style={styles.title}>Ubicación</Text>
-              <View>
-                <Text style={styles.label}>Dirección</Text>
-                <CustomInput
-                  placeholder="Dirección"
-                  value={userData.address}
-                  editable={false}
-                />
-              </View>
-              <View>
-                <Text style={styles.label}>Localización </Text>
-                <CustomInput
-                  placeholder="Localización"
-                  value={`${userData.country}, ${userData.department}, ${userData.city}`}
-                  editable={false}
-                />
-              </View>
-            </View>
-          </View>
+            </>
+          )}
         </ScrollView>
       </View>
     </SafeAreaView>
   );
+};
+
+/**
+ * Formatea la fecha en formato español
+ * @param dateString - Fecha en formato ISO
+ * @returns Fecha formateada (ej: 25 de marzo de 2025)
+ */
+const formatDate = (dateString: string | number | Date) => {
+  if (!dateString) return "No disponible";
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(date);
 };
 
 const styles = StyleSheet.create({
@@ -261,7 +313,6 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 24,
   },
   container: {
     flex: 1,
@@ -285,16 +336,22 @@ const styles = StyleSheet.create({
   username: {
     color: colors.darkGray,
     ...typography.medium.medium,
+    marginTop: 8,
   },
   profileImage: {
     width: 60,
     height: 60,
     borderRadius: 10,
-    marginRight: 10,
   },
   pictureContainer: {
     alignItems: "center",
     marginVertical: 20,
+  },
+  avatarContainer: {
+    width: 60,
+    height: 60,
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
     ...typography.semibold.large,
@@ -303,6 +360,18 @@ const styles = StyleSheet.create({
   dataContainer: {
     gap: 8,
     marginBottom: 1,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 40,
+    minHeight: 300,
+  },
+  loaderText: {
+    marginTop: 12,
+    ...typography.regular.medium,
+    color: colors.darkGray,
   },
 });
 

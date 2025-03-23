@@ -9,26 +9,35 @@ import {
   ScrollView,
 } from "react-native";
 import axios from "axios";
-import emailjs from "@emailjs/react-native";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
 import Button from "@/components/Button";
 import CustomInput from "@/components/CustomInput";
 import Header from "@/components/Header";
-import { API_FRONT, API_URL } from "@/services/config";
+import { API_FRONT, API_URL } from "@env";
 
+/**
+ * Pantalla de recuperación de contraseña
+ * Permite al usuario solicitar un correo con un enlace para restablecer su contraseña
+ */
 export default function ForgotPasswordScreen() {
+  // Estado para el correo electrónico
   const [email, setEmail] = useState("");
   const router = useRouter();
 
+  /**
+   * Maneja el proceso de solicitud de restablecimiento de contraseña
+   * Obtiene un token del backend y envía un correo electrónico con un enlace de recuperación
+   */
   const handleSendEmail = async () => {
+    // Validación del campo de correo
     if (!email) {
       Alert.alert("Error", "Por favor, ingresa tu correo electrónico.");
       return;
     }
 
     try {
-      // Primero, obtener el token de recuperación desde el backend
+      // Paso 1: Obtener el token de recuperación desde el backend
       const response = await axios.post(
         `${API_URL}/auth/request-reset-password`,
         {
@@ -38,21 +47,21 @@ export default function ForgotPasswordScreen() {
 
       const resetToken = response.data.token; // Extraer el token desde la respuesta del backend
 
-      // Enviar correo a través de EmailJS
+      // Paso 2: Preparar datos para el servicio de correo (EmailJS)
       const payload = {
-        service_id: "service_c35ss8k", // Reemplaza con tu Service ID
-        template_id: "template_wbz1eil", // Reemplaza con tu Template ID
-        user_id: "hMGKOWPvqqS5l9Qsf", // Reemplaza con tu Public Key
-        accessToken: "Qm3WiVQBa3J59N-sE7iKa", // Aquí reemplazas con tu Private Key
+        service_id: "service_c35ss8k", // ID del servicio en EmailJS
+        template_id: "template_wbz1eil", // ID de la plantilla en EmailJS
+        user_id: "hMGKOWPvqqS5l9Qsf", // Public Key de EmailJS
+        accessToken: "Qm3WiVQBa3J59N-sE7iKa", // Private Key de EmailJS
         template_params: {
           to_name: "Usuario",
           to_email: email,
-          message: `${API_FRONT}/login/resetpassword/${resetToken}`,
-
+          message: `${API_FRONT}/login/resetpassword/${resetToken}`, // URL con token para resetear contraseña
           reply_to: email,
         },
       };
 
+      // Paso 3: Enviar correo a través de la API de EmailJS
       const emailResponse = await fetch(
         "https://api.emailjs.com/api/v1.0/email/send",
         {
@@ -62,6 +71,7 @@ export default function ForgotPasswordScreen() {
         }
       );
 
+      // Verificar respuesta del servicio de correo
       if (emailResponse.ok) {
         Alert.alert(
           "Éxito",
@@ -81,6 +91,7 @@ export default function ForgotPasswordScreen() {
       <Header />
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
+          {/* Contenedor del formulario */}
           <View style={styles.formContainer}>
             <Text style={[typography.semibold.big, { color: colors.darkGray }]}>
               ¿Olvidaste tu contraseña?
@@ -90,6 +101,7 @@ export default function ForgotPasswordScreen() {
               recuperación.
             </Text>
 
+            {/* Campo de entrada para el correo */}
             <CustomInput
               placeholder="Ingresa tu correo electrónico"
               keyboardType="email-address"
@@ -97,9 +109,11 @@ export default function ForgotPasswordScreen() {
               onChangeText={setEmail}
             />
 
+            {/* Botón para enviar solicitud */}
             <Button text="Enviar enlace" onPress={handleSendEmail} />
           </View>
 
+          {/* Pie de página con enlace para volver al login */}
           <View style={styles.footerContainer}>
             <Text style={[typography.medium.regular, { color: colors.gray }]}>
               ¿Volver al inicio de sesión?{" "}
@@ -117,6 +131,9 @@ export default function ForgotPasswordScreen() {
   );
 }
 
+/**
+ * Estilos para los componentes de la pantalla de recuperación de contraseña
+ */
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -124,7 +141,6 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 24,
   },
   container: {
     flex: 1,
@@ -148,5 +164,8 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
   },
-  link: { ...typography.bold.regular, color: colors.accent },
+  link: {
+    ...typography.bold.regular,
+    color: colors.accent,
+  },
 });

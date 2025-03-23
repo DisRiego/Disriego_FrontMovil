@@ -15,9 +15,10 @@ import {
   TouchableOpacity,
   Image,
 } from "react-native";
+import axios from "axios";
+import * as ImagePicker from "expo-image-picker";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
-import * as ImagePicker from "expo-image-picker";
 import Button from "@/components/Button";
 import CustomInput from "@/components/CustomInput";
 import DropdownPicker from "@/components/Dropdown";
@@ -28,15 +29,28 @@ import {
   getCities,
   getCountryPhoneCode,
 } from "@/services/location";
-import { API_URL } from "@/services/config";
-import axios from "axios";
+import { API_URL } from "@env";
 import { getUserData } from "@/services/auth";
 
+/**
+ * Pantalla para completar información del perfil de usuario
+ * Se muestra después del primer inicio de sesión para recolectar datos adicionales
+ */
 export default function CompleteInfo() {
   const router = useRouter();
+
+  // Estados para los campos del formulario
   const [direccion, setDireccion] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [imageName, setImageName] = useState<string | null>(null);
 
+  // Estados para los selectores de ubicación
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [selectedState, setSelectedState] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
+
+  // Estados para las opciones de los selectores
   const [countries, setCountries] = useState<{ name: string; iso2: string }[]>(
     []
   );
@@ -44,14 +58,12 @@ export default function CompleteInfo() {
   const [cities, setCities] = useState<{ name: string; id: string }[]>([]);
   const [phoneCode, setPhoneCode] = useState("");
 
-  const [selectedCountry, setSelectedCountry] = useState("");
-  const [selectedState, setSelectedState] = useState("");
-  const [selectedCity, setSelectedCity] = useState("");
+  // Estado para controlar la carga durante peticiones
   const [loading, setLoading] = useState(false);
 
-  const [imageUri, setImageUri] = useState<string | null>(null);
-  const [imageName, setImageName] = useState<string | null>(null);
-
+  /**
+   * Carga la lista de países al iniciar la pantalla
+   */
   useEffect(() => {
     const fetchCountries = async () => {
       try {
@@ -65,14 +77,22 @@ export default function CompleteInfo() {
     fetchCountries();
   }, []);
 
+  /**
+   * Obtiene los estados/departamentos para un país seleccionado
+   * @param countryCode Código ISO del país seleccionado
+   */
   const fetchStates = async (countryCode: string) => {
+    // Reinicia los campos dependientes
     setSelectedState("");
     setSelectedCity("");
     setCities([]);
+
     try {
+      // Obtiene los estados del país seleccionado
       const data = await getStates(countryCode);
       setStates(data);
 
+      // Obtiene el código telefónico del país seleccionado
       const code = await getCountryPhoneCode(countryCode);
       setPhoneCode(code);
     } catch (error) {
@@ -80,6 +100,11 @@ export default function CompleteInfo() {
     }
   };
 
+  /**
+   * Obtiene las ciudades para un estado/departamento seleccionado
+   * @param countryCode Código ISO del país seleccionado
+   * @param stateCode Código ISO del estado seleccionado
+   */
   const fetchCities = async (countryCode: string, stateCode: string) => {
     setSelectedCity("");
     try {
@@ -90,11 +115,14 @@ export default function CompleteInfo() {
     }
   };
 
+  /**
+   * Abre el selector de imágenes para elegir una foto de perfil
+   */
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [1, 1],
+      aspect: [1, 1], // Mantiene relación de aspecto cuadrada
       quality: 1,
     });
 
@@ -105,7 +133,12 @@ export default function CompleteInfo() {
     }
   };
 
+  /**
+   * Maneja el envío del formulario con los datos del usuario
+   * Realiza la validación y envía los datos al backend
+   */
   const handleRegister = async () => {
+    // Validación de campos obligatorios
     if (
       !direccion ||
       !selectedCountry ||
@@ -120,19 +153,22 @@ export default function CompleteInfo() {
     setLoading(true);
 
     try {
+      // Obtiene los datos del usuario actual
       const userData = await getUserData();
       if (!userData) {
         throw new Error("No se pudo obtener el ID del usuario.");
       }
 
+      // Prepara los datos para enviar al servidor
       const formData = new FormData();
-      formData.append("user_id", userData.id.toString()); // ID del usuario extraído del token
+      formData.append("user_id", userData.id.toString());
       formData.append("country", selectedCountry);
       formData.append("department", selectedState);
       formData.append("city", selectedCity);
       formData.append("address", direccion);
       formData.append("phone", telefono);
 
+      // Añade la imagen de perfil si se seleccionó una
       if (imageUri && imageName) {
         formData.append("profile_picture", {
           uri: imageUri,
@@ -146,6 +182,7 @@ export default function CompleteInfo() {
         Object.fromEntries(formData as any)
       );
 
+      // Realiza la petición POST al servidor
       const response = await axios.post(
         `${API_URL}/users/first-login-register`,
         formData,
@@ -178,6 +215,7 @@ export default function CompleteInfo() {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
           >
             <ScrollView contentContainerStyle={styles.scrollContainer}>
+              {/* Formulario de datos del perfil */}
               <View style={styles.formContainer}>
                 <Text
                   style={[typography.semibold.big, { color: colors.darkGray }]}
@@ -190,6 +228,7 @@ export default function CompleteInfo() {
                   Ingresa tus datos y asegúrate de que sean correctos.
                 </Text>
 
+                {/* Campo de dirección */}
                 <Text style={styles.label}>Dirección</Text>
                 <CustomInput
                   placeholder="Dirección"
@@ -197,6 +236,7 @@ export default function CompleteInfo() {
                   onChangeText={setDireccion}
                 />
 
+                {/* Selector de país */}
                 <Text style={styles.label}>País</Text>
                 <DropdownPicker
                   selectedValue={selectedCountry}
@@ -210,6 +250,7 @@ export default function CompleteInfo() {
                   ]}
                 />
 
+                {/* Selector de departamento/estado */}
                 <Text style={styles.label}>Departamento</Text>
                 <DropdownPicker
                   selectedValue={selectedState}
@@ -224,6 +265,7 @@ export default function CompleteInfo() {
                   disabled={!selectedCountry}
                 />
 
+                {/* Selector de ciudad */}
                 <Text style={styles.label}>Ciudad</Text>
                 <DropdownPicker
                   selectedValue={selectedCity}
@@ -235,6 +277,7 @@ export default function CompleteInfo() {
                   disabled={!selectedState}
                 />
 
+                {/* Campo de teléfono */}
                 <Text style={styles.label}>Teléfono</Text>
                 <CustomInput
                   placeholder="Teléfono"
@@ -245,6 +288,7 @@ export default function CompleteInfo() {
                   keyboardType="numeric"
                 />
 
+                {/* Sección de imagen de perfil */}
                 <Text style={styles.subtitle}>
                   Subir foto de perfil (Opcional)
                 </Text>
@@ -264,6 +308,7 @@ export default function CompleteInfo() {
                 </TouchableOpacity>
               </View>
 
+              {/* Pie de página con botón de registro */}
               <View style={styles.footerContainer}>
                 <Button
                   text={
@@ -285,9 +330,17 @@ export default function CompleteInfo() {
   );
 }
 
+/**
+ * Estilos para los componentes de la pantalla CompleteInfo
+ */
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.base },
-  scrollContainer: { flexGrow: 1 },
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.base,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+  },
   container: {
     flex: 1,
     alignItems: "center",
@@ -311,7 +364,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     alignItems: "center",
   },
-  label: { marginBottom: 8, ...typography.medium.regular, color: colors.gray },
+  label: {
+    marginBottom: 8,
+    ...typography.medium.regular,
+    color: colors.gray,
+  },
   subtitle: {
     ...typography.medium.regular,
     color: colors.gray,
