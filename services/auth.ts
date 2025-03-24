@@ -53,6 +53,10 @@ export const login = async (email: string, password: string) => {
       await AsyncStorage.multiSet([
         ["token", tokenCache],
         ["email", email],
+        // Guardar datos de usuario completos
+        ["userData", JSON.stringify(response.data)],
+        // Establecer flag de first login basado en el token
+        ["isFirstLogin", response.data.first_login_complete ? "false" : "true"],
       ]);
     } else {
       throw new Error("Token is null");

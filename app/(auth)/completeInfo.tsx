@@ -13,7 +13,6 @@ import {
   Keyboard,
   Platform,
   TouchableOpacity,
-  Image,
 } from "react-native";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
@@ -225,87 +224,100 @@ export default function CompleteInfo() {
                 <Text
                   style={[typography.medium.regular, { color: colors.gray }]}
                 >
-                  Ingresa tus datos y asegúrate de que sean correctos.
+                  Por favor, ingresa los siguientes datos y asegúrate de que tu
+                  información sea correcta.
                 </Text>
 
                 {/* Campo de dirección */}
-                <Text style={styles.label}>Dirección</Text>
-                <CustomInput
-                  placeholder="Dirección"
-                  value={direccion}
-                  onChangeText={setDireccion}
-                />
+                <View style={{ width: "100%" }}>
+                  <Text style={styles.label}>Dirección</Text>
+                  <CustomInput
+                    placeholder="Dirección"
+                    value={direccion}
+                    onChangeText={setDireccion}
+                  />
+                </View>
 
                 {/* Selector de país */}
-                <Text style={styles.label}>País</Text>
-                <DropdownPicker
-                  selectedValue={selectedCountry}
-                  onValueChange={(value) => {
-                    setSelectedCountry(value);
-                    fetchStates(value);
-                  }}
-                  options={[
-                    { label: "Selecciona una opción", value: "" },
-                    ...countries.map((c) => ({ label: c.name, value: c.iso2 })),
-                  ]}
-                />
+                <View style={{ width: "100%" }}>
+                  <Text style={styles.label}>País</Text>
+                  <DropdownPicker
+                    selectedValue={selectedCountry}
+                    onValueChange={(value) => {
+                      setSelectedCountry(value);
+                      fetchStates(value);
+                    }}
+                    options={[
+                      { label: "Selecciona una opción", value: "" },
+                      ...countries.map((c) => ({
+                        label: c.name,
+                        value: c.iso2,
+                      })),
+                    ]}
+                  />
+                </View>
 
                 {/* Selector de departamento/estado */}
-                <Text style={styles.label}>Departamento</Text>
-                <DropdownPicker
-                  selectedValue={selectedState}
-                  onValueChange={(value) => {
-                    setSelectedState(value);
-                    fetchCities(selectedCountry, value);
-                  }}
-                  options={[
-                    { label: "Selecciona una opción", value: "" },
-                    ...states.map((s) => ({ label: s.name, value: s.iso2 })),
-                  ]}
-                  disabled={!selectedCountry}
-                />
+                <View style={{ width: "100%" }}>
+                  <Text style={styles.label}>Departamento</Text>
+                  <DropdownPicker
+                    selectedValue={selectedState}
+                    onValueChange={(value) => {
+                      setSelectedState(value);
+                      fetchCities(selectedCountry, value);
+                    }}
+                    options={[
+                      { label: "Selecciona una opción", value: "" },
+                      ...states.map((s) => ({ label: s.name, value: s.iso2 })),
+                    ]}
+                    disabled={!selectedCountry}
+                  />
+                </View>
 
                 {/* Selector de ciudad */}
-                <Text style={styles.label}>Ciudad</Text>
-                <DropdownPicker
-                  selectedValue={selectedCity}
-                  onValueChange={setSelectedCity}
-                  options={[
-                    { label: "Selecciona una opción", value: "" },
-                    ...cities.map((c) => ({ label: c.name, value: c.id })),
-                  ]}
-                  disabled={!selectedState}
-                />
+                <View style={{ width: "100%" }}>
+                  <Text style={styles.label}>Ciudad</Text>
+                  <DropdownPicker
+                    selectedValue={selectedCity}
+                    onValueChange={setSelectedCity}
+                    options={[
+                      { label: "Selecciona una opción", value: "" },
+                      ...cities.map((c) => ({ label: c.name, value: c.id })),
+                    ]}
+                    disabled={!selectedState}
+                  />
+                </View>
 
                 {/* Campo de teléfono */}
-                <Text style={styles.label}>Teléfono</Text>
-                <CustomInput
-                  placeholder="Teléfono"
-                  value={telefono}
-                  onChangeText={(text) =>
-                    setTelefono(text.replace(/[^0-9]/g, ""))
-                  }
-                  keyboardType="numeric"
-                />
-
-                {/* Sección de imagen de perfil */}
-                <Text style={styles.subtitle}>
-                  Subir foto de perfil (Opcional)
-                </Text>
-                {imageUri && (
-                  <Image
-                    source={{ uri: imageUri }}
-                    style={styles.profileImage}
+                <View style={{ width: "100%" }}>
+                  <Text style={styles.label}>Teléfono</Text>
+                  <CustomInput
+                    placeholder="Teléfono"
+                    value={telefono}
+                    onChangeText={(text) =>
+                      setTelefono(text.replace(/[^0-9]/g, ""))
+                    }
+                    keyboardType="numeric"
                   />
-                )}
-                <TouchableOpacity
-                  style={styles.uploadButton}
-                  onPress={pickImage}
-                >
-                  <Text style={styles.uploadText}>
-                    {imageName ? "Cambiar imagen" : "Subir imagen"}
+                </View>
+
+                {/* Seccion de imagen */}
+                <View style={{ width: "100%", gap: "12" }}>
+                  <Text style={styles.subtitle}>
+                    Subir una foto de perfil (Opcional)
                   </Text>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.uploadContainer}
+                    onPress={pickImage}
+                  >
+                    <Text style={styles.uploadText}>
+                      {imageName
+                        ? "Imagen seleccionada"
+                        : "Selecciona la imagen aquí"}
+                    </Text>
+                    <Text style={styles.uploadButtonText}>Subir</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {/* Pie de página con botón de registro */}
@@ -374,46 +386,24 @@ const styles = StyleSheet.create({
     color: colors.gray,
     textAlign: "left",
   },
-  imageUploadContainer: {
+  uploadContainer: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
     width: "100%",
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 15,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    color: colors.gray,
-    backgroundColor: colors.white,
-    ...typography.medium.regular,
-    justifyContent: "space-between",
-  },
-  imagePickerButton: {
-    flex: 1,
-  },
-  uploadButton: {
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: 12,
-    alignItems: "center",
-    paddingHorizontal: 18,
-    backgroundColor: colors.base,
-  },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginTop: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: colors.white,
   },
   uploadText: {
     ...typography.medium.regular,
     color: colors.gray,
   },
-  fileName: {
-    marginTop: 5,
-    textAlign: "center",
-    color: colors.primary,
+  uploadButtonText: {
     ...typography.medium.regular,
+    color: colors.primary,
   },
 });

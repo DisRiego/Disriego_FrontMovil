@@ -37,24 +37,31 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    const checkToken = async () => {
+    const checkFirstLogin = async () => {
       try {
         const token = await AsyncStorage.getItem("token");
-        console.log(
-          "Token almacenado:",
-          token ? token : "No hay token guardado"
-        );
+        const isFirstLogin = await AsyncStorage.getItem("isFirstLogin");
 
-        // Si hay token almacenado, redirigir al home
-        if (token) {
+        console.log("Token almacenado:", token);
+        console.log("Es primer login:", isFirstLogin);
+
+        // Si hay token pero no se ha establecido isFirstLogin, considerarlo primer login
+        if (token && (isFirstLogin === null || isFirstLogin === undefined)) {
+          await AsyncStorage.setItem("isFirstLogin", "true");
+          router.replace("/completeInfo");
+          return;
+        }
+
+        // Si hay token y ya no es primer login, redirigir al home
+        if (token && isFirstLogin === "false") {
           router.replace("(tabs)/home");
         }
       } catch (error) {
-        console.error("Error al verificar el token:", error);
+        console.error("Error al verificar el primer login:", error);
       }
     };
 
-    checkToken();
+    checkFirstLogin();
   }, [router]);
 
   // Función para enviar correo de activación
@@ -121,9 +128,7 @@ export default function LoginScreen() {
       console.log("Token obtenido:", token);
 
       if (token) {
-        await AsyncStorage.setItem("token", token);
-
-        // Verificar si es el primer inicio de sesión
+        // Si la autenticación es exitosa, verificar el primer login
         const isFirstLogin = await AsyncStorage.getItem("isFirstLogin");
 
         if (isFirstLogin === "true" || isFirstLogin === null) {
