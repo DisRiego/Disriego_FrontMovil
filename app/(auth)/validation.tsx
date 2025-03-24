@@ -134,7 +134,10 @@ export default function ValidationScreen() {
         "Ocurrió un error inesperado.";
 
       if (errorMessage) {
-        Alert.alert("Error", errorMessage);
+        Alert.alert(
+          "Error",
+          "Este usuario ya completó el pre-registro. Por favor, inicie sesión o restablezca su contraseña."
+        );
       } else {
         Alert.alert("Error", "Error desconocido. Inténtalo de nuevo.");
       }

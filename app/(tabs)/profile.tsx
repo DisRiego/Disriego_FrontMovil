@@ -82,7 +82,7 @@ const Profile = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      router.push("/login");
+      router.replace("/login");
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
     }

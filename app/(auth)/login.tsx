@@ -6,6 +6,7 @@ import {
   Alert,
   StyleSheet,
   SafeAreaView,
+  Image,
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
@@ -20,82 +21,55 @@ import { typography } from "@/config/typography";
 import Button from "@/components/Button";
 import CustomInput from "@/components/CustomInput";
 import Header from "@/components/Header";
-// import LoginButton from "@/components/LoginButton";
+import LoginButton from "@/components/LoginButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Eye, EyeOff } from "lucide-react-native";
 
-/**
- * Pantalla de inicio de sesión que permite a los usuarios acceder a su cuenta
- * Verifica si ya hay una sesión activa y redirecciona según corresponda
- */
 export default function LoginScreen() {
   const router = useRouter();
-
-  // Estados para los campos del formulario
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-
-  // Estados para manejo de errores
+  const [loading, setLoading] = useState(false);
   const [emailError, setEmailError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Estado para controlar la carga durante la petición
-  const [loading, setLoading] = useState(false);
-
-  /**
-   * Verifica si existe una sesión activa al cargar la pantalla
-   * Redirecciona al usuario según su estado de registro
-   */
   useEffect(() => {
-    const checkLoginStatus = async () => {
+    const checkToken = async () => {
       try {
         const token = await AsyncStorage.getItem("token");
-        const firstLogin = await AsyncStorage.getItem("first_login");
-
         console.log(
           "Token almacenado:",
           token ? token : "No hay token guardado"
         );
-        console.log("First Login:", firstLogin);
 
+        // Si hay token almacenado, redirigir al home
         if (token) {
-          if (firstLogin === "false") {
-            router.replace("/completeInfo");
-          } else {
-            router.replace("(tabs)/home");
-          }
+          router.replace("(tabs)/home");
         }
       } catch (error) {
-        console.error("Error al verificar el estado de sesión:", error);
+        console.error("Error al verificar el token:", error);
       }
     };
 
-    checkLoginStatus();
+    checkToken();
   }, [router]);
 
-  /**
-   * Maneja el proceso de inicio de sesión
-   * Valida campos, realiza la petición y redirecciona según el resultado
-   */
   const handleLogin = async () => {
-    // Validación de campos
     if (!email || !password) {
-      Alert.alert(
-        "Error",
-        "Por favor, completa todos los campos obligatorios."
-      );
+      Alert.alert("Error", "Faltan campos por completar.");
       return;
     }
 
     setLoading(true);
     try {
-      // Llamada al servicio de autenticación
-      const { token, first_login } = await login(email, password);
+      const token = await login(email, password);
+      console.log("Token obtenido:", token);
 
       if (token) {
+        await AsyncStorage.setItem("token", token);
         Alert.alert("Éxito", "Inicio de sesión exitoso.");
-        router.replace(first_login ? "/completeInfo" : "(tabs)/home");
+        router.replace("(tabs)/home");
       } else {
         throw new Error("Credenciales incorrectas.");
       }
@@ -118,7 +92,6 @@ export default function LoginScreen() {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
           >
             <ScrollView contentContainerStyle={styles.scrollContainer}>
-              {/* Contenedor del formulario */}
               <View style={styles.formContainer}>
                 <Text
                   style={[typography.semibold.big, { color: colors.darkGray }]}
@@ -132,7 +105,6 @@ export default function LoginScreen() {
                   cuenta.
                 </Text>
 
-                {/* Input de correo electrónico */}
                 <CustomInput
                   placeholder="Correo Electrónico"
                   keyboardType="email-address"
@@ -146,7 +118,6 @@ export default function LoginScreen() {
                   style={[emailError && styles.inputError]}
                 />
 
-                {/* Input de contraseña con toggle para mostrar/ocultar */}
                 <CustomInput
                   placeholder="Contraseña"
                   secureTextEntry={!showPassword}
@@ -172,7 +143,6 @@ export default function LoginScreen() {
                   }
                 />
 
-                {/* Enlace para recuperar contraseña */}
                 <View style={styles.forgotPasswordContainer}>
                   <Text
                     style={[typography.medium.regular, { color: colors.gray }]}
@@ -188,10 +158,6 @@ export default function LoginScreen() {
                   </Text>
                 </View>
 
-                {/* 
-                Sección de inicio de sesión con proveedores (Google/Outlook)
-                Actualmente desactivada
-                
                 <Image
                   source={require("../../assets/images/divisor.png")}
                   style={styles.divisor}
@@ -209,10 +175,8 @@ export default function LoginScreen() {
                     onPress={() => console.log("Outlook Login")}
                   />
                 </View>
-                */}
               </View>
 
-              {/* Pie de página con botón de inicio de sesión y enlace de registro */}
               <View style={styles.footerContainer}>
                 <Button
                   text={
@@ -231,7 +195,7 @@ export default function LoginScreen() {
                   ¿No tienes una cuenta?
                   <Text
                     style={styles.link}
-                    onPress={() => router.push("/validation")}
+                    onPress={() => router.push("/register")}
                   >
                     {" "}
                     Regístrate aquí
@@ -246,16 +210,11 @@ export default function LoginScreen() {
   );
 }
 
-/**
- * Estilos para los componentes de la pantalla de inicio de sesión
- */
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.base,
-  },
+  safeArea: { flex: 1, backgroundColor: colors.base },
   scrollContainer: {
     flexGrow: 1,
+    paddingBottom: 24,
   },
   container: {
     flex: 1,

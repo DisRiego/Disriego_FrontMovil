@@ -91,7 +91,7 @@ const SeeProfile = () => {
             gender_name: data.gender_name || "",
             type_document_name: data.type_document_name || "",
             document_number: data.document_number?.toString() || "",
-            birthday: data.birthday || "No disponible",
+            birthday: formatDate(data.birthday),
             date_issuance_document: formatDate(data.date_issuance_document),
             country: locationNames.country,
             department: locationNames.department,

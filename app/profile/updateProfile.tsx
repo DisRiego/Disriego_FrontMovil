@@ -177,6 +177,51 @@ const UpdateProfile = () => {
   );
 
   /**
+   * Maneja el cambio de país y actualiza los estados
+   */
+  const handleCountryChange = useCallback(async (countryCode: string) => {
+    try {
+      setSelectedCountry(countryCode);
+      setSelectedState("");
+      setSelectedCity("");
+      setCities([]);
+
+      if (countryCode) {
+        const statesData = await getStates(countryCode);
+        setStates(statesData);
+      } else {
+        setStates([]);
+      }
+    } catch (error) {
+      console.error("Error al cargar estados:", error);
+      setStates([]);
+    }
+  }, []);
+
+  /**
+   * Maneja el cambio de estado/departamento y actualiza las ciudades
+   */
+  const handleStateChange = useCallback(
+    async (stateCode: string) => {
+      try {
+        setSelectedState(stateCode);
+        setSelectedCity("");
+
+        if (selectedCountry && stateCode) {
+          const citiesData = await getCities(selectedCountry, stateCode);
+          setCities(citiesData);
+        } else {
+          setCities([]);
+        }
+      } catch (error) {
+        console.error("Error al cargar ciudades:", error);
+        setCities([]);
+      }
+    },
+    [selectedCountry]
+  );
+
+  /**
    * Guarda los cambios del perfil en el servidor
    */
   const handleSaveChanges = async () => {
@@ -367,7 +412,7 @@ const UpdateProfile = () => {
                   <Text style={styles.label}>País</Text>
                   <DropdownPicker
                     selectedValue={selectedCountry}
-                    onValueChange={setSelectedCountry}
+                    onValueChange={handleCountryChange}
                     options={countryOptions}
                   />
                 </View>
@@ -376,7 +421,7 @@ const UpdateProfile = () => {
                   <Text style={styles.label}>Departamento</Text>
                   <DropdownPicker
                     selectedValue={selectedState}
-                    onValueChange={setSelectedState}
+                    onValueChange={handleStateChange}
                     options={stateOptions}
                     disabled={!selectedCountry}
                   />
