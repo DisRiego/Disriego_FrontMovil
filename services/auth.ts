@@ -17,6 +17,13 @@ interface User {
   roles: { id: number; name: string }[];
 }
 
+// Interfaz para el error específico de cuenta no activada
+interface NotActivatedError {
+  status: string;
+  message: string;
+  token: string;
+}
+
 // Cache en memoria para evitar llamadas innecesarias a AsyncStorage
 let tokenCache: string | null = null;
 let emailCache: string | null = null;
@@ -54,10 +61,35 @@ export const login = async (email: string, password: string) => {
     return tokenCache;
   } catch (error: any) {
     console.error("Error en login:", error);
+
+    // Manejar caso específico de cuenta no activada
+    if (
+      error.response?.status === 401 &&
+      typeof error.response?.data?.detail === "object" &&
+      error.response?.data?.detail.status === "false"
+    ) {
+      const notActivatedError = error.response.data.detail as NotActivatedError;
+      // Puedes guardar el token temporal si es necesario
+      await AsyncStorage.setItem("activation_token", notActivatedError.token);
+      throw new Error(notActivatedError.message);
+    }
+
+    // Manejar caso de cuenta inactiva o bloqueada
+    if (
+      error.response?.status === 401 &&
+      error.response?.data?.detail ===
+        "Cuenta inactiva o bloqueada. No se permite el acceso."
+    ) {
+      throw new Error("Cuenta inactiva o bloqueada. No se permite el acceso.");
+    }
+
+    // Otros errores
     throw new Error(
       error.response?.status === 401
         ? "Credenciales incorrectas."
-        : error.response?.data?.message || "Ocurrió un error inesperado."
+        : error.response?.data?.detail ||
+          error.response?.data?.message ||
+          "Ocurrió un error inesperado."
     );
   }
 };

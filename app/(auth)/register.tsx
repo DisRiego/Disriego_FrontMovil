@@ -81,7 +81,7 @@ export default function RegisterScreen() {
       console.log("Token de activación generado:", activationToken);
 
       // URL de activación que se incluirá en el correo
-      const activationUrl = `http://192.168.1.54:8002/users/activate-account/${activationToken}`;
+      const activationUrl = `http://localhost:5173/signup/${activationToken}`;
 
       // Configuración del servicio de correo EmailJS
       const payload = {
