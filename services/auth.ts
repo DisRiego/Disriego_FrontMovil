@@ -46,6 +46,9 @@ export const login = async (email: string, password: string) => {
       throw new Error("Credenciales incorrectas.");
     }
 
+    // Decodificar el token para obtener la información
+    const decodedToken = jwtDecode(response.data.access_token) as any;
+
     tokenCache = response.data.access_token; // Cache en memoria
     emailCache = email;
 
@@ -55,8 +58,13 @@ export const login = async (email: string, password: string) => {
         ["email", email],
         // Guardar datos de usuario completos
         ["userData", JSON.stringify(response.data)],
+        // Guardar first_login_complete como string explícito
+        [
+          "first_login_complete",
+          decodedToken.first_login_complete ? "true" : "false",
+        ],
         // Establecer flag de first login basado en el token
-        ["isFirstLogin", response.data.first_login_complete ? "false" : "true"],
+        ["isFirstLogin", decodedToken.first_login_complete ? "false" : "true"],
       ]);
     } else {
       throw new Error("Token is null");

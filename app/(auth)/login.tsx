@@ -127,32 +127,36 @@ export default function LoginScreen() {
       const token = await login(email, password);
       console.log("Token obtenido:", token);
 
-      if (token) {
-        // Si la autenticación es exitosa, verificar el primer login
-        const isFirstLogin = await AsyncStorage.getItem("isFirstLogin");
+      // Obtener datos de usuario completos
+      const userDataString = await AsyncStorage.getItem("userData");
+      const userData = userDataString ? JSON.parse(userDataString) : null;
 
-        if (isFirstLogin === "true" || isFirstLogin === null) {
-          // Si es el primer inicio de sesión, marcar que ya no lo será la próxima vez
-          await AsyncStorage.setItem("isFirstLogin", "false");
-          // Redirigir a la pantalla de completar información
-          Alert.alert(
-            "Bienvenido",
-            "Por favor, completa tu información de perfil."
-          );
+      console.log("Datos de usuario completos:", userData);
+      console.log("first_login_complete:", userData?.first_login_complete);
+
+      if (token) {
+        const firstLoginComplete = await AsyncStorage.getItem(
+          "first_login_complete"
+        );
+
+        if (firstLoginComplete === "false") {
           router.replace("/completeInfo");
         } else {
-          // Si no es el primer inicio de sesión, redirigir al home
-          Alert.alert("Éxito", "Inicio de sesión exitoso.");
           router.replace("(tabs)/home");
         }
-      } else {
-        throw new Error("Credenciales incorrectas.");
       }
-    } catch (error: any) {
-      console.error("Error de login:", error.message);
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Error de login:", error.message);
+      } else {
+        console.error("Error de login:", error);
+      }
 
       // Manejar caso específico de cuenta no activada
-      if (error.message.includes("Cuenta no activada")) {
+      if (
+        error instanceof Error &&
+        error.message.includes("Cuenta no activada")
+      ) {
         // Obtener el token de activación desde AsyncStorage que el servicio de auth debió guardar
         const activationToken = await AsyncStorage.getItem("activation_token");
 
@@ -177,7 +181,10 @@ export default function LoginScreen() {
             "No se encontró el token de activación. Por favor, intente registrarse nuevamente."
           );
         }
-      } else if (error.message.includes("Cuenta inactiva o bloqueada")) {
+      } else if (
+        error instanceof Error &&
+        error.message.includes("Cuenta inactiva o bloqueada")
+      ) {
         Alert.alert(
           "Cuenta bloqueada",
           "Su cuenta está inactiva o bloqueada. Por favor contacte con soporte."
