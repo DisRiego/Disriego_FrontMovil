@@ -19,8 +19,10 @@ import LotCard from "@/components/LotCard";
 import LotInfoCard from "@/components/LotInfoCard";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
+import { useRouter } from "expo-router";
 
 export default function DetailsLots() {
+  const router = useRouter();
   /**
    * Obtiene los parámetros pasados durante la navegación
    * Incluye información completa del lote seleccionado
@@ -74,7 +76,21 @@ export default function DetailsLots() {
                 paymentInterval={paymentInterval as string}
                 plantingDate={plantingDate as string}
                 estimatedHarvestDate={estimatedHarvestDate as string}
-                onEditPress={() => console.log("Abrir formulario de edición")}
+                onEditPress={() => {
+                  console.log("ID enviado a UpdateCrops:", id);
+
+                  router.push({
+                    pathname: "properties/updateCrops",
+                    params: {
+                      lotId: id,
+                      name,
+                      cropType,
+                      paymentInterval,
+                      plantingDate,
+                      estimatedHarvestDate,
+                    },
+                  });
+                }}
               />
             </View>
           </View>
