@@ -274,7 +274,7 @@ export default function LoginScreen() {
                     </Text>
                   </Text>
                 </View>
-
+                {/*
                 <Image
                   source={require("../../assets/images/divisor.png")}
                   style={styles.divisor}
@@ -292,6 +292,7 @@ export default function LoginScreen() {
                     onPress={() => console.log("Outlook Login")}
                   />
                 </View>
+                */}
               </View>
 
               <View style={styles.footerContainer}>
