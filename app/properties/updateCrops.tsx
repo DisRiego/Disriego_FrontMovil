@@ -73,6 +73,9 @@ export default function UpdateCrops() {
   const [showHarvestPicker, setShowHarvestPicker] = useState(false);
   const [savingChanges, setSavingChanges] = useState(false);
 
+  // Overall loading state
+  const [loading, setLoading] = useState(true);
+
   // Fetch crop types
   useEffect(() => {
     const fetchCropTypes = async () => {
@@ -91,7 +94,6 @@ export default function UpdateCrops() {
             ...formattedOptions,
           ]);
 
-          // If there's an initial crop type, find and set its corresponding value
           if (initialCropType) {
             const matchedCrop = formattedOptions.find(
               (crop: { label: string }) => crop.label === initialCropType
@@ -135,7 +137,6 @@ export default function UpdateCrops() {
             ...formattedOptions,
           ]);
 
-          // If there's an initial payment interval, find and set its corresponding value
           if (initialPaymentInterval) {
             const matchedInterval = formattedOptions.find(
               (interval: { label: string }) =>
@@ -161,6 +162,13 @@ export default function UpdateCrops() {
 
     fetchPaymentIntervals();
   }, []);
+
+  // Manage overall loading state
+  useEffect(() => {
+    if (!loadingCrops && !loadingPayments) {
+      setLoading(false);
+    }
+  }, [loadingCrops, loadingPayments]);
 
   // Handle planting date change
   const handlePlantingDateChange = (event: any, selectedDate?: Date) => {
@@ -219,6 +227,7 @@ export default function UpdateCrops() {
 
       if (data.success) {
         Alert.alert("Éxito", "Los detalles del cultivo han sido actualizados.");
+        router.push("/properties/myProperties");
       } else {
         Alert.alert(
           "Error",
@@ -236,119 +245,125 @@ export default function UpdateCrops() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <KeyboardAvoidingView
-            style={styles.container}
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-          >
-            <ScrollView contentContainerStyle={styles.scrollContainer}>
-              <CustomHeader
-                title="Detalles del cultivo"
-                backRoute={() => router.back()}
-              />
+        <CustomHeader
+          title="Detalles del cultivo"
+          backRoute="/properties/myProperties"
+        />
 
-              <View style={styles.textContainer}>
-                <Text style={[typography.regular.big, { color: colors.gray }]}>
-                  Por favor, complete el siguiente formulario y luego de a
-                  confirmar para editar los detalles del cultivo.
-                </Text>
+        {loading ? (
+          <View style={styles.loaderContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loaderText}>Cargando datos...</Text>
+          </View>
+        ) : (
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <KeyboardAvoidingView
+              style={styles.container}
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+            >
+              <ScrollView contentContainerStyle={styles.scrollContainer}>
+                <View style={styles.textContainer}>
+                  <Text
+                    style={[typography.regular.big, { color: colors.gray }]}
+                  >
+                    Por favor, complete el siguiente formulario y luego de a
+                    confirmar para editar los detalles del cultivo.
+                  </Text>
 
-                <View style={styles.formContainer}>
-                  {/* Dropdown for Crop Type */}
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.label}>Tipo de cultivo</Text>
-                    {loadingCrops ? (
-                      <ActivityIndicator size="small" color={colors.primary} />
-                    ) : (
+                  <View style={styles.formContainer}>
+                    {/* Dropdown for Crop Type */}
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.label}>Tipo de cultivo</Text>
                       <DropdownPicker
                         selectedValue={selectedCrop}
                         onValueChange={setSelectedCrop}
                         options={cropOptions}
                       />
-                    )}
-                  </View>
+                    </View>
 
-                  {/* Dropdown for Payment Interval */}
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.label}>Intervalo de Pago</Text>
-                    {loadingPayments ? (
-                      <ActivityIndicator size="small" color={colors.primary} />
-                    ) : (
+                    {/* Dropdown for Payment Interval */}
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.label}>Intervalo de Pago</Text>
                       <DropdownPicker
                         selectedValue={selectedInterval}
                         onValueChange={setSelectedInterval}
                         options={paymentOptions}
                       />
-                    )}
+                    </View>
+
+                    {/* Planting Date Picker */}
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.label}>Fecha de siembra</Text>
+                      <TouchableOpacity
+                        onPress={() => setShowPlantingPicker(true)}
+                      >
+                        <CustomInput
+                          placeholder="Seleccione una fecha"
+                          value={
+                            plantingDate
+                              ? plantingDate.toLocaleDateString()
+                              : ""
+                          }
+                          editable={false}
+                        />
+                      </TouchableOpacity>
+                      {showPlantingPicker && (
+                        <DateTimePicker
+                          value={plantingDate || new Date()}
+                          mode="date"
+                          display="default"
+                          onChange={handlePlantingDateChange}
+                        />
+                      )}
+                    </View>
+
+                    {/* Harvest Date Picker */}
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.label}>
+                        Fecha estimada de cosecha
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => setShowHarvestPicker(true)}
+                      >
+                        <CustomInput
+                          placeholder="Seleccione una fecha"
+                          value={
+                            harvestDate ? harvestDate.toLocaleDateString() : ""
+                          }
+                          editable={false}
+                        />
+                      </TouchableOpacity>
+                      {showHarvestPicker && (
+                        <DateTimePicker
+                          value={harvestDate || new Date()}
+                          mode="date"
+                          display="default"
+                          minimumDate={plantingDate || new Date()}
+                          onChange={handleHarvestDateChange}
+                        />
+                      )}
+                    </View>
                   </View>
 
-                  {/* Planting Date Picker */}
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.label}>Fecha de siembra</Text>
-                    <TouchableOpacity
-                      onPress={() => setShowPlantingPicker(true)}
-                    >
-                      <CustomInput
-                        placeholder="Seleccione una fecha"
-                        value={
-                          plantingDate ? plantingDate.toLocaleDateString() : ""
-                        }
-                        editable={false}
-                      />
-                    </TouchableOpacity>
-                    {showPlantingPicker && (
-                      <DateTimePicker
-                        value={plantingDate || new Date()}
-                        mode="date"
-                        display="default"
-                        onChange={handlePlantingDateChange}
-                      />
-                    )}
-                  </View>
-
-                  {/* Harvest Date Picker */}
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.label}>Fecha estimada de cosecha</Text>
-                    <TouchableOpacity
-                      onPress={() => setShowHarvestPicker(true)}
-                    >
-                      <CustomInput
-                        placeholder="Seleccione una fecha"
-                        value={
-                          harvestDate ? harvestDate.toLocaleDateString() : ""
-                        }
-                        editable={false}
-                      />
-                    </TouchableOpacity>
-                    {showHarvestPicker && (
-                      <DateTimePicker
-                        value={harvestDate || new Date()}
-                        mode="date"
-                        display="default"
-                        minimumDate={plantingDate || new Date()}
-                        onChange={handleHarvestDateChange}
-                      />
-                    )}
+                  {/* Save Changes Button */}
+                  <View style={styles.footerContainer}>
+                    <Button
+                      text={
+                        savingChanges ? (
+                          <ActivityIndicator size={28} color="white" />
+                        ) : (
+                          "Guardar cambios"
+                        )
+                      }
+                      onPress={handleSaveChanges}
+                      disabled={savingChanges}
+                    />
                   </View>
                 </View>
-                {/* Save Changes Button */}
-                <View style={styles.footerContainer}>
-                  <Button
-                    text={
-                      savingChanges ? (
-                        <ActivityIndicator size={28} color="white" />
-                      ) : (
-                        "Guardar cambios"
-                      )
-                    }
-                    onPress={handleSaveChanges}
-                    disabled={savingChanges}
-                  />
-                </View>
-              </View>
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </TouchableWithoutFeedback>
+              </ScrollView>
+            </KeyboardAvoidingView>
+          </TouchableWithoutFeedback>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -360,6 +375,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.base,
     paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
+  container: {
+    flex: 1,
+    paddingBottom: 16,
+    alignItems: "center",
+    justifyContent: "flex-start",
+    backgroundColor: colors.base,
+  },
   scrollContainer: {
     flexGrow: 1,
   },
@@ -368,23 +390,6 @@ const styles = StyleSheet.create({
     gap: 16,
     width: "100%",
     paddingVertical: 20,
-  },
-  container: {
-    flex: 1,
-    paddingBottom: 16,
-    alignItems: "center",
-    justifyContent: "flex-start",
-    backgroundColor: colors.base,
-  },
-  textContainer: {
-    gap: 14,
-    width: "100%",
-    paddingTop: 10,
-    paddingHorizontal: 20,
-    alignItems: "flex-start",
-  },
-  inputContainer: {
-    width: "100%",
   },
   label: {
     marginBottom: 8,
@@ -398,5 +403,27 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     paddingHorizontal: 20,
     alignItems: "center",
+  },
+  textContainer: {
+    flex: 1,
+    width: "100%",
+    paddingTop: 10,
+    paddingHorizontal: 20,
+    alignItems: "flex-start",
+  },
+  inputContainer: {
+    width: "100%",
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 40,
+    minHeight: 300,
+  },
+  loaderText: {
+    marginTop: 12,
+    ...typography.regular.medium,
+    color: colors.darkGray,
   },
 });
