@@ -401,7 +401,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
     paddingTop: 24,
     paddingBottom: 8,
-    paddingHorizontal: 20,
     alignItems: "center",
   },
   textContainer: {
