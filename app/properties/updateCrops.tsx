@@ -22,7 +22,7 @@ import { API_URL } from "@env";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import CustomInput from "@/components/CustomInput";
 import Button from "@/components/Button";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 
 export default function UpdateCrops() {
   const params = useLocalSearchParams();
@@ -244,7 +244,7 @@ export default function UpdateCrops() {
             <ScrollView contentContainerStyle={styles.scrollContainer}>
               <CustomHeader
                 title="Detalles del cultivo"
-                backRoute="/properties/myProperties"
+                backRoute={() => router.back()}
               />
 
               <View style={styles.textContainer}>

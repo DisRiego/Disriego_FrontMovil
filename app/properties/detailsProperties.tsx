@@ -133,13 +133,12 @@ export default function DetailsProperties() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
+          {/* Encabezado con título y botón de retorno */}
+          <CustomHeader
+            title="Detalles del predio"
+            backRoute="/properties/myProperties"
+          />
           <View style={styles.innerContainer}>
-            {/* Encabezado con título y botón de retorno */}
-            <CustomHeader
-              title="Detalles del predio"
-              backRoute="/properties/myProperties"
-            />
-
             {/* Información del predio */}
             <View style={styles.textContainer}>
               <Text style={[typography.regular.big, { color: colors.gray }]}>

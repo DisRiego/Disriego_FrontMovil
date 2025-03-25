@@ -45,53 +45,57 @@ export default function DetailsLots() {
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           {/* Encabezado personalizado con botón de volver */}
-          <CustomHeader title="Detalles del Lote" backRoute="/(tabs)/home" />
+          <CustomHeader
+            title="Detalles del Lote"
+            backRoute={() => router.back()}
+          />
+          <View style={styles.innerContainer}>
+            {/* Sección de descripción y tarjetas informativas */}
+            <View style={styles.textContainer}>
+              {/* Texto descriptivo de la sección */}
+              <Text style={[typography.regular.big, { color: colors.gray }]}>
+                En esta sección podrás visualizar información detallada sobre{" "}
+                {name}.
+              </Text>
 
-          {/* Sección de descripción y tarjetas informativas */}
-          <View style={styles.textContainer}>
-            {/* Texto descriptivo de la sección */}
-            <Text style={[typography.regular.big, { color: colors.gray }]}>
-              En esta sección podrás visualizar información detallada sobre{" "}
-              {name}.
-            </Text>
+              {/* Primera tarjeta: Información básica del lote */}
+              <View style={styles.propContainer}>
+                <LotCard
+                  name={name as string}
+                  id={id as string}
+                  folio={real_estate_registration_number as string}
+                  extension={extension as string}
+                  latitud={latitude as string}
+                  longitud={longitude as string}
+                  minimal={false} // Controla la visibilidad de elementos adicionales
+                  showCropType={false} // Oculta el tipo de cultivo en esta tarjeta
+                />
+              </View>
 
-            {/* Primera tarjeta: Información básica del lote */}
-            <View style={styles.propContainer}>
-              <LotCard
-                name={name as string}
-                id={id as string}
-                folio={real_estate_registration_number as string}
-                extension={extension as string}
-                latitud={latitude as string}
-                longitud={longitude as string}
-                minimal={false} // Controla la visibilidad de elementos adicionales
-                showCropType={false} // Oculta el tipo de cultivo en esta tarjeta
-              />
-            </View>
+              {/* Segunda tarjeta: Información del cultivo y fechas */}
+              <View style={styles.cropContainer}>
+                <LotInfoCard
+                  cropType={cropType as string}
+                  paymentInterval={paymentInterval as string}
+                  plantingDate={plantingDate as string}
+                  estimatedHarvestDate={estimatedHarvestDate as string}
+                  onEditPress={() => {
+                    console.log("ID enviado a UpdateCrops:", id);
 
-            {/* Segunda tarjeta: Información del cultivo y fechas */}
-            <View style={styles.cropContainer}>
-              <LotInfoCard
-                cropType={cropType as string}
-                paymentInterval={paymentInterval as string}
-                plantingDate={plantingDate as string}
-                estimatedHarvestDate={estimatedHarvestDate as string}
-                onEditPress={() => {
-                  console.log("ID enviado a UpdateCrops:", id);
-
-                  router.push({
-                    pathname: "properties/updateCrops",
-                    params: {
-                      lotId: id,
-                      name,
-                      cropType,
-                      paymentInterval,
-                      plantingDate,
-                      estimatedHarvestDate,
-                    },
-                  });
-                }}
-              />
+                    router.push({
+                      pathname: "properties/updateCrops",
+                      params: {
+                        lotId: id,
+                        name,
+                        cropType,
+                        paymentInterval,
+                        plantingDate,
+                        estimatedHarvestDate,
+                      },
+                    });
+                  }}
+                />
+              </View>
             </View>
           </View>
         </ScrollView>
@@ -112,10 +116,13 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingBottom: 16,
   },
   scrollContainer: {
     flexGrow: 1,
+  },
+  innerContainer: {
+    paddingHorizontal: 20,
   },
   textContainer: {
     marginVertical: 10,
