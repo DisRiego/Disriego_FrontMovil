@@ -119,7 +119,7 @@ export default function HomeScreen() {
     return (
       <View style={{ marginRight: 15 }}>
         {/* Mostrar avatar con iniciales siempre como base */}
-        <Svg width={45} height={45} viewBox="0 0 45 45">
+        <Svg width={50} height={50} viewBox="0 0 45 45">
           <Circle
             cx="22.5"
             cy="22.5"
@@ -219,8 +219,8 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   profileImage: {
-    width: 45,
-    height: 45,
+    width: 50,
+    height: 50,
     borderRadius: 22.5,
   },
   welcomeText: {

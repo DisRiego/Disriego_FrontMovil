@@ -26,6 +26,7 @@ import { Svg, Circle, Text as SvgText } from "react-native-svg";
 interface UserData {
   name: string;
   email: string;
+  first_last_name: string;
   profile_picture?: string | null;
 }
 
@@ -61,7 +62,8 @@ const Profile = () => {
         const userData = await getUserData();
         if (userData) {
           setUser({
-            name: `${userData.name} ${userData.first_last_name}`,
+            name: userData.name,
+            first_last_name: userData.first_last_name,
             email: userData.email,
             profile_picture: userData.profile_picture || null,
           });
@@ -93,45 +95,60 @@ const Profile = () => {
    * @returns Componente de avatar (imagen o iniciales)
    */
   const renderUserAvatar = () => {
-    if (!user) {
+    // Mostrar indicador de carga mientras se obtienen los datos del usuario
+    if (loading) {
       return (
-        <Svg width={50} height={50} viewBox="0 0 50 50">
-          <Circle cx="25" cy="25" r="25" fill={colors.base} />
-        </Svg>
-      );
-    }
-
-    if (user.profile_picture && imageLoaded) {
-      return (
-        <Image
-          source={{ uri: user.profile_picture }}
-          style={styles.avatar}
-          onLoad={() => setImageLoaded(true)}
-          onError={() => setImageLoaded(false)}
+        <ActivityIndicator
+          size="small"
+          color={colors.gray}
+          style={{ marginRight: 15 }}
         />
       );
     }
+
+    const fullName = `${user?.name || ""} ${user?.first_last_name || ""}`;
 
     return (
-      <Svg width={50} height={50} viewBox="0 0 50 50">
-        <Circle
-          cx="25"
-          cy="25"
-          r="25"
-          fill={loading ? colors.base : colors.primary}
-        />
-        <SvgText
-          x="50%"
-          y="50%"
-          textAnchor="middle"
-          dy=".35em"
-          fontSize="18"
-          fontWeight="bold"
-          fill="white"
-        >
-          {getInitials(user.name || "")}
-        </SvgText>
-      </Svg>
+      <View>
+        {/* Mostrar avatar con iniciales siempre como base */}
+        <Svg width={50} height={50} viewBox="0 0 50 50">
+          <Circle
+            cx="25"
+            cy="25"
+            r="25"
+            fill={loading ? colors.base : colors.primary}
+          />
+          <SvgText
+            x="50%"
+            y="50%"
+            textAnchor="middle"
+            dy=".35em"
+            fontSize="18"
+            fontWeight="bold"
+            fill="white"
+          >
+            {getInitials(fullName || "Usuario")}
+          </SvgText>
+        </Svg>
+
+        {/* Cargar la imagen en segundo plano solo si hay una URL disponible */}
+        {user?.profile_picture && (
+          <Image
+            source={{ uri: user.profile_picture }}
+            style={[
+              styles.avatar,
+              {
+                position: "absolute",
+                top: 0,
+                left: 0,
+                opacity: imageLoaded ? 1 : 0,
+              },
+            ]}
+            onLoad={() => setImageLoaded(true)}
+            onError={() => console.error("Error loading profile image")}
+          />
+        )}
+      </View>
     );
   };
 
@@ -150,7 +167,9 @@ const Profile = () => {
               <ActivityIndicator size="small" color={colors.gray} />
             ) : (
               <>
-                <Text style={styles.name}>{user?.name || "Usuario"}</Text>
+                <Text style={styles.name}>{`${user?.name || "Usuario"} ${
+                  user?.first_last_name || ""
+                }`}</Text>
                 <Text style={styles.email}>
                   {user?.email || "email@ejemplo.com"}
                 </Text>

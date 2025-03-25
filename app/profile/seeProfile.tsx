@@ -37,13 +37,9 @@ const SeeProfile = () => {
   const getInitials = (name: string) => {
     if (!name || name.trim().length === 0) return "";
     const parts = name.split(" ");
-    const initials =
-      parts.length > 1
-        ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
-        : parts[0][0].toUpperCase();
-
-    console.log("Iniciales generadas en getInitials:", initials);
-    return initials;
+    return parts.length > 1
+      ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+      : parts[0][0].toUpperCase();
   };
 
   // Estado unificado para los datos del usuario
@@ -78,7 +74,6 @@ const SeeProfile = () => {
           );
 
           const fullName = `${data.name} ${data.first_last_name}`;
-          // Calculamos las iniciales aquí y las guardamos en el estado
           const initials = getInitials(fullName);
           setUserInitials(initials);
 
@@ -108,39 +103,23 @@ const SeeProfile = () => {
     fetchUserData();
   }, []);
 
-  // Debug el valor del nombre cuando cambia
-  useEffect(() => {
-    console.log("Nombre de usuario actualizado:", userData.name);
-    console.log("Iniciales que se utilizarían:", getInitials(userData.name));
-    // Actualizamos las iniciales cuando cambia el nombre
-    if (userData.name) {
-      setUserInitials(getInitials(userData.name));
-    }
-  }, [userData.name]);
-
-  // Debug el valor de las iniciales cuando cambian
-  useEffect(() => {
-    console.log("Iniciales actualizadas en el estado:", userInitials);
-  }, [userInitials]);
-
   // Función para renderizar el avatar
   const renderAvatar = () => {
-    // Si hay una imagen de perfil y está cargada, mostrarla
-    if (userData.profile_picture && imageLoaded) {
+    // Mostrar indicador de carga si está cargando
+    if (loading) {
       return (
-        <Image
-          source={{ uri: userData.profile_picture }}
-          style={styles.profileImage}
-          onLoad={() => setImageLoaded(true)}
-          onError={() => setImageLoaded(false)}
+        <ActivityIndicator
+          size="small"
+          color={colors.gray}
+          style={{ width: 60, height: 60 }}
         />
       );
     }
 
-    // En cualquier otro caso, mostrar el avatar con iniciales
     return (
-      <View style={styles.avatarContainer}>
-        <Svg width={60} height={60}>
+      <View>
+        {/* Base SVG con iniciales */}
+        <Svg width={60} height={60} viewBox="0 0 60 60">
           <Circle
             cx="30"
             cy="30"
@@ -148,16 +127,35 @@ const SeeProfile = () => {
             fill={loading ? colors.base : colors.primary}
           />
           <SvgText
-            x="30"
-            y="36"
+            x="50%"
+            y="50%"
             textAnchor="middle"
+            dy=".35em"
             fontSize="18"
-            fill="white"
             fontWeight="bold"
+            fill="white"
           >
             {userInitials}
           </SvgText>
         </Svg>
+
+        {/* Imagen de perfil encima del Svg */}
+        {userData.profile_picture && (
+          <Image
+            source={{ uri: userData.profile_picture }}
+            style={[
+              styles.profileImage,
+              {
+                position: "absolute",
+                top: 0,
+                left: 0,
+                opacity: imageLoaded ? 1 : 0,
+              },
+            ]}
+            onLoad={() => setImageLoaded(true)}
+            onError={() => console.error("Error loading profile image")}
+          />
+        )}
       </View>
     );
   };
@@ -273,7 +271,7 @@ const SeeProfile = () => {
                     />
                   </View>
                   <View>
-                    <Text style={styles.label}>Localización </Text>
+                    <Text style={styles.label}>Localización</Text>
                     <CustomInput
                       placeholder="Localización"
                       value={`${userData.country}, ${userData.department}, ${userData.city}`}
@@ -341,17 +339,11 @@ const styles = StyleSheet.create({
   profileImage: {
     width: 60,
     height: 60,
-    borderRadius: 10,
+    borderRadius: 30,
   },
   pictureContainer: {
     alignItems: "center",
     marginVertical: 20,
-  },
-  avatarContainer: {
-    width: 60,
-    height: 60,
-    alignItems: "center",
-    justifyContent: "center",
   },
   title: {
     ...typography.semibold.large,

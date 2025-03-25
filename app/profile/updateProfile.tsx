@@ -39,6 +39,7 @@ type User = {
   country?: string;
   department?: string;
   city?: string;
+  profile_picture?: string;
 };
 
 /**
@@ -80,7 +81,6 @@ const UpdateProfile = () => {
   const [loading, setLoading] = useState(true);
   const [savingChanges, setSavingChanges] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [userInitials, setUserInitials] = useState("");
   const [imageLoaded, setImageLoaded] = useState(false);
 
   // Estados para datos del usuario
@@ -121,11 +121,6 @@ const UpdateProfile = () => {
             setImageUri(userData.profile_picture);
           }
 
-          // Calcular las iniciales del nombre completo
-          const fullName = `${userData.name} ${userData.first_last_name}`;
-          const initials = getInitials(fullName);
-          setUserInitials(initials);
-
           // Carga de estados y ciudades si el usuario ya tiene un país seleccionado
           if (userData.country) {
             const statesData = await getStates(userData.country);
@@ -149,14 +144,6 @@ const UpdateProfile = () => {
 
     fetchData();
   }, []);
-
-  // Efecto para actualizar las iniciales cuando cambia el nombre del usuario
-  useEffect(() => {
-    if (user) {
-      const fullName = `${user.name} ${user.first_last_name}`;
-      setUserInitials(getInitials(fullName));
-    }
-  }, [user?.name, user?.first_last_name]);
 
   /**
    * Memoriza las opciones para los dropdowns para evitar recálculos innecesarios
@@ -327,39 +314,50 @@ const UpdateProfile = () => {
    * Renderiza el avatar del usuario con imagen o iniciales
    */
   const renderAvatar = () => {
-    // Si hay una imagen de perfil y está cargada, mostrarla
-    if (imageUri && imageLoaded) {
+    // Mostrar indicador de carga mientras se obtienen los datos del usuario
+    if (loading) {
       return (
-        <Image
-          source={{ uri: imageUri }}
-          style={styles.profileImage}
-          onLoad={() => setImageLoaded(true)}
-          onError={() => setImageLoaded(false)}
-        />
+        <View style={styles.avatarContainer}>
+          <ActivityIndicator size="small" color={colors.gray} />
+        </View>
       );
     }
 
-    // En cualquier otro caso, mostrar el avatar con iniciales
     return (
       <View style={styles.avatarContainer}>
-        <Svg width={60} height={60}>
-          <Circle
-            cx="30"
-            cy="30"
-            r="30"
-            fill={loading ? colors.base : colors.primary}
-          />
+        {/* Base SVG avatar con iniciales */}
+        <Svg width={60} height={60} viewBox="0 0 60 60">
+          <Circle cx="30" cy="30" r="30" fill={colors.primary} />
           <SvgText
-            x="30"
-            y="35"
+            x="50%"
+            y="50%"
             textAnchor="middle"
+            dy=".35em"
             fontSize="16"
-            fill="white"
             fontWeight="bold"
+            fill="white"
           >
-            {userInitials}
+            {getInitials(`${user?.name || ""} ${user?.first_last_name || ""}`)}
           </SvgText>
         </Svg>
+
+        {/* Cargar la imagen en segundo plano solo si hay una URL disponible */}
+        {imageUri && (
+          <Image
+            source={{ uri: imageUri }}
+            style={[
+              styles.profileImage,
+              {
+                position: "absolute",
+                top: 0,
+                left: 0,
+                opacity: imageLoaded ? 1 : 0,
+              },
+            ]}
+            onLoad={() => setImageLoaded(true)}
+            onError={() => console.error("Error loading profile image")}
+          />
+        )}
       </View>
     );
   };
@@ -523,8 +521,7 @@ const styles = StyleSheet.create({
   avatarContainer: {
     width: 60,
     height: 60,
-    alignItems: "center",
-    justifyContent: "center",
+    position: "relative",
   },
   profileImage: {
     width: 60,
