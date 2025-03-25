@@ -5,6 +5,7 @@ import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { generateLotPDF } from "@/utils/generatePDFLot";
 
 interface LotDetailsModalProps {
   isVisible: boolean;
@@ -17,8 +18,8 @@ interface LotDetailsModalProps {
   extension: string;
   cropType: string;
   paymentInterval: string;
-  plantingDate: string;
-  estimatedHarvestDate: string;
+  propertyId: string; // 🔹 ID del predio
+  propertyName: string; // 🔹 Nombre del predio
 }
 
 export default function LotDetailsModal({
@@ -32,10 +33,30 @@ export default function LotDetailsModal({
   extension,
   cropType,
   paymentInterval,
-  plantingDate,
-  estimatedHarvestDate,
+  propertyId,
+  propertyName,
 }: LotDetailsModalProps) {
   const router = useRouter();
+
+  // Función para generar el PDF y luego descargarlo
+  const handleDownload = async () => {
+    try {
+      const pdfUri = await generateLotPDF({
+        propertyId, // 🔹 ID del predio
+        propertyName, // 🔹 Nombre del predio
+        name, // Nombre del lote
+        id, // ID del lote
+        real_estate_registration_number,
+        latitude,
+        longitude,
+        extension,
+        cropType,
+        paymentInterval,
+      });
+    } catch (error) {
+      console.error("Error al generar o descargar el PDF:", error);
+    }
+  };
 
   return (
     <Modal isVisible={isVisible} style={styles.modal} onBackdropPress={onClose}>
@@ -93,10 +114,14 @@ export default function LotDetailsModal({
 
         {/* Botones */}
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.downloadButton}>
+          <TouchableOpacity
+            style={styles.downloadButton}
+            onPress={handleDownload}
+          >
             <AntDesign name="download" size={17} color={colors.darkGray} />
             <Text style={styles.downloadText}>Descargar</Text>
           </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.detailsButton}
             onPress={() => {
@@ -112,8 +137,6 @@ export default function LotDetailsModal({
                   extension,
                   cropType,
                   paymentInterval,
-                  plantingDate, // Agregar
-                  estimatedHarvestDate, // Agregar
                 },
               });
             }}
