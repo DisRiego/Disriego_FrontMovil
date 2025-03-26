@@ -7,7 +7,7 @@ import { typography } from "@/config/typography";
 
 interface CustomHeaderProps {
   title: string;
-  backRoute?: string;
+  backRoute?: string | (() => void);
 }
 
 export default function CustomHeader({
@@ -20,7 +20,13 @@ export default function CustomHeader({
     <View style={styles.customHeader}>
       {/* Botón de retroceso */}
       <TouchableOpacity
-        onPress={() => router.push(backRoute)}
+        onPress={() => {
+          if (typeof backRoute === "function") {
+            backRoute(); // Si es una función, la ejecuta
+          } else {
+            router.push(backRoute); // Si es string, navega a la ruta
+          }
+        }}
         style={styles.backButton}
       >
         <AntDesign name="left" size={22} color={colors.gray} />
