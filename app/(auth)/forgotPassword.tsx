@@ -30,9 +30,17 @@ export default function ForgotPasswordScreen() {
    * Obtiene un token del backend y envía un correo electrónico con un enlace de recuperación
    */
   const handleSendEmail = async () => {
+    // Expresión regular para validar un correo electrónico
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     // Validación del campo de correo
     if (!email) {
       Alert.alert("Error", "Por favor, ingresa tu correo electrónico.");
+      return;
+    }
+
+    if (!emailRegex.test(email)) {
+      Alert.alert("Error", "Por favor, ingresa un correo válido.");
       return;
     }
 
@@ -40,23 +48,21 @@ export default function ForgotPasswordScreen() {
       // Paso 1: Obtener el token de recuperación desde el backend
       const response = await axios.post(
         `${API_URL}/auth/request-reset-password`,
-        {
-          email,
-        }
+        { email }
       );
 
-      const resetToken = response.data.token; // Extraer el token desde la respuesta del backend
+      const resetToken = response.data.token;
 
       // Paso 2: Preparar datos para el servicio de correo (EmailJS)
       const payload = {
-        service_id: "service_c35ss8k", // ID del servicio en EmailJS
-        template_id: "template_wbz1eil", // ID de la plantilla en EmailJS
-        user_id: "hMGKOWPvqqS5l9Qsf", // Public Key de EmailJS
-        accessToken: "Qm3WiVQBa3J59N-sE7iKa", // Private Key de EmailJS
+        service_id: "service_c35ss8k",
+        template_id: "template_wbz1eil",
+        user_id: "hMGKOWPvqqS5l9Qsf",
+        accessToken: "Qm3WiVQBa3J59N-sE7iKa",
         template_params: {
           to_name: "Usuario",
           to_email: email,
-          message: `${API_FRONT}/login/resetpassword/${resetToken}`, // URL con token para resetear contraseña
+          message: `${API_FRONT}/login/resetpassword/${resetToken}`,
           reply_to: email,
         },
       };
@@ -71,7 +77,6 @@ export default function ForgotPasswordScreen() {
         }
       );
 
-      // Verificar respuesta del servicio de correo
       if (emailResponse.ok) {
         Alert.alert(
           "Éxito",
