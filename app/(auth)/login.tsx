@@ -139,11 +139,18 @@ export default function LoginScreen() {
           "first_login_complete"
         );
 
-        if (firstLoginComplete === "false") {
-          router.replace("/completeInfo");
-        } else {
-          router.replace("(tabs)/home");
-        }
+        Alert.alert("Éxito", "Inicio de sesión exitoso.", [
+          {
+            text: "OK",
+            onPress: () => {
+              if (firstLoginComplete === "false") {
+                router.replace("/completeInfo");
+              } else {
+                router.replace("(tabs)/home");
+              }
+            },
+          },
+        ]);
       }
     } catch (error) {
       if (error instanceof Error) {
