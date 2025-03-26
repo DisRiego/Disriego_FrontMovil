@@ -13,7 +13,11 @@ interface LotCardProps {
   longitud?: string;
   cropType?: string;
   paymentInterval?: string;
+  plantingDate?: string;
+  estimatedHarvestDate?: string;
   onPress?: () => void;
+  minimal?: boolean; // Controla la visibilidad de ciertos datos
+  showCropType?: boolean; // Nueva prop para controlar la visibilidad del tipo de cultivo
 }
 
 export default function LotCard({
@@ -24,13 +28,17 @@ export default function LotCard({
   latitud,
   longitud,
   cropType,
-  paymentInterval,
   onPress,
+  minimal = false, // Por defecto, muestra todo
+  showCropType = true, // Por defecto, se muestra el tipo de cultivo
 }: LotCardProps) {
   const Container = onPress ? TouchableOpacity : View;
 
   return (
-    <Container style={styles.card} {...(onPress && { onPress })}>
+    <Container
+      style={styles.card}
+      {...(onPress && { onPress, accessibilityRole: "button" })}
+    >
       {/* Encabezado */}
       <View style={styles.header}>
         <Text style={styles.title}>{name}</Text>
@@ -41,36 +49,39 @@ export default function LotCard({
 
       <Text style={styles.idText}>#{id}</Text>
 
-      {/* Información opcional */}
+      {/* Información visible en ambos modos */}
       <View style={styles.infoRow}>
         <Text style={styles.label}>Folio Matrícula</Text>
-        <Text style={styles.value}>{folio || ""}</Text>
+        <Text style={styles.value}>{folio || "N/A"}</Text>
       </View>
 
       <View style={styles.infoRow}>
         <Text style={styles.label}>Extensión (m²)</Text>
-        <Text style={styles.value}>{extension || ""}</Text>
+        <Text style={styles.value}>{extension || "N/A"}</Text>
       </View>
 
-      <View style={styles.infoRow}>
-        <Text style={styles.label}>Latitud</Text>
-        <Text style={styles.value}>{latitud || ""}</Text>
-      </View>
+      {/* Mostrar el tipo de cultivo solo si `showCropType` es `true` */}
+      {showCropType && (
+        <View style={styles.infoRow}>
+          <Text style={styles.label}>Tipo Cultivo</Text>
+          <Text style={styles.value}>{cropType || "N/A"}</Text>
+        </View>
+      )}
 
-      <View style={styles.infoRow}>
-        <Text style={styles.label}>Longitud</Text>
-        <Text style={styles.value}>{longitud || ""}</Text>
-      </View>
+      {/* Oculta latitud y longitud si `minimal` es `true` */}
+      {!minimal && (
+        <>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Latitud</Text>
+            <Text style={styles.value}>{latitud || "N/A"}</Text>
+          </View>
 
-      <View style={styles.infoRow}>
-        <Text style={styles.label}>Tipo Cultivo</Text>
-        <Text style={styles.value}>{cropType || "N/A"}</Text>
-      </View>
-
-      <View style={styles.infoRow}>
-        <Text style={styles.label}>Intervalo de Pago</Text>
-        <Text style={styles.value}>{paymentInterval || "N/A"}</Text>
-      </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Longitud</Text>
+            <Text style={styles.value}>{longitud || "N/A"}</Text>
+          </View>
+        </>
+      )}
     </Container>
   );
 }
@@ -80,12 +91,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: 12,
     padding: 15,
-    marginVertical: 5,
+    marginVertical: 6,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: colors.border,
     shadowColor: colors.border,
     shadowOpacity: 0.1,
     shadowRadius: 5,
+    elevation: 3, // Para sombras en Android
   },
   header: {
     flexDirection: "row",
