@@ -230,10 +230,13 @@ const UpdateProfile = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      alert("Perfil actualizado correctamente");
+      Alert.alert("Éxito", "Perfil actualizado correctamente.");
     } catch (error) {
       console.error("Error al actualizar perfil:", error);
-      alert("Hubo un problema al actualizar el perfil");
+      Alert.alert(
+        "Error",
+        "No se pudo actualizar la imagen. Inténtalo de nuevo."
+      );
     } finally {
       setSavingChanges(false);
     }
