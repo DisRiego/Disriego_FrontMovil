@@ -1,3 +1,8 @@
+/**
+ * PublicLayout.tsx
+ * Componente principal para el manejo de autenticación y navegación.
+ * Gestiona el splash screen, carga de fuentes y redirección según estado de autenticación.
+ */
 import React, { useEffect, useState } from "react";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -9,6 +14,12 @@ import { getToken } from "../services/auth";
 SplashScreen.preventAutoHideAsync();
 
 export default function PublicLayout() {
+  // Estados y hooks
+  const router = useRouter();
+  const segments = useSegments();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  // Carga de fuentes personalizadas
   const [loaded] = useFonts({
     RobotoBold: require("../assets/fonts/Roboto-Bold.ttf"),
     RobotoSemiBold: require("../assets/fonts/Roboto-SemiBold.ttf"),
@@ -17,10 +28,10 @@ export default function PublicLayout() {
     RobotoLight: require("../assets/fonts/Roboto-Light.ttf"),
   });
 
-  const router = useRouter();
-  const segments = useSegments();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-
+  /**
+   * Efecto para verificar el estado de autenticación
+   * Recupera el token de usuario y actualiza el estado isAuthenticated
+   */
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -35,6 +46,10 @@ export default function PublicLayout() {
     checkAuth();
   }, []);
 
+  /**
+   * Efecto para manejar la navegación y el splash screen
+   * Se ejecuta cuando las fuentes están cargadas y se conoce el estado de autenticación
+   */
   useEffect(() => {
     if (loaded && isAuthenticated !== null) {
       SplashScreen.hideAsync(); // Oculta el splash solo cuando todo esté listo
@@ -44,13 +59,16 @@ export default function PublicLayout() {
         segments.length === 1 &&
         (segments[0] === "login" || segments[0] === "register")
       ) {
+        // Redirige según el estado de autenticación
         router.replace(isAuthenticated ? "/(tabs)/home" : "/login");
       }
     }
-  }, [loaded, isAuthenticated, segments]);
+  }, [loaded, isAuthenticated, segments, router]);
 
-  if (!loaded || isAuthenticated === null) return null; // Evita errores al montar
+  // Previene renderizado hasta que las fuentes estén cargadas y se verifique autenticación
+  if (!loaded || isAuthenticated === null) return null;
 
+  // Renderizado del layout principal
   return (
     <>
       <Stack

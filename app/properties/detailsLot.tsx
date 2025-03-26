@@ -1,3 +1,8 @@
+/**
+ * Componente DetailsLots
+ * Muestra la información detallada de un lote específico
+ * Incluye datos como nombre, ID, folio, extensión, tipo de cultivo, fechas, etc.
+ */
 import React from "react";
 import {
   View,
@@ -11,20 +16,28 @@ import {
 import { useLocalSearchParams } from "expo-router";
 import CustomHeader from "@/components/CustomHeader";
 import LotCard from "@/components/LotCard";
+import LotInfoCard from "@/components/LotInfoCard";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
+import { useRouter } from "expo-router";
 
 export default function DetailsLots() {
-  // Obtener los parámetros pasados en la navegación
+  const router = useRouter();
+  /**
+   * Obtiene los parámetros pasados durante la navegación
+   * Incluye información completa del lote seleccionado
+   */
   const {
     id,
     name,
-    real_estate_registration_number,
-    latitude,
     longitude,
+    latitude,
+    real_estate_registration_number,
     extension,
     cropType,
     paymentInterval,
+    plantingDate,
+    estimatedHarvestDate,
   } = useLocalSearchParams();
 
   return (
@@ -32,27 +45,57 @@ export default function DetailsLots() {
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           {/* Encabezado personalizado con botón de volver */}
-          <CustomHeader title="Detalles del Lote" backRoute="/(tabs)/home" />
+          <CustomHeader
+            title="Detalles del Lote"
+            backRoute={() => router.back()}
+          />
+          <View style={styles.innerContainer}>
+            {/* Sección de descripción y tarjetas informativas */}
+            <View style={styles.textContainer}>
+              {/* Texto descriptivo de la sección */}
+              <Text style={[typography.regular.big, { color: colors.gray }]}>
+                En esta sección podrás visualizar información detallada sobre{" "}
+                {name}.
+              </Text>
 
-          {/* Descripción */}
-          <View style={styles.textContainer}>
-            <Text style={[typography.regular.big, { color: colors.gray }]}>
-              En esta sección podrás visualizar información detallada sobre{" "}
-              {name}.
-            </Text>
+              {/* Primera tarjeta: Información básica del lote */}
+              <View style={styles.propContainer}>
+                <LotCard
+                  name={name as string}
+                  id={id as string}
+                  folio={real_estate_registration_number as string}
+                  extension={extension as string}
+                  latitud={latitude as string}
+                  longitud={longitude as string}
+                  minimal={false} // Controla la visibilidad de elementos adicionales
+                  showCropType={false} // Oculta el tipo de cultivo en esta tarjeta
+                />
+              </View>
 
-            {/* Tarjeta con la información del lote */}
-            <View style={styles.propContainer}>
-              <LotCard
-                name={name as string}
-                id={id as string}
-                folio={real_estate_registration_number as string}
-                extension={extension as string}
-                latitud={latitude as string}
-                longitud={longitude as string}
-                cropType={cropType as string}
-                paymentInterval={paymentInterval as string}
-              />
+              {/* Segunda tarjeta: Información del cultivo y fechas */}
+              <View style={styles.cropContainer}>
+                <LotInfoCard
+                  cropType={cropType as string}
+                  paymentInterval={paymentInterval as string}
+                  plantingDate={plantingDate as string}
+                  estimatedHarvestDate={estimatedHarvestDate as string}
+                  onEditPress={() => {
+                    console.log("ID enviado a UpdateCrops:", id);
+
+                    router.push({
+                      pathname: "properties/updateCrops",
+                      params: {
+                        lotId: id,
+                        name,
+                        cropType,
+                        paymentInterval,
+                        plantingDate,
+                        estimatedHarvestDate,
+                      },
+                    });
+                  }}
+                />
+              </View>
             </View>
           </View>
         </ScrollView>
@@ -61,6 +104,10 @@ export default function DetailsLots() {
   );
 }
 
+/**
+ * Estilos para el componente DetailsLots
+ * Define la apariencia y estructura de la pantalla de detalles
+ */
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -69,11 +116,13 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingBottom: 16,
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 24,
+  },
+  innerContainer: {
+    paddingHorizontal: 20,
   },
   textContainer: {
     marginVertical: 10,
@@ -81,30 +130,7 @@ const styles = StyleSheet.create({
   propContainer: {
     marginTop: 12,
   },
-  detailsContainer: {
-    backgroundColor: colors.white,
-    padding: 12,
-    borderRadius: 8,
+  cropContainer: {
     marginTop: 12,
-    elevation: 2,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-  },
-  label: {
-    color: colors.darkGray,
-    fontSize: 14,
-  },
-  value: {
-    color: colors.darkGray,
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: 4,
   },
 });
