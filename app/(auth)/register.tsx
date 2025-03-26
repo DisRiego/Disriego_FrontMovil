@@ -328,6 +328,13 @@ export default function RegisterScreen() {
         onPress={handleRegister}
         disabled={loading}
       />
+      <Text style={[typography.medium.regular, { color: colors.gray }]}>
+        ¿Tienes una cuenta?
+        <Text style={styles.link} onPress={() => router.push("/login")}>
+          {" "}
+          Inicia sesión aquí
+        </Text>
+      </Text>
     </View>
   );
 
@@ -402,4 +409,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     alignItems: "center",
   },
+  link: { ...typography.bold.regular, color: colors.accent },
 });
