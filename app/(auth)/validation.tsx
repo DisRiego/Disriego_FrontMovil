@@ -81,19 +81,40 @@ export default function ValidationScreen() {
 
   // Maneja la validación y el envío de datos al backend
   async function handleValidation() {
-    if (!documentType || documentType === "") {
-      Alert.alert(
-        "Error",
-        "Por favor, selecciona un tipo de documento válido."
-      );
-      return;
-    }
+    // Verificar si el tipo de documento es el placeholder
+    const placeholderDocumentType = documentTypes.find(
+      (type) => type.label === "Selecciona un tipo de documento"
+    )?.value;
 
-    if (!documentNumber.trim() || !dateIssuanceDocument) {
+    // Verificar si algún campo está vacío o si el tipo de documento es inválido
+    if (
+      !documentType ||
+      documentType === placeholderDocumentType || // Explícitamente prevenir el placeholder
+      !documentNumber.trim() ||
+      !dateIssuanceDocument
+    ) {
       Alert.alert(
         "Error",
         "Por favor, completa todos los campos obligatorios."
       );
+      return;
+    }
+
+    // Validar que el número de documento solo contenga números
+    const documentRegex = /^[0-9]+$/;
+    if (!documentRegex.test(documentNumber)) {
+      Alert.alert(
+        "Error",
+        "El número de identificación solo debe contener números."
+      );
+      return;
+    }
+
+    // Validar que la fecha de expedición no sea futura
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (dateIssuanceDocument > today) {
+      Alert.alert("Error", "La fecha de expedición no puede ser futura.");
       return;
     }
 
@@ -107,7 +128,7 @@ export default function ValidationScreen() {
       const response = await axios.post(
         `${API_URL}/users/pre-register/validate`,
         {
-          document_type_id: parseInt(documentType), // Convertimos a número el valor seleccionado
+          document_type_id: parseInt(documentType),
           document_number: documentNumber,
           date_issuance_document: dateToSend,
         }
@@ -115,7 +136,7 @@ export default function ValidationScreen() {
 
       if (response.data.success) {
         await AsyncStorage.setItem("preRegisterToken", response.data.token);
-        Alert.alert("Éxito", "Validación exitosa.", [
+        Alert.alert("Éxito", "Validación completada.", [
           { text: "Continuar", onPress: () => router.push("/register") },
         ]);
       } else {
@@ -124,7 +145,7 @@ export default function ValidationScreen() {
     } catch (error: any) {
       console.error("Error en la validación:", error.response?.data || error);
       Alert.alert(
-        "Error",
+        "Cuenta Existente",
         "Este usuario ya completó el pre-registro. Por favor, inicie sesión o restablezca su contraseña."
       );
     } finally {
