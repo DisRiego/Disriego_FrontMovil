@@ -1,79 +1,206 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "expo-router";
 import {
   View,
   Text,
   Alert,
   StyleSheet,
-  TouchableOpacity,
-  Platform,
-  ScrollView,
   SafeAreaView,
+  ScrollView,
+  ActivityIndicator,
+  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Keyboard,
+  Platform,
+  TouchableOpacity,
 } from "react-native";
-import { useRouter } from "expo-router";
+import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { colors } from "../../config/theme";
-import { typography } from "../../config/typography";
-import Button from "../../components/Button";
-import CustomInput from "../../components/CustomInput";
+import { colors } from "@/config/theme";
+import { typography } from "@/config/typography";
+import Button from "@/components/Button";
+import CustomInput from "@/components/CustomInput";
 import DropdownPicker from "@/components/Dropdown";
-import Header from "../../components/Header";
-import { TextInput } from "react-native";
+import Header from "@/components/Header";
+import {
+  getCountries,
+  getStates,
+  getCities,
+  getCountryPhoneCode,
+} from "@/services/location";
+import { API_URL } from "@/services/config";
+import { getUserData } from "@/services/auth";
 
-export default function completeInfo() {
+/**
+ * Pantalla para completar información del perfil de usuario
+ * Se muestra después del primer inicio de sesión para recolectar datos adicionales
+ */
+export default function CompleteInfo() {
   const router = useRouter();
-  const [birthday, setBirthday] = useState<Date | null>(null);
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
-  const [typePerson, setTypePerson] = useState("");
-  const [gender, setGender] = useState("");
-  const [imageName, setImageName] = useState<string | null>(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const handleNext = async () => {
-    if (!birthday || !phone || !address || typePerson === "" || gender === "") {
-      Alert.alert(
-        "Campos incompletos",
-        "Por favor, completa todos los campos obligatorios antes de continuar."
-      );
-      return;
-    }
+  // Estados para los campos del formulario
+  const [direccion, setDireccion] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [imageName, setImageName] = useState<string | null>(null);
+
+  // Estados para los selectores de ubicación
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [selectedState, setSelectedState] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
+
+  // Estados para las opciones de los selectores
+  const [countries, setCountries] = useState<{ name: string; iso2: string }[]>(
+    []
+  );
+  const [states, setStates] = useState<{ name: string; iso2: string }[]>([]);
+  const [cities, setCities] = useState<{ name: string; id: string }[]>([]);
+  const [phoneCode, setPhoneCode] = useState("");
+
+  // Estado para controlar la carga durante peticiones
+  const [loading, setLoading] = useState(false);
+
+  /**
+   * Carga la lista de países al iniciar la pantalla
+   */
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        const data = await getCountries();
+        setCountries(data);
+      } catch (error) {
+        console.error("Error al obtener países:", error);
+      }
+    };
+
+    fetchCountries();
+  }, []);
+
+  /**
+   * Obtiene los estados/departamentos para un país seleccionado
+   * @param countryCode Código ISO del país seleccionado
+   */
+  const fetchStates = async (countryCode: string) => {
+    // Reinicia los campos dependientes
+    setSelectedState("");
+    setSelectedCity("");
+    setCities([]);
 
     try {
-      // Simula el envío de datos al backend
-      const response = await fakeApiCall();
+      // Obtiene los estados del país seleccionado
+      const data = await getStates(countryCode);
+      setStates(data);
 
-      if ((response as { success: boolean }).success) {
-        router.push("/updateSuccess");
-      } else {
-        router.push("/updateError");
-      }
+      // Obtiene el código telefónico del país seleccionado
+      const code = await getCountryPhoneCode(countryCode);
+      setPhoneCode(code);
     } catch (error) {
-      console.error("Error al actualizar:", error);
-      router.push("/updateError");
+      console.error("Error al obtener departamentos:", error);
     }
   };
 
-  // Simulación de una API
-  const fakeApiCall = async () => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ success: true }); // true: éxito, false: error
-      }, 1500);
-    });
+  /**
+   * Obtiene las ciudades para un estado/departamento seleccionado
+   * @param countryCode Código ISO del país seleccionado
+   * @param stateCode Código ISO del estado seleccionado
+   */
+  const fetchCities = async (countryCode: string, stateCode: string) => {
+    setSelectedCity("");
+    try {
+      const data = await getCities(countryCode, stateCode);
+      setCities(data);
+    } catch (error) {
+      console.error("Error al obtener ciudades:", error);
+    }
   };
 
+  /**
+   * Abre el selector de imágenes para elegir una foto de perfil
+   */
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [1, 1],
+      aspect: [1, 1], // Mantiene relación de aspecto cuadrada
       quality: 1,
     });
 
     if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
       const uriParts = result.assets[0].uri.split("/");
       setImageName(uriParts[uriParts.length - 1]);
+    }
+  };
+
+  /**
+   * Maneja el envío del formulario con los datos del usuario
+   * Realiza la validación y envía los datos al backend
+   */
+  const handleRegister = async () => {
+    // Validación de campos obligatorios
+    if (
+      !direccion ||
+      !selectedCountry ||
+      !selectedState ||
+      !selectedCity ||
+      !telefono
+    ) {
+      Alert.alert("Error", "Por favor completa todos los campos.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Obtiene los datos del usuario actual
+      const userData = await getUserData();
+      if (!userData) {
+        throw new Error("No se pudo obtener el ID del usuario.");
+      }
+
+      // Prepara los datos para enviar al servidor
+      const formData = new FormData();
+      formData.append("user_id", userData.id.toString());
+      formData.append("country", selectedCountry);
+      formData.append("department", selectedState);
+      formData.append("city", selectedCity);
+      formData.append("address", direccion);
+      formData.append("phone", telefono);
+
+      // Añade la imagen de perfil si se seleccionó una
+      if (imageUri && imageName) {
+        formData.append("profile_picture", {
+          uri: imageUri,
+          name: imageName,
+          type: "image/jpeg",
+        } as any);
+      }
+
+      console.log(
+        "Enviando datos al backend:",
+        Object.fromEntries(formData as any)
+      );
+
+      // Realiza la petición POST al servidor
+      const response = await axios.post(
+        `${API_URL}/users/first-login-register`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+
+      console.log("Respuesta del servidor:", response.data);
+      Alert.alert("Éxito", "Registro completado correctamente.");
+      router.push("/home");
+    } catch (error) {
+      console.error("Error al registrar:", error);
+      Alert.alert(
+        "Error",
+        "Ocurrió un problema al registrarse. Inténtalo de nuevo."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -81,108 +208,143 @@ export default function completeInfo() {
     <SafeAreaView style={styles.safeArea}>
       <Header />
       <View style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <View style={styles.formContainer}>
-            <Text style={styles.title}>Completa tu perfil</Text>
-            <Text style={styles.subtitle}>
-              Para continuar, por favor ingresa los siguientes datos y asegúrate
-              de que tu información sea correcta.
-            </Text>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <KeyboardAvoidingView
+            style={styles.container}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+          >
+            <ScrollView contentContainerStyle={styles.scrollContainer}>
+              {/* Formulario de datos del perfil */}
+              <View style={styles.formContainer}>
+                <Text
+                  style={[typography.semibold.big, { color: colors.darkGray }]}
+                >
+                  Completa tu perfil
+                </Text>
+                <Text
+                  style={[typography.medium.regular, { color: colors.gray }]}
+                >
+                  Por favor, ingresa los siguientes datos y asegúrate de que tu
+                  información sea correcta.
+                </Text>
 
-            {/* Fecha de nacimiento */}
-            <TouchableOpacity
-              onPress={() => setShowDatePicker(true)}
-              style={styles.dateInput}
-            >
-              <Text style={styles.dateText}>
-                {birthday
-                  ? birthday.toLocaleDateString()
-                  : "fecha de nacimiento *"}
-              </Text>
-            </TouchableOpacity>
-            {showDatePicker && (
-              <DateTimePicker
-                value={birthday || new Date()}
-                mode="date"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                maximumDate={new Date()} // Evita fechas futuras
-                onChange={(event, selectedDate) => {
-                  setShowDatePicker(false);
-                  if (selectedDate) setBirthday(selectedDate);
-                }}
-              />
-            )}
+                {/* Campo de dirección */}
+                <View style={{ width: "100%" }}>
+                  <Text style={styles.label}>Dirección</Text>
+                  <CustomInput
+                    placeholder="Dirección"
+                    value={direccion}
+                    onChangeText={setDireccion}
+                  />
+                </View>
 
-            <CustomInput
-              placeholder="Teléfono *"
-              keyboardType="phone-pad"
-              value={phone}
-              style={styles.input}
-              onChangeText={(text) => {
-                if (text.length <= 10) {
-                  setPhone(text);
-                }
-              }}
-            />
+                {/* Selector de país */}
+                <View style={{ width: "100%" }}>
+                  <Text style={styles.label}>País</Text>
+                  <DropdownPicker
+                    selectedValue={selectedCountry}
+                    onValueChange={(value) => {
+                      setSelectedCountry(value);
+                      fetchStates(value);
+                    }}
+                    options={[
+                      { label: "Selecciona una opción", value: "" },
+                      ...countries.map((c) => ({
+                        label: c.name,
+                        value: c.iso2,
+                      })),
+                    ]}
+                  />
+                </View>
 
-            <TextInput
-              placeholder="Dirección de correspondencia *"
-              value={address}
-              multiline={true}
-              maxLength={128}
-              onChangeText={setAddress}
-              style={[styles.input, styles.addressInput]}
-            />
+                {/* Selector de departamento/estado */}
+                <View style={{ width: "100%" }}>
+                  <Text style={styles.label}>Departamento</Text>
+                  <DropdownPicker
+                    selectedValue={selectedState}
+                    onValueChange={(value) => {
+                      setSelectedState(value);
+                      fetchCities(selectedCountry, value);
+                    }}
+                    options={[
+                      { label: "Selecciona una opción", value: "" },
+                      ...states.map((s) => ({ label: s.name, value: s.iso2 })),
+                    ]}
+                    disabled={!selectedCountry}
+                  />
+                </View>
 
-            <DropdownPicker
-              selectedValue={typePerson}
-              onValueChange={(value) => setTypePerson(value)}
-              options={[
-                { label: "Tipo de persona *", value: "" },
-                { label: "Natural", value: "Natural" },
-                { label: "Jurídico", value: "Juridico" },
-              ]}
-            />
+                {/* Selector de ciudad */}
+                <View style={{ width: "100%" }}>
+                  <Text style={styles.label}>Ciudad</Text>
+                  <DropdownPicker
+                    selectedValue={selectedCity}
+                    onValueChange={setSelectedCity}
+                    options={[
+                      { label: "Selecciona una opción", value: "" },
+                      ...cities.map((c) => ({ label: c.name, value: c.id })),
+                    ]}
+                    disabled={!selectedState}
+                  />
+                </View>
 
-            <DropdownPicker
-              selectedValue={gender}
-              onValueChange={(value) => setGender(value)}
-              options={[
-                { label: "Género *", value: "" },
-                { label: "Femenino", value: "Femenino" },
-                { label: "Masculino", value: "Masculino" },
-                { label: "Otro", value: "Otro" },
-              ]}
-            />
+                {/* Campo de teléfono */}
+                <View style={{ width: "100%" }}>
+                  <Text style={styles.label}>Teléfono</Text>
+                  <CustomInput
+                    placeholder="Teléfono"
+                    value={telefono}
+                    onChangeText={(text) =>
+                      setTelefono(text.replace(/[^0-9]/g, ""))
+                    }
+                    keyboardType="numeric"
+                  />
+                </View>
 
-            {/* Seccion de imagen */}
-            <Text style={styles.subtitle}>
-              Subir una foto de perfil (Opcional)
-            </Text>
-            <View style={styles.imageUploadContainer}>
-              <Text style={styles.uploadText}>
-                {imageName
-                  ? "Imagen seleccionada"
-                  : "Selecciona la imagen aquí"}
-              </Text>
-              <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
-                <Text style={styles.uploadText}>Subir</Text>
-              </TouchableOpacity>
-            </View>
+                {/* Seccion de imagen */}
+                <View style={{ width: "100%", gap: "12" }}>
+                  <Text style={styles.subtitle}>
+                    Subir una foto de perfil (Opcional)
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.uploadContainer}
+                    onPress={pickImage}
+                  >
+                    <Text style={styles.uploadText}>
+                      {imageName
+                        ? "Imagen seleccionada"
+                        : "Selecciona la imagen aquí"}
+                    </Text>
+                    <Text style={styles.uploadButtonText}>Subir</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
 
-            {imageName && <Text style={styles.fileName}>{imageName}</Text>}
-          </View>
-
-          {/* Botón de siguiente */}
-          <View style={styles.footerContainer}>
-            <Button text="Siguiente" onPress={handleNext} />
-          </View>
-        </ScrollView>
+              {/* Pie de página con botón de registro */}
+              <View style={styles.footerContainer}>
+                <Button
+                  text={
+                    loading ? (
+                      <ActivityIndicator size={28} color={colors.primary} />
+                    ) : (
+                      "Registrarse"
+                    )
+                  }
+                  onPress={handleRegister}
+                  disabled={loading}
+                />
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </TouchableWithoutFeedback>
       </View>
     </SafeAreaView>
   );
 }
 
+/**
+ * Estilos para los componentes de la pantalla CompleteInfo
+ */
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -190,7 +352,6 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingVertical: 16,
   },
   container: {
     flex: 1,
@@ -202,106 +363,47 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 14,
     width: "100%",
+    paddingTop: 24,
     paddingHorizontal: 20,
+    paddingBottom: 8,
     alignItems: "flex-start",
-    justifyContent: "flex-start",
-    backgroundColor: colors.base,
   },
-  inputRow: {
-    flexDirection: "row",
+  footerContainer: {
     width: "100%",
-    justifyContent: "space-between",
+    marginTop: 2,
+    paddingTop: 24,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    alignItems: "center",
   },
-  title: {
-    ...typography.semibold.big,
-    alignSelf: "flex-start",
+  label: {
+    marginBottom: 8,
+    ...typography.medium.regular,
+    color: colors.gray,
   },
   subtitle: {
     ...typography.medium.regular,
     color: colors.gray,
     textAlign: "left",
   },
-  footerContainer: {
-    width: "100%",
-    marginTop: 2,
-    paddingTop: 32,
-    paddingBottom: 8,
-    paddingHorizontal: 20,
+  uploadContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-  },
-  uploadButton: {
-    paddingVertical: 8,
+    width: "100%",
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,
-    alignItems: "center",
-    paddingHorizontal: 18,
-    backgroundColor: colors.base,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: colors.white,
   },
   uploadText: {
     ...typography.medium.regular,
     color: colors.gray,
   },
-  fileName: {
-    marginTop: 5,
-    textAlign: "center",
+  uploadButtonText: {
+    ...typography.medium.regular,
     color: colors.primary,
-    ...typography.medium.regular,
-  },
-  dateInput: {
-    width: "100%",
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 15,
-    backgroundColor: colors.white,
-    justifyContent: "center",
-  },
-  dateText: {
-    color: colors.gray,
-    ...typography.medium.regular,
-  },
-  imageUploadContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    width: "100%",
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 15,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    color: colors.gray,
-    backgroundColor: colors.white,
-    ...typography.medium.regular,
-    justifyContent: "space-between",
-  },
-  imagePickerButton: {
-    flex: 1,
-  },
-
-  disabledButton: {
-    backgroundColor: colors.base,
-  },
-  disabledText: {
-    color: colors.gray,
-  },
-  addressInput: {
-    minHeight: 50,
-    maxHeight: 100,
-    textAlignVertical: "top",
-    minWidth: "100%",
-    flexShrink: 1,
-  },
-
-  input: {
-    height: 50,
-    padding: 15,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 15,
-    backgroundColor: colors.white,
-    ...typography.medium.regular,
-    color: colors.gray,
   },
 });
