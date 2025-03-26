@@ -5,6 +5,7 @@ import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { generateLotPDF } from "@/utils/generatePDFLot";
 
 interface LotDetailsModalProps {
   isVisible: boolean;
@@ -17,6 +18,10 @@ interface LotDetailsModalProps {
   extension: string;
   cropType: string;
   paymentInterval: string;
+  plantingDate: string;
+  estimatedHarvestDate: string;
+  propertyId: string;
+  propertyName: string;
 }
 
 export default function LotDetailsModal({
@@ -30,8 +35,31 @@ export default function LotDetailsModal({
   extension,
   cropType,
   paymentInterval,
+  plantingDate,
+  estimatedHarvestDate,
+  propertyId,
+  propertyName,
 }: LotDetailsModalProps) {
   const router = useRouter();
+
+  const handleDownload = async () => {
+    try {
+      const pdfUri = await generateLotPDF({
+        propertyId,
+        propertyName,
+        name,
+        id,
+        real_estate_registration_number,
+        latitude,
+        longitude,
+        extension,
+        cropType,
+        paymentInterval,
+      });
+    } catch (error) {
+      console.error("Error al generar o descargar el PDF:", error);
+    }
+  };
 
   return (
     <Modal isVisible={isVisible} style={styles.modal} onBackdropPress={onClose}>
@@ -89,7 +117,10 @@ export default function LotDetailsModal({
 
         {/* Botones */}
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.downloadButton}>
+          <TouchableOpacity
+            style={styles.downloadButton}
+            onPress={handleDownload}
+          >
             <AntDesign name="download" size={17} color={colors.darkGray} />
             <Text style={styles.downloadText}>Descargar</Text>
           </TouchableOpacity>
@@ -108,6 +139,8 @@ export default function LotDetailsModal({
                   extension,
                   cropType,
                   paymentInterval,
+                  plantingDate, // Agregar
+                  estimatedHarvestDate, // Agregar
                 },
               });
             }}
