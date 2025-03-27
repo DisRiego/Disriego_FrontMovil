@@ -167,7 +167,7 @@ export default function ValidationScreen() {
                 <Text
                   style={[typography.semibold.big, { color: colors.darkGray }]}
                 >
-                  Registrarse
+                  Validar
                 </Text>
                 <Text
                   style={[typography.medium.regular, { color: colors.gray }]}

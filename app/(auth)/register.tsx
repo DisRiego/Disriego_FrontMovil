@@ -322,7 +322,7 @@ export default function RegisterScreen() {
           loading ? (
             <ActivityIndicator size={28} color={colors.primary} />
           ) : (
-            "Registrarse"
+            "Finalizar"
           )
         }
         onPress={handleRegister}
