@@ -3,36 +3,53 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
-  ScrollView,
   Alert,
   ActivityIndicator,
   TouchableWithoutFeedback,
   KeyboardAvoidingView,
   Platform,
   Keyboard,
+  ScrollView,
+  TouchableOpacity,
 } from "react-native";
-import axios from "axios";
-import { AntDesign } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { typography } from "@/config/typography";
-import { colors } from "@/config/theme";
-import Button from "@/components/Button";
-import CustomInput from "@/components/CustomInput";
+import { AntDesign } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { usePasswordValidation } from "@/hooks/passwordValidation";
+import axios from "axios";
+import { Eye, EyeOff } from "lucide-react-native";
+
+// Importaciones locales
+import { typography } from "@/config/typography";
+import { colors } from "@/config/theme";
 import { API_URL } from "@/services/config";
 import { getUserData } from "@/services/auth";
+import { usePasswordValidation } from "@/hooks/passwordValidation";
+
+// Componentes
+import Button from "@/components/Button";
+import CustomInput from "@/components/CustomInput";
 import CustomHeader from "@/components/CustomHeader";
 
+/**
+ * Componente UpdatePassword
+ * Permite al usuario actualizar su contraseña actual por una nueva
+ * que cumpla con los requisitos de seguridad especificados
+ */
 const UpdatePassword = () => {
+  // Hooks y estados
   const router = useRouter();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Estados para controlar la visibilidad de las contraseñas
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Hook personalizado para validación de contraseña
   const {
     errors,
     validatePassword,
@@ -40,7 +57,13 @@ const UpdatePassword = () => {
     handleConfirmPasswordChange,
   } = usePasswordValidation();
 
+  /**
+   * Maneja el proceso de guardado de la nueva contraseña
+   * Valida que todos los campos estén completos y cumplan los requisitos
+   * Realiza la petición al servidor para actualizar la contraseña
+   */
   const handleSaveChanges = async () => {
+    // Validación de campos
     if (!newPassword || !confirmPassword) {
       Alert.alert("Error", "Todos los campos son obligatorios.");
       return;
@@ -59,7 +82,8 @@ const UpdatePassword = () => {
     setLoading(true);
 
     try {
-      const user = await getUserData(); // Obtenemos el usuario desde el token
+      // Obtención de datos del usuario y token
+      const user = await getUserData();
       if (!user) {
         Alert.alert("Error", "No se pudo obtener la información del usuario.");
         setLoading(false);
@@ -73,8 +97,9 @@ const UpdatePassword = () => {
         return;
       }
 
+      // Petición al servidor
       await axios.post(
-        `${API_URL}/users/${user.id}/change-password`, // Usamos user.id en la URL
+        `${API_URL}/users/${user.id}/change-password`,
         {
           old_password: currentPassword,
           new_password: newPassword,
@@ -110,27 +135,44 @@ const UpdatePassword = () => {
         >
           <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContainer}>
+              {/* Encabezado */}
               <CustomHeader
                 title="Actualizar contraseña"
                 backRoute="/(tabs)/profile"
               />
 
+              {/* Formulario */}
               <View style={styles.formContainer}>
                 <Text style={[typography.regular.big, { color: colors.gray }]}>
                   Ingresa los datos requeridos a continuación para actualizar tu
                   contraseña.
                 </Text>
 
+                {/* Campo de contraseña actual */}
                 <View style={{ width: "100%" }}>
                   <Text style={styles.label}>Contraseña actual</Text>
                   <CustomInput
                     placeholder="Contraseña actual"
                     value={currentPassword}
                     onChangeText={setCurrentPassword}
-                    secureTextEntry
+                    secureTextEntry={!showCurrentPassword}
+                    iconRight={
+                      <TouchableOpacity
+                        onPress={() =>
+                          setShowCurrentPassword(!showCurrentPassword)
+                        }
+                      >
+                        {showCurrentPassword ? (
+                          <EyeOff size={20} color={colors.border} />
+                        ) : (
+                          <Eye size={20} color={colors.border} />
+                        )}
+                      </TouchableOpacity>
+                    }
                   />
                 </View>
 
+                {/* Campo de nueva contraseña */}
                 <View style={{ width: "100%" }}>
                   <Text style={styles.label}>Contraseña nueva</Text>
                   <CustomInput
@@ -139,10 +181,21 @@ const UpdatePassword = () => {
                     onChangeText={(text) =>
                       handlePasswordChange(text, setNewPassword)
                     }
-                    secureTextEntry
+                    secureTextEntry={!showNewPassword}
                     style={errors.password ? styles.errorInput : undefined}
                     placeholderTextColor={
                       errors.password ? colors.error : colors.gray
+                    }
+                    iconRight={
+                      <TouchableOpacity
+                        onPress={() => setShowNewPassword(!showNewPassword)}
+                      >
+                        {showNewPassword ? (
+                          <EyeOff size={20} color={colors.border} />
+                        ) : (
+                          <Eye size={20} color={colors.border} />
+                        )}
+                      </TouchableOpacity>
                     }
                   />
                   {errors.password && newPassword.length > 0 && (
@@ -152,6 +205,7 @@ const UpdatePassword = () => {
                   )}
                 </View>
 
+                {/* Campo de confirmación de contraseña */}
                 <View style={{ width: "100%" }}>
                   <Text style={styles.label}>Confirmar contraseña</Text>
                   <CustomInput
@@ -164,12 +218,25 @@ const UpdatePassword = () => {
                         setConfirmPassword
                       )
                     }
-                    secureTextEntry
+                    secureTextEntry={!showConfirmPassword}
                     style={
                       errors.confirmPassword ? styles.errorInput : undefined
                     }
                     placeholderTextColor={
                       errors.confirmPassword ? colors.error : colors.gray
+                    }
+                    iconRight={
+                      <TouchableOpacity
+                        onPress={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff size={20} color={colors.border} />
+                        ) : (
+                          <Eye size={20} color={colors.border} />
+                        )}
+                      </TouchableOpacity>
                     }
                   />
                   {errors.confirmPassword && confirmPassword.length > 0 && (
@@ -179,6 +246,7 @@ const UpdatePassword = () => {
                   )}
                 </View>
 
+                {/* Requisitos de la contraseña */}
                 <View style={styles.validationContainer}>
                   <Text style={styles.validationText}>
                     <AntDesign
@@ -215,6 +283,7 @@ const UpdatePassword = () => {
                 </View>
               </View>
 
+              {/* Botón de guardar cambios */}
               <View style={styles.footerContainer}>
                 <Button
                   text={
@@ -236,6 +305,7 @@ const UpdatePassword = () => {
   );
 };
 
+// Estilos
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -243,7 +313,6 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 24,
   },
   container: {
     flex: 1,
