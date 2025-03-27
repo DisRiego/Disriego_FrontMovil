@@ -26,7 +26,13 @@ import { router, useLocalSearchParams } from "expo-router";
 
 export default function UpdateCrops() {
   const params = useLocalSearchParams();
+  console.log("Params en UpdateCrops:", params);
+
   const lotId = React.useMemo(() => params.lotId || params.id, [params]);
+  const [cropData, setCropData] = useState<Record<string, any>>({});
+  const [paymentIntervals, setPaymentIntervals] = useState<
+    Record<string, number>
+  >({});
 
   // State for pre-existing crop details
   const [initialCropType, setInitialCropType] = useState<string | undefined>(
@@ -77,6 +83,7 @@ export default function UpdateCrops() {
   const [loading, setLoading] = useState(true);
 
   // Fetch crop types
+  // Fetch crop types
   useEffect(() => {
     const fetchCropTypes = async () => {
       try {
@@ -89,35 +96,40 @@ export default function UpdateCrops() {
             value: crop.id.toString(),
           }));
 
+          const cropDetails = data.data.reduce((acc: any, crop: any) => {
+            acc[crop.id] = crop;
+            return acc;
+          }, {});
+
           setCropOptions([
             { label: "Seleccione una opción", value: "" },
             ...formattedOptions,
           ]);
+          setCropData(cropDetails);
 
-          if (initialCropType) {
-            const matchedCrop = formattedOptions.find(
-              (crop: { label: string }) => crop.label === initialCropType
-            );
-            if (matchedCrop) {
-              setSelectedCrop(matchedCrop.value);
-            }
+          // Buscar el ID del cultivo basado en su nombre
+          const matchedCrop = data.data.find(
+            (crop: any) => crop.name === params.cropType
+          );
+          if (matchedCrop) {
+            setSelectedCrop(matchedCrop.id.toString());
           }
         } else {
           Alert.alert("Error", "No se pudieron cargar los tipos de cultivo");
         }
       } catch (error) {
+        console.error("Error fetching crops:", error);
         Alert.alert(
           "Error",
           "Hubo un problema al obtener los tipos de cultivo"
         );
-        console.error("Error fetching crops:", error);
       } finally {
         setLoadingCrops(false);
       }
     };
 
     fetchCropTypes();
-  }, []);
+  }, [params.cropType]);
 
   // Fetch payment intervals
   useEffect(() => {
@@ -132,36 +144,40 @@ export default function UpdateCrops() {
             value: interval.id.toString(),
           }));
 
+          const intervalMap = data.data.reduce((acc: any, interval: any) => {
+            acc[interval.id] = interval.interval_days;
+            return acc;
+          }, {});
+
           setPaymentOptions([
             { label: "Seleccione una opción", value: "" },
             ...formattedOptions,
           ]);
+          setPaymentIntervals(intervalMap);
 
-          if (initialPaymentInterval) {
-            const matchedInterval = formattedOptions.find(
-              (interval: { label: string }) =>
-                interval.label === initialPaymentInterval
-            );
-            if (matchedInterval) {
-              setSelectedInterval(matchedInterval.value);
-            }
+          // Buscar el ID del intervalo basado en su nombre
+          const matchedInterval = data.data.find(
+            (interval: any) => interval.name === params.paymentInterval
+          );
+          if (matchedInterval) {
+            setSelectedInterval(matchedInterval.id.toString());
           }
         } else {
           Alert.alert("Error", "No se pudieron cargar los intervalos de pago");
         }
       } catch (error) {
+        console.error("Error fetching payments:", error);
         Alert.alert(
           "Error",
           "Hubo un problema al obtener los intervalos de pago"
         );
-        console.error("Error fetching payments:", error);
       } finally {
         setLoadingPayments(false);
       }
     };
 
     fetchPaymentIntervals();
-  }, []);
+  }, [params.paymentInterval]);
 
   // Manage overall loading state
   useEffect(() => {
@@ -242,6 +258,26 @@ export default function UpdateCrops() {
     }
   };
 
+  useEffect(() => {
+    if (selectedCrop && cropData[selectedCrop]) {
+      const { harvest_time, payment_interval_id } = cropData[selectedCrop];
+
+      // Establecer el intervalo de pago automáticamente
+      if (paymentIntervals[payment_interval_id]) {
+        setSelectedInterval(payment_interval_id.toString());
+      }
+
+      // Calcular la fecha de cosecha si la fecha de siembra ya está seleccionada
+      if (plantingDate) {
+        const calculatedHarvestDate = new Date(plantingDate);
+        calculatedHarvestDate.setDate(
+          calculatedHarvestDate.getDate() + harvest_time
+        );
+        setHarvestDate(calculatedHarvestDate);
+      }
+    }
+  }, [selectedCrop, plantingDate, cropData, paymentIntervals]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -284,10 +320,13 @@ export default function UpdateCrops() {
                     {/* Dropdown for Payment Interval */}
                     <View style={styles.inputContainer}>
                       <Text style={styles.label}>Intervalo de Pago</Text>
-                      <DropdownPicker
-                        selectedValue={selectedInterval}
-                        onValueChange={setSelectedInterval}
-                        options={paymentOptions}
+                      <CustomInput
+                        value={
+                          paymentOptions.find(
+                            (option) => option.value === selectedInterval
+                          )?.label || "Cargando..."
+                        }
+                        editable={false}
                       />
                     </View>
 
@@ -322,26 +361,12 @@ export default function UpdateCrops() {
                       <Text style={styles.label}>
                         Fecha estimada de cosecha
                       </Text>
-                      <TouchableOpacity
-                        onPress={() => setShowHarvestPicker(true)}
-                      >
-                        <CustomInput
-                          placeholder="Seleccione una fecha"
-                          value={
-                            harvestDate ? harvestDate.toLocaleDateString() : ""
-                          }
-                          editable={false}
-                        />
-                      </TouchableOpacity>
-                      {showHarvestPicker && (
-                        <DateTimePicker
-                          value={harvestDate || new Date()}
-                          mode="date"
-                          display="default"
-                          minimumDate={plantingDate || new Date()}
-                          onChange={handleHarvestDateChange}
-                        />
-                      )}
+                      <CustomInput
+                        value={
+                          harvestDate ? harvestDate.toLocaleDateString() : ""
+                        }
+                        editable={false}
+                      />
                     </View>
                   </View>
 
