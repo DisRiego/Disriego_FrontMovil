@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { colors } from "@/config/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { typography } from "@/config/typography";
+import { useLotContext } from "@/context/LotContext";
 
 interface LotCardProps {
   name: string;
@@ -16,8 +17,8 @@ interface LotCardProps {
   plantingDate?: string;
   estimatedHarvestDate?: string;
   onPress?: () => void;
-  minimal?: boolean; // Controla la visibilidad de ciertos datos
-  showCropType?: boolean; // Nueva prop para controlar la visibilidad del tipo de cultivo
+  minimal?: boolean;
+  showCropType?: boolean;
 }
 
 export default function LotCard({
@@ -29,18 +30,38 @@ export default function LotCard({
   longitud,
   cropType,
   paymentInterval,
+  plantingDate,
+  estimatedHarvestDate,
   onPress,
-  minimal = false, // Por defecto, muestra todo
-  showCropType = true, // Por defecto, se muestra el tipo de cultivo
+  minimal = false,
+  showCropType = true,
 }: LotCardProps) {
+  const { setLot } = useLotContext();
+
+  const handlePress = () => {
+    setLot({
+      id,
+      name,
+      real_estate_registration_number: folio || "",
+      latitude: latitud || "",
+      longitude: longitud || "",
+      extension: extension || "",
+      cropType: cropType || "",
+      paymentInterval: paymentInterval || "",
+      plantingDate: plantingDate || "",
+      estimatedHarvestDate: estimatedHarvestDate || "",
+    });
+
+    if (onPress) onPress();
+  };
+
   const Container = onPress ? TouchableOpacity : View;
 
   return (
     <Container
       style={styles.card}
-      {...(onPress && { onPress, accessibilityRole: "button" })}
+      {...(onPress && { onPress: handlePress, accessibilityRole: "button" })}
     >
-      {/* Encabezado */}
       <View style={styles.header}>
         <Text style={styles.title}>{name}</Text>
         {onPress && (
@@ -49,7 +70,6 @@ export default function LotCard({
       </View>
 
       <Text style={styles.idText}>#{id}</Text>
-      {/* Información visible en ambos modos */}
       <View style={styles.infoRow}>
         <Text style={styles.label}>Folio Matrícula</Text>
         <Text style={styles.value}>{folio || "N/A"}</Text>
@@ -60,7 +80,6 @@ export default function LotCard({
         <Text style={styles.value}>{extension || "N/A"}</Text>
       </View>
 
-      {/* Mostrar el tipo de cultivo solo si `showCropType` es `true` */}
       {showCropType && (
         <View style={styles.infoRow}>
           <Text style={styles.label}>Tipo Cultivo</Text>
@@ -68,7 +87,6 @@ export default function LotCard({
         </View>
       )}
 
-      {/* Oculta latitud y longitud si `minimal` es `true` */}
       {!minimal && (
         <>
           <View style={styles.infoRow}>
@@ -99,7 +117,7 @@ const styles = StyleSheet.create({
     shadowColor: colors.border,
     shadowOpacity: 0.1,
     shadowRadius: 5,
-    elevation: 3, // Para sombras en Android
+    elevation: 3,
   },
   header: {
     flexDirection: "row",

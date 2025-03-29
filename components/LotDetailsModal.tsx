@@ -1,3 +1,4 @@
+// LotDetailsModal.tsx
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import Modal from "react-native-modal";
@@ -6,6 +7,7 @@ import { typography } from "@/config/typography";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { generateLotPDF } from "@/utils/generatePDFLot";
+import { useLotContext } from "@/context/LotContext";
 
 interface LotDetailsModalProps {
   isVisible: boolean;
@@ -41,10 +43,11 @@ export default function LotDetailsModal({
   propertyName,
 }: LotDetailsModalProps) {
   const router = useRouter();
+  const { setLot, setProperty } = useLotContext();
 
   const handleDownload = async () => {
     try {
-      const pdfUri = await generateLotPDF({
+      await generateLotPDF({
         propertyId,
         propertyName,
         name,
@@ -59,6 +62,33 @@ export default function LotDetailsModal({
     } catch (error) {
       console.error("Error al generar o descargar el PDF:", error);
     }
+  };
+
+  const handleViewDetails = () => {
+    setProperty({
+      id: propertyId,
+      name: propertyName,
+      latitude,
+      longitude,
+      extension,
+      real_estate_registration_number,
+    });
+
+    setLot({
+      id,
+      name,
+      real_estate_registration_number,
+      latitude,
+      longitude,
+      extension,
+      cropType,
+      paymentInterval,
+      plantingDate,
+      estimatedHarvestDate,
+    });
+
+    onClose();
+    router.push("/properties/detailsLot");
   };
 
   return (
@@ -103,6 +133,7 @@ export default function LotDetailsModal({
             <Text style={styles.value}>{extension}</Text>
           </View>
           <View style={styles.separator} />
+
           <View style={styles.row}>
             <Text style={styles.label}>Tipo de Cultivo</Text>
             <Text style={styles.value}>{cropType}</Text>
@@ -126,24 +157,7 @@ export default function LotDetailsModal({
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.detailsButton}
-            onPress={() => {
-              onClose(); // Cierra el modal antes de navegar
-              router.push({
-                pathname: "/properties/detailsLot",
-                params: {
-                  id,
-                  name,
-                  real_estate_registration_number,
-                  latitude,
-                  longitude,
-                  extension,
-                  cropType,
-                  paymentInterval,
-                  plantingDate, // Agregar
-                  estimatedHarvestDate, // Agregar
-                },
-              });
-            }}
+            onPress={handleViewDetails}
           >
             <Text style={styles.detailsText}>Ver Detalles</Text>
             <Feather name="eye" size={17} color={colors.primary} />

@@ -39,8 +39,10 @@
     "expo-web-browser": "~14.0.2",
     "jwt-decode": "^4.0.0",
     "lucide-react-native": "^0.482.0",
+    "moment": "^2.30.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
+    "react-hook-form": "^7.55.0",
     "react-native": "0.76.7",
     "react-native-dotenv": "^3.4.11",
     "react-native-gesture-handler": "~2.20.2",
@@ -59,6 +61,7 @@
     "@babel/core": "^7.25.2",
     "@testing-library/jest-native": "^5.4.3",
     "@testing-library/react-native": "^12.4.3",
+    "@microsoft/tsdoc": "^0.15.1",
     "@types/jest": "^29.5.14",
     "@types/react": "~18.3.12",
     "@types/react-native-dotenv": "^0.2.2",
@@ -72,6 +75,7 @@
     "jest-html-reporter": "^4.1.0",
     "react-test-renderer": "18.3.1",
     "ts-jest": "^29.1.1",
+    "typedoc": "^0.28.1",
     "typescript": "^5.3.3"
   },
   "private": true

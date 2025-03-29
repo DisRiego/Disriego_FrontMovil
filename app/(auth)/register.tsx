@@ -21,7 +21,7 @@ import Header from "@/components/Header";
 import { usePasswordValidation } from "@/hooks/passwordValidation";
 import { AntDesign } from "@expo/vector-icons";
 import axios from "axios";
-import { API_URL } from "@/services/config";
+import { API_FRONT, API_URL } from "@/services/config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 /**
@@ -83,7 +83,8 @@ export default function RegisterScreen() {
       console.log("Token de activación generado:", activationToken);
 
       // URL de activación que se incluirá en el correo
-      const activationUrl = `http://localhost:5173/signup/${activationToken}`;
+
+      const activationUrl = `${API_FRONT}/signup/${activationToken}`;
 
       // Configuración del servicio de correo EmailJS
       const payload = {
@@ -324,7 +325,7 @@ export default function RegisterScreen() {
           loading ? (
             <ActivityIndicator size={28} color={colors.primary} />
           ) : (
-            "Registrarse"
+            "Finalizar"
           )
         }
         onPress={handleRegister}

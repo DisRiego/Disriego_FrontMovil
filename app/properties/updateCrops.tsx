@@ -1,369 +1,235 @@
+//<Text style={styles.title}>Lote: {currentLot.name}</Text>
+import React, { useEffect, useState, useMemo } from "react";
 import {
   View,
   Text,
-  Alert,
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  ActivityIndicator,
   TouchableWithoutFeedback,
   KeyboardAvoidingView,
   Keyboard,
   Platform,
-  TouchableOpacity,
   StatusBar,
+  ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
-import React, { useState, useEffect } from "react";
-import { colors } from "@/config/theme";
+import { useRouter } from "expo-router";
+import moment from "moment";
+
 import CustomHeader from "@/components/CustomHeader";
+import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
-import DropdownPicker from "@/components/Dropdown";
-import { API_URL } from "@/services/config";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import { useLotContext } from "@/context/LotContext";
 import CustomInput from "@/components/CustomInput";
+import DropdownPicker from "@/components/Dropdown";
 import Button from "@/components/Button";
-import { router, useLocalSearchParams } from "expo-router";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 export default function UpdateCrops() {
-  const params = useLocalSearchParams();
-  const lotId = React.useMemo(() => params.lotId || params.id, [params]);
+  const router = useRouter();
+  const {
+    currentLot,
+    updateLotField,
+    updateLotInList,
+    cropTypes,
+    paymentIntervals,
+    fetchCropOptions,
+    saveLotToBackend,
+  } = useLotContext();
 
-  // State for pre-existing crop details
-  const [initialCropType, setInitialCropType] = useState<string | undefined>(
-    params.cropType as string
-  );
-  const [initialPaymentInterval, setInitialPaymentInterval] = useState<
-    string | undefined
-  >(params.paymentInterval as string);
-  const [initialPlantingDate, setInitialPlantingDate] = useState<Date | null>(
-    params.plantingDate ? new Date(params.plantingDate as string) : null
-  );
-  const [initialHarvestDate, setInitialHarvestDate] = useState<Date | null>(
-    params.estimatedHarvestDate
-      ? new Date(params.estimatedHarvestDate as string)
-      : null
-  );
+  const [selectedCrop, setSelectedCrop] = useState<any>(null);
+  const [plantingDate, setPlantingDate] = useState<Date>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [estimatedHarvestDate, setEstimatedHarvestDate] = useState("");
+  const [isLoadingOptions, setIsLoadingOptions] = useState(true);
 
-  // State for types of crop
-  const [selectedCrop, setSelectedCrop] = useState<string>(
-    initialCropType || ""
-  );
-  const [cropOptions, setCropOptions] = useState<
-    { label: string; value: string }[]
-  >([]);
-  const [loadingCrops, setLoadingCrops] = useState<boolean>(true);
+  const cropOptions = useMemo(() => {
+    return cropTypes.map((crop) => {
+      const interval = paymentIntervals.find(
+        (p) => p.id === crop.payment_interval_id
+      );
+      return {
+        id: crop.id,
+        label: crop.name,
+        value: crop.name,
+        intervalId: interval?.id || 0,
+        intervalName: interval?.name || "",
+        harvestDays: crop.harvest_time || 0,
+      };
+    });
+  }, [cropTypes, paymentIntervals]);
 
-  // State for payment intervals
-  const [selectedInterval, setSelectedInterval] = useState<string>(
-    initialPaymentInterval || ""
-  );
-  const [paymentOptions, setPaymentOptions] = useState<
-    { label: string; value: string }[]
-  >([]);
-  const [loadingPayments, setLoadingPayments] = useState<boolean>(true);
-
-  // State for planting and harvest dates
-  const [plantingDate, setPlantingDate] = useState<Date | null>(
-    initialPlantingDate
-  );
-  const [harvestDate, setHarvestDate] = useState<Date | null>(
-    initialHarvestDate
-  );
-  const [showPlantingPicker, setShowPlantingPicker] = useState(false);
-  const [showHarvestPicker, setShowHarvestPicker] = useState(false);
-  const [savingChanges, setSavingChanges] = useState(false);
-
-  // Overall loading state
-  const [loading, setLoading] = useState(true);
-
-  // Fetch crop types
   useEffect(() => {
-    const fetchCropTypes = async () => {
-      try {
-        const response = await fetch(`${API_URL}/my-company/type-crops`);
-        const data = await response.json();
-
-        if (data.success) {
-          const formattedOptions = data.data.map((crop: any) => ({
-            label: crop.name,
-            value: crop.id.toString(),
-          }));
-
-          setCropOptions([
-            { label: "Seleccione una opción", value: "" },
-            ...formattedOptions,
-          ]);
-
-          if (initialCropType) {
-            const matchedCrop = formattedOptions.find(
-              (crop: { label: string }) => crop.label === initialCropType
-            );
-            if (matchedCrop) {
-              setSelectedCrop(matchedCrop.value);
-            }
-          }
-        } else {
-          Alert.alert("Error", "No se pudieron cargar los tipos de cultivo");
-        }
-      } catch (error) {
-        Alert.alert(
-          "Error",
-          "Hubo un problema al obtener los tipos de cultivo"
-        );
-        console.error("Error fetching crops:", error);
-      } finally {
-        setLoadingCrops(false);
-      }
+    const loadOptions = async () => {
+      setIsLoadingOptions(true);
+      await fetchCropOptions();
+      setIsLoadingOptions(false);
     };
-
-    fetchCropTypes();
+    loadOptions();
   }, []);
 
-  // Fetch payment intervals
   useEffect(() => {
-    const fetchPaymentIntervals = async () => {
-      try {
-        const response = await fetch(`${API_URL}/my-company/payment-intervals`);
-        const data = await response.json();
-
-        if (data.success) {
-          const formattedOptions = data.data.map((interval: any) => ({
-            label: interval.name,
-            value: interval.id.toString(),
-          }));
-
-          setPaymentOptions([
-            { label: "Seleccione una opción", value: "" },
-            ...formattedOptions,
-          ]);
-
-          if (initialPaymentInterval) {
-            const matchedInterval = formattedOptions.find(
-              (interval: { label: string }) =>
-                interval.label === initialPaymentInterval
-            );
-            if (matchedInterval) {
-              setSelectedInterval(matchedInterval.value);
-            }
-          }
-        } else {
-          Alert.alert("Error", "No se pudieron cargar los intervalos de pago");
+    if (!isLoadingOptions && currentLot && cropOptions.length > 0) {
+      const found = cropOptions.find((c) => c.value === currentLot.cropType);
+      if (found) {
+        setSelectedCrop(found);
+        if (currentLot.plantingDate) {
+          const parsed = new Date(currentLot.plantingDate);
+          setPlantingDate(parsed);
+          const est = moment(parsed)
+            .add(found.harvestDays, "days")
+            .format("YYYY-MM-DD");
+          setEstimatedHarvestDate(est);
         }
-      } catch (error) {
-        Alert.alert(
-          "Error",
-          "Hubo un problema al obtener los intervalos de pago"
-        );
-        console.error("Error fetching payments:", error);
-      } finally {
-        setLoadingPayments(false);
       }
-    };
-
-    fetchPaymentIntervals();
-  }, []);
-
-  // Manage overall loading state
-  useEffect(() => {
-    if (!loadingCrops && !loadingPayments) {
-      setLoading(false);
     }
-  }, [loadingCrops, loadingPayments]);
+  }, [isLoadingOptions, currentLot, cropOptions]);
 
-  // Handle planting date change
-  const handlePlantingDateChange = (event: any, selectedDate?: Date) => {
-    setShowPlantingPicker(false);
+  const onChangeCrop = (value: string) => {
+    const crop = cropOptions.find((c) => c.value === value);
+    if (crop) {
+      setSelectedCrop(crop);
+      const est = moment(plantingDate)
+        .add(crop.harvestDays, "days")
+        .format("YYYY-MM-DD");
+      setEstimatedHarvestDate(est);
+    }
+  };
+
+  const onChangeDate = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
     if (selectedDate) {
       setPlantingDate(selectedDate);
-    }
-  };
-
-  // Handle harvest date change
-  const handleHarvestDateChange = (event: any, selectedDate?: Date) => {
-    setShowHarvestPicker(false);
-    if (selectedDate) {
-      if (plantingDate && selectedDate < plantingDate) {
-        Alert.alert(
-          "Error",
-          "La fecha de cosecha no puede ser antes de la fecha de siembra."
-        );
-      } else {
-        setHarvestDate(selectedDate);
+      if (selectedCrop) {
+        const est = moment(selectedDate)
+          .add(selectedCrop.harvestDays, "days")
+          .format("YYYY-MM-DD");
+        setEstimatedHarvestDate(est);
       }
     }
   };
 
-  // Save changes function
-  const handleSaveChanges = async () => {
-    if (!selectedCrop || !selectedInterval || !plantingDate || !harvestDate) {
-      Alert.alert("Error", "Por favor complete todos los campos.");
-      return;
+  const handleSave = async () => {
+    if (selectedCrop && currentLot) {
+      const updated = {
+        ...currentLot,
+        cropType: selectedCrop.value,
+        paymentInterval: selectedCrop.intervalName,
+        plantingDate: plantingDate.toISOString(),
+        estimatedHarvestDate,
+      };
+
+      updateLotField("cropType", updated.cropType);
+      updateLotField("paymentInterval", updated.paymentInterval);
+      updateLotField("plantingDate", updated.plantingDate);
+      updateLotField("estimatedHarvestDate", updated.estimatedHarvestDate);
+      updateLotInList(updated);
+
+      const success = await saveLotToBackend(currentLot.id, {
+        typeCropId: selectedCrop.id,
+        paymentIntervalId: selectedCrop.intervalId,
+        plantingDate: updated.plantingDate,
+        estimatedHarvestDate: updated.estimatedHarvestDate,
+      });
+
+      if (success) {
+        router.replace("/properties/detailsLot");
+      } else {
+        alert("Hubo un error al guardar los cambios en el servidor.");
+      }
     }
+  };
 
-    setSavingChanges(true);
-
-    const formData = new FormData();
-    formData.append("type_crop_id", selectedCrop);
-    formData.append("payment_interval", selectedInterval);
-    formData.append("planting_date", plantingDate.toISOString().split("T")[0]);
-    formData.append(
-      "estimated_harvest_date",
-      harvestDate.toISOString().split("T")[0]
+  if (isLoadingOptions || !currentLot) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loaderText}>Cargando opciones...</Text>
+        </View>
+      </SafeAreaView>
     );
-
-    try {
-      const response = await fetch(
-        `${API_URL}/properties/lot/${lotId}/edit-fields`,
-        {
-          method: "PUT",
-          body: formData,
-          headers: {
-            Accept: "application/json",
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        Alert.alert("Éxito", "Los detalles del cultivo han sido actualizados.");
-        router.push("/properties/myProperties");
-      } else {
-        Alert.alert(
-          "Error",
-          data.message || "No se pudo actualizar el cultivo."
-        );
-      }
-    } catch (error) {
-      Alert.alert("Error", "Hubo un problema al guardar los cambios.");
-      console.error("Error saving changes:", error);
-    } finally {
-      setSavingChanges(false);
-    }
-  };
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <CustomHeader
-          title="Detalles del cultivo"
-          backRoute="/properties/myProperties"
+          title="Actualizar cultivo"
+          backRoute="/properties/detailsLot"
         />
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <KeyboardAvoidingView
+            style={styles.container}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+          >
+            <ScrollView contentContainerStyle={styles.scrollContainer}>
+              <View style={styles.textContainer}>
+                <Text style={[typography.regular.big, { color: colors.gray }]}>
+                  Edita los detalles del lote {currentLot.name}.
+                </Text>
 
-        {loading ? (
-          <View style={styles.loaderContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loaderText}>Cargando datos...</Text>
-          </View>
-        ) : (
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <KeyboardAvoidingView
-              style={styles.container}
-              behavior={Platform.OS === "ios" ? "padding" : "height"}
-            >
-              <ScrollView contentContainerStyle={styles.scrollContainer}>
-                <View style={styles.textContainer}>
-                  <Text
-                    style={[typography.regular.big, { color: colors.gray }]}
-                  >
-                    Por favor, complete el siguiente formulario y luego de a
-                    confirmar para editar los detalles del cultivo.
-                  </Text>
-
-                  <View style={styles.formContainer}>
-                    {/* Dropdown for Crop Type */}
-                    <View style={styles.inputContainer}>
-                      <Text style={styles.label}>Tipo de cultivo</Text>
-                      <DropdownPicker
-                        selectedValue={selectedCrop}
-                        onValueChange={setSelectedCrop}
-                        options={cropOptions}
-                      />
-                    </View>
-
-                    {/* Dropdown for Payment Interval */}
-                    <View style={styles.inputContainer}>
-                      <Text style={styles.label}>Intervalo de Pago</Text>
-                      <DropdownPicker
-                        selectedValue={selectedInterval}
-                        onValueChange={setSelectedInterval}
-                        options={paymentOptions}
-                      />
-                    </View>
-
-                    {/* Planting Date Picker */}
-                    <View style={styles.inputContainer}>
-                      <Text style={styles.label}>Fecha de siembra</Text>
-                      <TouchableOpacity
-                        onPress={() => setShowPlantingPicker(true)}
-                      >
-                        <CustomInput
-                          placeholder="Seleccione una fecha"
-                          value={
-                            plantingDate
-                              ? plantingDate.toLocaleDateString()
-                              : ""
-                          }
-                          editable={false}
-                        />
-                      </TouchableOpacity>
-                      {showPlantingPicker && (
-                        <DateTimePicker
-                          value={plantingDate || new Date()}
-                          mode="date"
-                          display="default"
-                          onChange={handlePlantingDateChange}
-                        />
-                      )}
-                    </View>
-
-                    {/* Harvest Date Picker */}
-                    <View style={styles.inputContainer}>
-                      <Text style={styles.label}>
-                        Fecha estimada de cosecha
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() => setShowHarvestPicker(true)}
-                      >
-                        <CustomInput
-                          placeholder="Seleccione una fecha"
-                          value={
-                            harvestDate ? harvestDate.toLocaleDateString() : ""
-                          }
-                          editable={false}
-                        />
-                      </TouchableOpacity>
-                      {showHarvestPicker && (
-                        <DateTimePicker
-                          value={harvestDate || new Date()}
-                          mode="date"
-                          display="default"
-                          minimumDate={plantingDate || new Date()}
-                          onChange={handleHarvestDateChange}
-                        />
-                      )}
-                    </View>
+                <View style={styles.formContainer}>
+                  {/* Dropdown crop type */}
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.label}>Tipo de cultivo</Text>
+                    <DropdownPicker
+                      selectedValue={selectedCrop?.value}
+                      onValueChange={onChangeCrop}
+                      options={cropOptions.map(({ label, value }) => ({
+                        label,
+                        value,
+                      }))}
+                    />
                   </View>
 
-                  {/* Save Changes Button */}
-                  <View style={styles.footerContainer}>
-                    <Button
-                      text={
-                        savingChanges ? (
-                          <ActivityIndicator size={28} color="white" />
-                        ) : (
-                          "Guardar cambios"
-                        )
-                      }
-                      onPress={handleSaveChanges}
-                      disabled={savingChanges}
+                  {/* Payment interval (read-only) */}
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.label}>Intervalo de Pago</Text>
+                    <CustomInput
+                      value={selectedCrop?.intervalName || ""}
+                      editable={false}
+                    />
+                  </View>
+
+                  {/* Planting date */}
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.label}>Fecha de siembra</Text>
+                    <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+                      <CustomInput
+                        value={moment(plantingDate).format("YYYY-MM-DD")}
+                        editable={false}
+                      />
+                    </TouchableOpacity>
+                    {showDatePicker && (
+                      <DateTimePicker
+                        value={plantingDate}
+                        mode="date"
+                        display="default"
+                        onChange={onChangeDate}
+                      />
+                    )}
+                  </View>
+
+                  {/* Harvest date */}
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.label}>Fecha estimada de cosecha</Text>
+                    <CustomInput
+                      value={estimatedHarvestDate}
+                      editable={false}
                     />
                   </View>
                 </View>
-              </ScrollView>
-            </KeyboardAvoidingView>
-          </TouchableWithoutFeedback>
-        )}
+
+                {/* Save Button */}
+                <View style={styles.footerContainer}>
+                  <Button text="Guardar" onPress={handleSave} />
+                </View>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </TouchableWithoutFeedback>
       </View>
     </SafeAreaView>
   );
@@ -378,10 +244,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingBottom: 16,
-    alignItems: "center",
     justifyContent: "flex-start",
     backgroundColor: colors.base,
   },
+
   scrollContainer: {
     flexGrow: 1,
   },
@@ -390,6 +256,16 @@ const styles = StyleSheet.create({
     gap: 16,
     width: "100%",
     paddingVertical: 20,
+  },
+  textContainer: {
+    flex: 1,
+    width: "100%",
+    paddingTop: 10,
+    paddingHorizontal: 20,
+    alignItems: "flex-start",
+  },
+  inputContainer: {
+    width: "100%",
   },
   label: {
     marginBottom: 8,
@@ -402,16 +278,6 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 8,
     alignItems: "center",
-  },
-  textContainer: {
-    flex: 1,
-    width: "100%",
-    paddingTop: 10,
-    paddingHorizontal: 20,
-    alignItems: "flex-start",
-  },
-  inputContainer: {
-    width: "100%",
   },
   loaderContainer: {
     flex: 1,

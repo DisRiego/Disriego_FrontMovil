@@ -25,7 +25,7 @@ import LoginButton from "@/components/LoginButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Eye, EyeOff } from "lucide-react-native";
 import axios from "axios";
-import { API_URL } from "@/services/config";
+import { API_FRONT, API_URL } from "@/services/config";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -73,7 +73,7 @@ export default function LoginScreen() {
       console.log("Token de activación a usar:", activationToken);
 
       // URL de activación que se incluirá en el correo
-      const activationUrl = `http://localhost:5173/signup/${activationToken}`;
+      const activationUrl = `${API_FRONT}/signup/${activationToken}`;
 
       // Configuración del servicio de correo EmailJS
       const payload = {
@@ -281,25 +281,6 @@ export default function LoginScreen() {
                     </Text>
                   </Text>
                 </View>
-                {/*
-                <Image
-                  source={require("../../assets/images/divisor.png")}
-                  style={styles.divisor}
-                />
-
-                <View style={styles.loginWrapper}>
-                  <LoginButton
-                    text="Ingresa con Google"
-                    icon={require("../../assets/images/googleLogo.png")}
-                    onPress={() => console.log("Google Login")}
-                  />
-                  <LoginButton
-                    text="Ingresa con Outlook"
-                    icon={require("../../assets/images/outlookLogo.png")}
-                    onPress={() => console.log("Outlook Login")}
-                  />
-                </View>
-                */}
               </View>
 
               <View style={styles.footerContainer}>
