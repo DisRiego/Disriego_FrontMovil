@@ -6,6 +6,7 @@ import { typography } from "@/config/typography";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { generatePropertyPDF } from "@/utils/generatePropertyPDF";
+import { useLotContext } from "@/context/LotContext";
 
 interface PropertyDetailsModalProps {
   isVisible: boolean;
@@ -29,12 +30,25 @@ export default function PropertyDetailsModal({
   extension,
 }: PropertyDetailsModalProps) {
   const router = useRouter();
+  const { setProperty } = useLotContext();
+
+  const handleViewDetails = () => {
+    setProperty({
+      id,
+      name,
+      latitude,
+      longitude,
+      extension,
+      real_estate_registration_number,
+    });
+
+    onClose();
+    router.push("/properties/detailsProperties");
+  };
 
   return (
     <Modal isVisible={isVisible} onBackdropPress={onClose} style={styles.modal}>
-      {/* Contenedor principal */}
       <View style={styles.container}>
-        {/* Header */}
         <View style={styles.header}>
           <View style={styles.titleContainer}>
             <View style={styles.iconContainer}>
@@ -50,13 +64,13 @@ export default function PropertyDetailsModal({
           </TouchableOpacity>
         </View>
 
-        {/* Información */}
         <View style={styles.infoContainer}>
           <View style={styles.row}>
             <Text style={styles.label}>Folio Matrícula</Text>
             <Text style={styles.value}>{real_estate_registration_number}</Text>
           </View>
           <View style={styles.separator} />
+
           <View style={styles.row}>
             <Text style={styles.label}>Latitud</Text>
             <Text style={styles.value}>{latitude}</Text>
@@ -74,7 +88,6 @@ export default function PropertyDetailsModal({
           <View style={styles.separator} />
         </View>
 
-        {/* Botones */}
         <View style={styles.actions}>
           <TouchableOpacity
             style={styles.downloadButton}
@@ -95,20 +108,7 @@ export default function PropertyDetailsModal({
 
           <TouchableOpacity
             style={styles.detailsButton}
-            onPress={() => {
-              onClose();
-              router.push({
-                pathname: "/properties/detailsProperties",
-                params: {
-                  id,
-                  name,
-                  real_estate_registration_number,
-                  latitude,
-                  longitude,
-                  extension,
-                },
-              });
-            }}
+            onPress={handleViewDetails}
           >
             <Text style={styles.detailsText}>Ver Detalles</Text>
             <Feather name="eye" size={17} color={colors.primary} />

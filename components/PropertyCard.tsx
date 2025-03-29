@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { colors } from "@/config/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { typography } from "@/config/typography";
+import { useLotContext } from "@/context/LotContext";
 
 interface PropertyCardProps {
   name: string;
@@ -23,11 +24,24 @@ export default function PropertyCard({
   longitud,
   onPress,
 }: PropertyCardProps) {
+  const { setProperty } = useLotContext();
   const Container = onPress ? TouchableOpacity : View;
 
+  const handlePress = () => {
+    setProperty({
+      id,
+      name,
+      real_estate_registration_number: folio || "",
+      latitude: latitud || "",
+      longitude: longitud || "",
+      extension: extension || "",
+    });
+
+    if (onPress) onPress();
+  };
+
   return (
-    <Container style={styles.card} {...(onPress && { onPress })}>
-      {/* Encabezado */}
+    <Container style={styles.card} {...(onPress && { onPress: handlePress })}>
       <View style={styles.header}>
         <Text style={styles.title}>{name}</Text>
         {onPress && (
@@ -35,10 +49,8 @@ export default function PropertyCard({
         )}
       </View>
 
-      {/* ID */}
       <Text style={styles.idText}>#{id}</Text>
 
-      {/* Información opcional */}
       {folio && (
         <View style={styles.infoRow}>
           <Text style={styles.label}>Folio Matrícula</Text>
