@@ -1,26 +1,19 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { Pencil } from "lucide-react-native"; // Importa el ícono de lápiz
+import { Pencil } from "lucide-react-native";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
-
-interface LotInfoCardProps {
-  cropType?: string;
-  paymentInterval?: string;
-  plantingDate?: string;
-  estimatedHarvestDate?: string;
-  onEditPress?: () => void;
-}
+import { useLotContext } from "@/context/LotContext";
+import moment from "moment"; // Asegúrate de importar moment
 
 export default function LotInfoCard({
-  cropType,
-  paymentInterval,
-  plantingDate,
-  estimatedHarvestDate,
   onEditPress,
-}: LotInfoCardProps) {
-  console.log("Planting Date:", plantingDate);
-  console.log("Estimated Harvest Date:", estimatedHarvestDate);
+}: {
+  onEditPress?: () => void;
+}) {
+  const { currentLot } = useLotContext();
+
+  if (!currentLot) return null;
 
   return (
     <View style={styles.card}>
@@ -28,25 +21,30 @@ export default function LotInfoCard({
 
       <View style={styles.infoRow}>
         <Text style={styles.label}>Tipo de Cultivo</Text>
-        <Text style={styles.value}>{cropType || "N/A"}</Text>
+        <Text style={styles.value}>{currentLot.cropType || "N/A"}</Text>
       </View>
 
       <View style={styles.infoRow}>
         <Text style={styles.label}>Intervalo de Pago</Text>
-        <Text style={styles.value}>{paymentInterval || "N/A"}</Text>
+        <Text style={styles.value}>{currentLot.paymentInterval || "N/A"}</Text>
       </View>
 
       <View style={styles.infoRow}>
         <Text style={styles.label}>Fecha de Plantación</Text>
-        <Text style={styles.value}>{plantingDate || "N/A"}</Text>
+        <Text style={styles.value}>
+          {currentLot.plantingDate
+            ? moment(currentLot.plantingDate).format("YYYY-MM-DD")
+            : "N/A"}
+        </Text>
       </View>
 
       <View style={styles.infoRow}>
         <Text style={styles.label}>Fecha Estimada de Cosecha</Text>
-        <Text style={styles.value}>{estimatedHarvestDate || "N/A"}</Text>
+        <Text style={styles.value}>
+          {currentLot.estimatedHarvestDate || "N/A"}
+        </Text>
       </View>
 
-      {/* Botón de Edición con Ícono */}
       {onEditPress && (
         <TouchableOpacity style={styles.editButton} onPress={onEditPress}>
           <Pencil size={18} color={colors.gray} />
@@ -105,6 +103,6 @@ const styles = StyleSheet.create({
   editText: {
     color: colors.gray,
     ...typography.medium.medium,
-    marginLeft: 8, // Espacio entre el icono y el texto
+    marginLeft: 8,
   },
 });

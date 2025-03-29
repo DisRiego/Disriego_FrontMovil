@@ -1,8 +1,10 @@
 /**
- * Componente MyProperties
- * Muestra un listado de predios asociados al usuario actual
- * Permite buscar predios por nombre, folio o ID
+ * Pantalla MyProperties
+ *
+ * Muestra una lista de propiedades del usuario actual, permitiendo buscarlas
+ * y visualizar sus detalles en un modal.
  */
+
 import React, { useEffect, useState } from "react";
 import {
   Platform,
@@ -23,57 +25,56 @@ import CustomHeader from "@/components/CustomHeader";
 import SearchBar from "@/components/SearchBar";
 import PropertyCard from "@/components/PropertyCard";
 import PropertyDetailsModal from "@/components/PropertyDetailsModal";
+import { useLotContext } from "@/context/LotContext";
 
 /**
- * Interfaz para los datos de propiedad
- * Define la estructura de un predio en la aplicación
+ * Representa una propiedad registrada por un usuario.
  */
 interface Property {
+  /** ID único de la propiedad */
   id: string;
+  /** Nombre del predio */
   name: string;
+  /** Número de folio de matrícula inmobiliaria */
   real_estate_registration_number: string;
+  /** Coordenada de latitud */
   latitude: string;
+  /** Coordenada de longitud */
   longitude: string;
+  /** Extensión del predio en hectáreas o unidad definida */
   extension: string;
+  /** ID del usuario al que pertenece la propiedad */
   user_id: number;
 }
 
-export default function MyProperties() {
-  // Estados para manejar las propiedades y la interfaz
+/**
+ * Componente principal de la pantalla "Mis propiedades".
+ *
+ * Permite consultar, buscar y visualizar propiedades del usuario autenticado.
+ *
+ * @returns {JSX.Element} El componente renderizado de la pantalla.
+ */
+export default function MyProperties(): JSX.Element {
   const [properties, setProperties] = useState<Property[]>([]);
   const [searchText, setSearchText] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(
-    null
-  );
   const [userId, setUserId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const { currentProperty, setProperty } = useLotContext();
 
   /**
-   * Efecto para obtener los datos del usuario y sus propiedades
-   * Se ejecuta al montar el componente
+   * Obtiene las propiedades asociadas al usuario actual desde la API.
    */
   useEffect(() => {
     const fetchProperties = async () => {
       try {
         setLoading(true);
-
-        // Obtener datos del usuario actual
         const user = await getUserData();
         if (!user) throw new Error("No se pudo obtener el usuario");
-
         setUserId(user.id);
-        console.log(`Obteniendo propiedades para user_id: ${user.id}`);
-
-        // Realizar petición para obtener las propiedades del usuario
         const response = await axios.get(
           `${API_URL}/properties/user/${user.id}`
         );
-
-        // Registro para depuración
-        console.log("Datos recibidos:", response.data);
-
-        // Guardar propiedades en el estado
         setProperties(response.data.data);
       } catch (error) {
         console.error("Error cargando propiedades:", error);
@@ -86,8 +87,7 @@ export default function MyProperties() {
   }, []);
 
   /**
-   * Filtra las propiedades según el texto de búsqueda
-   * Busca coincidencias en nombre, folio o ID
+   * Filtro de propiedades basado en el texto de búsqueda ingresado.
    */
   const filteredProperties = properties.filter((property) =>
     [property.name, property.real_estate_registration_number, property.id].some(
@@ -97,18 +97,19 @@ export default function MyProperties() {
   );
 
   /**
-   * Abre el modal con los detalles de la propiedad seleccionada
+   * Abre el modal con los detalles de la propiedad seleccionada.
+   *
+   * @param property La propiedad seleccionada para mostrar en detalle.
    */
-  const openModal = (property: Property) => {
-    setSelectedProperty(property);
+  const openModal = (property: Property): void => {
+    setProperty(property);
     setModalVisible(true);
   };
 
   /**
-   * Cierra el modal de detalles
+   * Cierra el modal de detalles de propiedad.
    */
-  const closeModal = () => {
-    setSelectedProperty(null);
+  const closeModal = (): void => {
     setModalVisible(false);
   };
 
@@ -116,32 +117,25 @@ export default function MyProperties() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {/* Encabezado de la pantalla */}
           <CustomHeader title="Mis predios y lotes" backRoute="/(tabs)/home" />
 
           <View style={styles.textContainer}>
-            {/* Texto descriptivo de la sección */}
             <Text style={[typography.regular.big, { color: colors.gray }]}>
               En esta sección podrás visualizar la información de los predios y
               lotes vinculados a su documento.
             </Text>
 
-            {/* Barra de búsqueda */}
             <View style={styles.searchContainer}>
               <SearchBar
                 searchText={searchText}
                 onSearchChange={setSearchText}
               />
-              {/* <FilterButton onPress={() => console.log("Abrir filtros")} /> */}
             </View>
 
-            {/* Listado de propiedades */}
             <View style={styles.formContainer}>
               {loading ? (
-                // Indicador de carga mientras se obtienen los datos
                 <ActivityIndicator size="large" color={colors.primary} />
               ) : filteredProperties.length > 0 ? (
-                // Mapeo de propiedades si existen resultados
                 filteredProperties.map((property) => (
                   <PropertyCard
                     key={property.id}
@@ -149,11 +143,12 @@ export default function MyProperties() {
                     id={property.id}
                     folio={property.real_estate_registration_number}
                     extension={property.extension}
+                    latitud={property.latitude}
+                    longitud={property.longitude}
                     onPress={() => openModal(property)}
                   />
                 ))
               ) : (
-                // Mensaje cuando no hay propiedades
                 <Text style={typography.regular.medium}>
                   No hay propiedades registradas.
                 </Text>
@@ -163,21 +158,18 @@ export default function MyProperties() {
         </ScrollView>
       </View>
 
-      {/* Modal de detalles de la propiedad */}
-      {selectedProperty && (
+      {currentProperty && (
         <PropertyDetailsModal
           isVisible={modalVisible}
           onClose={closeModal}
-          {...selectedProperty}
+          {...currentProperty}
         />
       )}
     </SafeAreaView>
   );
 }
 
-/**
- * Estilos para el componente MyProperties
- */
+// Estilos de la pantalla
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
