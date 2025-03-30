@@ -3,7 +3,7 @@ const path = require("path");
 module.exports = {
   preset: "jest-expo",
   moduleNameMapper: {
-    "^@/(.*)$": "<rootDir>/$1", // Mapea @/ a la raíz del proyecto
+    "^@/(.*)$": "<rootDir>/$1",
     "^@components/(.*)$": "<rootDir>/components/$1",
     "^@config/(.*)$": "<rootDir>/config/$1",
     "^@app/(.*)$": "<rootDir>/app/$1",
@@ -11,7 +11,7 @@ module.exports = {
     "^@services/(.*)$": "<rootDir>/services/$1",
   },
   transformIgnorePatterns: [
-    "node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|@expo/vector-icons|expo-font|expo-modules-core|react-native-reanimated)/)",
+    "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|react-native-reanimated)",
   ],
   setupFilesAfterEnv: [
     "<rootDir>/jest.setup.js",
@@ -36,4 +36,5 @@ module.exports = {
     ],
   ],
   testPathIgnorePatterns: ["<rootDir>/node_modules/", "<rootDir>/e2e/"],
+  modulePaths: ["<rootDir>"],
 };

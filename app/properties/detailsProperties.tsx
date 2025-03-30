@@ -8,11 +8,6 @@ import {
   StyleSheet,
   Platform,
   StatusBar,
-<<<<<<< HEAD
-  ActivityIndicator,
-  Modal,
-=======
->>>>>>> develop
 } from "react-native";
 import CustomHeader from "@/components/CustomHeader";
 import { colors } from "@/config/theme";
@@ -25,38 +20,8 @@ import LotDetailsModal from "@/components/LotDetailsModal";
 import { useFocusEffect } from "@react-navigation/native";
 
 export default function DetailsProperties() {
-<<<<<<< HEAD
-
-  /**
-   * Obtiene los parámetros de navegación con la información básica del predio
-   */
-
-  const {
-    id,
-    name,
-    real_estate_registration_number,
-    latitude,
-    longitude,
-    extension,
-  } = useLocalSearchParams();
-
-  // Estado para el texto de búsqueda
-  const [searchText, setSearchText] = useState("");
-
-  // Estados para almacenar datos de catálogos y lotes
-  const [typeCrops, setTypeCrops] = useState<Record<number, string>>({});
-  const [paymentIntervals, setPaymentIntervals] = useState<
-    Record<number, string>
-  >({});
-  const [lotsArray, setLotsArray] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Estados para el modal de detalles
-=======
   const router = useRouter();
   const { currentProperty, lots, refreshLotsByProperty } = useLotContext();
->>>>>>> develop
   const [selectedLot, setSelectedLot] = useState<any | null>(null);
 
   useFocusEffect(
@@ -73,11 +38,6 @@ export default function DetailsProperties() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-<<<<<<< HEAD
-
-          {/* Encabezado con título y botón de retorno */}
-=======
->>>>>>> develop
           <CustomHeader
             title="Detalles del Predio"
             backRoute={() => router.push("/properties/myProperties")}
@@ -130,32 +90,6 @@ export default function DetailsProperties() {
           </View>
         </ScrollView>
 
-<<<<<<< HEAD
-
-      {/* Modal de detalles del lote seleccionado */}
-      {modalVisible && selectedLot && (
-        <LotDetailsModal
-          isVisible={modalVisible}
-          onClose={() => setModalVisible(false)}
-          id={selectedLot.id}
-          name={selectedLot.name}
-          real_estate_registration_number={
-            selectedLot.real_estate_registration_number
-          }
-          latitude={selectedLot.latitude}
-          longitude={selectedLot.longitude}
-          extension={selectedLot.extension}
-          cropType={selectedLot.cropType}
-          paymentInterval={selectedLot.paymentInterval}
-
-          plantingDate={selectedLot.plantingDate}
-          estimatedHarvestDate={selectedLot.estimatedHarvestDate}
-          propertyId={id as string}
-          propertyName={name as string}
-
-        />
-      )}
-=======
         {selectedLot && (
           <LotDetailsModal
             isVisible={!!selectedLot}
@@ -177,7 +111,6 @@ export default function DetailsProperties() {
           />
         )}
       </View>
->>>>>>> develop
     </SafeAreaView>
   );
 }
