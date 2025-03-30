@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { colors } from "@/config/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { typography } from "@/config/typography";
+import { useLotContext } from "@/context/LotContext";
 
 interface LotCardProps {
   name: string;
@@ -13,7 +14,11 @@ interface LotCardProps {
   longitud?: string;
   cropType?: string;
   paymentInterval?: string;
+  plantingDate?: string;
+  estimatedHarvestDate?: string;
   onPress?: () => void;
+  minimal?: boolean;
+  showCropType?: boolean;
 }
 
 export default function LotCard({
@@ -25,13 +30,38 @@ export default function LotCard({
   longitud,
   cropType,
   paymentInterval,
+  plantingDate,
+  estimatedHarvestDate,
   onPress,
+  minimal = false,
+  showCropType = true,
 }: LotCardProps) {
+  const { setLot } = useLotContext();
+
+  const handlePress = () => {
+    setLot({
+      id,
+      name,
+      real_estate_registration_number: folio || "",
+      latitude: latitud || "",
+      longitude: longitud || "",
+      extension: extension || "",
+      cropType: cropType || "",
+      paymentInterval: paymentInterval || "",
+      plantingDate: plantingDate || "",
+      estimatedHarvestDate: estimatedHarvestDate || "",
+    });
+
+    if (onPress) onPress();
+  };
+
   const Container = onPress ? TouchableOpacity : View;
 
   return (
-    <Container style={styles.card} {...(onPress && { onPress })}>
-      {/* Encabezado */}
+    <Container
+      style={styles.card}
+      {...(onPress && { onPress: handlePress, accessibilityRole: "button" })}
+    >
       <View style={styles.header}>
         <Text style={styles.title}>{name}</Text>
         {onPress && (
@@ -40,37 +70,37 @@ export default function LotCard({
       </View>
 
       <Text style={styles.idText}>#{id}</Text>
-
-      {/* Información opcional */}
       <View style={styles.infoRow}>
         <Text style={styles.label}>Folio Matrícula</Text>
-        <Text style={styles.value}>{folio || ""}</Text>
+        <Text style={styles.value}>{folio || "N/A"}</Text>
       </View>
 
       <View style={styles.infoRow}>
         <Text style={styles.label}>Extensión (m²)</Text>
-        <Text style={styles.value}>{extension || ""}</Text>
+        <Text style={styles.value}>{extension || "N/A"}</Text>
       </View>
 
-      <View style={styles.infoRow}>
-        <Text style={styles.label}>Latitud</Text>
-        <Text style={styles.value}>{latitud || ""}</Text>
-      </View>
+      {showCropType && (
+        <View style={styles.infoRow}>
+          <Text style={styles.label}>Tipo Cultivo</Text>
+          <Text style={styles.value}>{cropType || "N/A"}</Text>
+        </View>
+      )}
 
-      <View style={styles.infoRow}>
-        <Text style={styles.label}>Longitud</Text>
-        <Text style={styles.value}>{longitud || ""}</Text>
-      </View>
+      {!minimal && (
+        <>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Latitud</Text>
+            <Text style={styles.value}>{latitud || "N/A"}</Text>
+          </View>
 
-      <View style={styles.infoRow}>
-        <Text style={styles.label}>Tipo Cultivo</Text>
-        <Text style={styles.value}>{cropType || "N/A"}</Text>
-      </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Longitud</Text>
+            <Text style={styles.value}>{longitud || "N/A"}</Text>
+          </View>
+        </>
+      )}
 
-      <View style={styles.infoRow}>
-        <Text style={styles.label}>Intervalo de Pago</Text>
-        <Text style={styles.value}>{paymentInterval || "N/A"}</Text>
-      </View>
     </Container>
   );
 }
@@ -80,12 +110,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: 12,
     padding: 15,
-    marginVertical: 5,
+    marginVertical: 6,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: colors.border,
     shadowColor: colors.border,
     shadowOpacity: 0.1,
     shadowRadius: 5,
+    elevation: 3,
   },
   header: {
     flexDirection: "row",

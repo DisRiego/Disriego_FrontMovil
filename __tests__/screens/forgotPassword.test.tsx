@@ -52,35 +52,22 @@ describe("ForgotPasswordScreen", () => {
       data: { token: "fake-reset-token" },
     });
 
-    console.log("🔹 Simulación de Axios POST ejecutada");
+    const alertSpy = jest.spyOn(Alert, "alert");
 
     const { getByPlaceholderText, getByText } = render(
       <ForgotPasswordScreen />
     );
     const emailInput = getByPlaceholderText("Ingresa tu correo electrónico");
     fireEvent.changeText(emailInput, "usuario@email.com");
-    console.log("🔹 Valor final del input:", emailInput.props.value);
-
     fireEvent.press(getByText("Enviar enlace"));
-    console.log("🔹 Axios post fue llamado:", mockedAxios.post.mock.calls);
 
     await waitFor(() => {
-      const alertMock = Alert.alert as jest.Mock;
-      const alertCalls = alertMock.mock.calls;
-      console.log("🔹 Alertas disparadas:", alertCalls);
-
-      // Verificamos que al menos una alerta fue llamada
-      expect(alertCalls.length).toBeGreaterThan(0);
-
-      // Buscamos la alerta de éxito específica
-      const lastAlert = alertCalls.find((call) => call[0] === "Éxito");
-      expect(lastAlert).toBeDefined();
-      const [title, message] = lastAlert!;
-
-      expect(title).toBe("Éxito");
-      expect(message).toBe(
+      expect(alertSpy).toHaveBeenCalledWith(
+        "Éxito",
         "Se ha enviado un enlace de recuperación a tu correo."
       );
     });
+
+    alertSpy.mockRestore();
   });
 });

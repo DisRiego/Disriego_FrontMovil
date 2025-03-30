@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+
 import {
   View,
   Text,
@@ -8,60 +9,73 @@ import {
   ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
+import NavigationButton from "@/components/NavigationButton";
+
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
-import NavigationButton from "@/components/NavigationButton";
 import { getToken } from "@/services/auth";
 
+/**
+ * WelcomeScreen
+ * Pantalla de bienvenida de la aplicación.
+ * Verifica el estado de autenticación y muestra diferentes opciones según el resultado.
+ *
+ * @returns {JSX.Element|null} Componente de pantalla de bienvenida o null mientras verifica autenticación.
+ */
 export default function WelcomeScreen() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
+  /**
+   * Verifica si existe un token de autenticación válido.
+   * Actualiza el estado local `isAuthenticated`.
+   */
   useEffect(() => {
     const checkAuth = async () => {
       const token = await getToken();
-      setIsAuthenticated(!!token); // Si hay token, está autenticado
+      setIsAuthenticated(!!token);
     };
 
     checkAuth();
   }, []);
 
+  /**
+   * Redirige al usuario autenticado a la pantalla principal (home).
+   */
   const handleContinue = () => {
-    // Redirige a la pantalla principal (por ejemplo, "home")
     router.replace("/(tabs)/home");
   };
 
-  if (isAuthenticated === null) {
-    return null; // Muestra nada hasta que se verifique el estado de autenticación
-  }
+  if (isAuthenticated === null) return null;
 
   return (
     <SafeAreaView style={styles.safeContainer}>
       <ScrollView contentContainerStyle={{ height: "100%" }}>
         <View style={styles.container}>
-          {/* Logo */}
+          {/* Logo de la aplicación */}
           <Image
             source={require("../assets/images/logo.png")}
             style={styles.logo}
           />
 
-          {/* Imagen principal */}
+          {/* Imagen principal de bienvenida */}
           <Image
             source={require("../assets/images/welcome.png")}
             style={styles.image}
           />
 
-          {/* Mensaje de bienvenida */}
+          {/* Título de bienvenida */}
           <Text style={styles.title}>¡Bienvenido a DisRiego!</Text>
 
+          {/* Subtítulo según autenticación */}
           <Text style={styles.subtitle}>
             {isAuthenticated
               ? "¡Ya estás autenticado! Haz clic en 'Continuar' para acceder."
               : "Para acceder a todas las funcionalidades, por favor regístrate o inicia sesión con tu cuenta."}
           </Text>
 
+          {/* Botones condicionales */}
           {isAuthenticated ? (
-            // Botón de Continuar cuando está autenticado
             <NavigationButton
               text="Continuar"
               color={colors.tertiary}
@@ -72,16 +86,13 @@ export default function WelcomeScreen() {
             />
           ) : (
             <>
-              {/* Botón de Registro */}
               <NavigationButton
                 text="Registrarse"
                 color={colors.base}
                 textColor={colors.gray}
                 borderColor={colors.border}
-                route="/register"
+                route="/validation"
               />
-
-              {/* Botón de Inicio de Sesión */}
               <NavigationButton
                 text="Iniciar Sesión"
                 color={colors.tertiary}
@@ -97,6 +108,9 @@ export default function WelcomeScreen() {
   );
 }
 
+/**
+ * Estilos para los componentes de la pantalla de bienvenida.
+ */
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
@@ -126,7 +140,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 10,
   },
-
   subtitle: {
     ...typography.regular.large,
     color: colors.gray,

@@ -26,6 +26,7 @@ jobs:
       - name: 📂 Verificar y crear directorio de reportes
         run: mkdir -p reports
 
+
       - name: 🚀 Ejecutar pruebas con Jest
         run: npx jest
 

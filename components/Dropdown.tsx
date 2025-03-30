@@ -8,6 +8,7 @@ interface DropdownPickerProps {
   selectedValue: string;
   onValueChange: (itemValue: string, itemIndex: number) => void;
   options: { label: string; value: string }[];
+  disabled?: boolean;
 }
 
 export default function DropdownPicker({

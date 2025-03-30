@@ -5,6 +5,8 @@ import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { generatePropertyPDF } from "@/utils/generatePropertyPDF";
+import { useLotContext } from "@/context/LotContext";
 
 interface PropertyDetailsModalProps {
   isVisible: boolean;
@@ -27,12 +29,26 @@ export default function PropertyDetailsModal({
   longitude,
   extension,
 }: PropertyDetailsModalProps) {
-  const router = useRouter(); //
+  const router = useRouter();
+  const { setProperty } = useLotContext();
+
+  const handleViewDetails = () => {
+    setProperty({
+      id,
+      name,
+      latitude,
+      longitude,
+      extension,
+      real_estate_registration_number,
+    });
+
+    onClose();
+    router.push("/properties/detailsProperties");
+  };
 
   return (
-    <Modal isVisible={isVisible} style={styles.modal} onBackdropPress={onClose}>
+    <Modal isVisible={isVisible} onBackdropPress={onClose} style={styles.modal}>
       <View style={styles.container}>
-        {/* Header */}
         <View style={styles.header}>
           <View style={styles.titleContainer}>
             <View style={styles.iconContainer}>
@@ -48,13 +64,13 @@ export default function PropertyDetailsModal({
           </TouchableOpacity>
         </View>
 
-        {/* Información */}
         <View style={styles.infoContainer}>
           <View style={styles.row}>
             <Text style={styles.label}>Folio Matrícula</Text>
             <Text style={styles.value}>{real_estate_registration_number}</Text>
           </View>
           <View style={styles.separator} />
+
           <View style={styles.row}>
             <Text style={styles.label}>Latitud</Text>
             <Text style={styles.value}>{latitude}</Text>
@@ -72,28 +88,27 @@ export default function PropertyDetailsModal({
           <View style={styles.separator} />
         </View>
 
-        {/* Botones */}
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.downloadButton}>
+          <TouchableOpacity
+            style={styles.downloadButton}
+            onPress={() => {
+              generatePropertyPDF({
+                id,
+                name,
+                real_estate_registration_number,
+                latitude,
+                longitude,
+                extension,
+              });
+            }}
+          >
             <AntDesign name="download" size={17} color={colors.darkGray} />
             <Text style={styles.downloadText}>Descargar</Text>
           </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.detailsButton}
-            onPress={() => {
-              onClose(); // Cierra el modal antes de navegar
-              router.push({
-                pathname: "/properties/detailsProperties",
-                params: {
-                  id,
-                  name,
-                  real_estate_registration_number,
-                  latitude,
-                  longitude,
-                  extension,
-                },
-              });
-            }}
+            onPress={handleViewDetails}
           >
             <Text style={styles.detailsText}>Ver Detalles</Text>
             <Feather name="eye" size={17} color={colors.primary} />
@@ -135,7 +150,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   infoContainer: {
-    backgroundColor: colors.white,
     paddingVertical: 10,
   },
   row: {
@@ -166,7 +180,6 @@ const styles = StyleSheet.create({
   downloadButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "transparent",
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: 20,

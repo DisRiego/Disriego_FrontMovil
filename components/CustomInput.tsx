@@ -5,6 +5,7 @@ import {
   TextInputProps,
   View,
   TouchableOpacity,
+  Text,
 } from "react-native";
 import { colors } from "@/config/theme";
 
@@ -12,6 +13,8 @@ interface CustomInputProps extends TextInputProps {
   placeholderTextColor?: string;
   iconRight?: JSX.Element;
   onIconPress?: () => void;
+  prefix?: string;
+  onPress?: () => void; // Nuevo: Permite hacer que el input sea "touchable"
 }
 
 export default function CustomInput({
@@ -19,21 +22,31 @@ export default function CustomInput({
   style,
   iconRight,
   onIconPress,
+  prefix,
+  onPress, // Nuevo
+  editable,
   ...props
 }: CustomInputProps) {
   return (
-    <View style={[styles.inputContainer, style]}>
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={onPress ? 0.8 : 1}
+      style={[styles.inputContainer, style]}
+      disabled={!onPress} // Solo permite tocar si hay `onPress`
+    >
+      {prefix && <Text style={styles.prefix}>{prefix}</Text>}
       <TextInput
         {...props}
         style={[styles.input, style]}
         placeholderTextColor={placeholderTextColor || colors.gray}
+        editable={editable ?? !onPress} // Bloquea la edición si hay `onPress`
       />
       {iconRight && (
         <TouchableOpacity onPress={onIconPress} style={styles.iconContainer}>
           {iconRight}
         </TouchableOpacity>
       )}
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -57,5 +70,10 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     padding: 10,
+  },
+  prefix: {
+    marginRight: 8,
+    fontSize: 16,
+    color: colors.darkGray,
   },
 });

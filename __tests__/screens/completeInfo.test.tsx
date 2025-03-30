@@ -1,45 +1,66 @@
 import React from "react";
 import { render, fireEvent, waitFor } from "@testing-library/react-native";
 import CompleteInfo from "@/app/(auth)/completeInfo";
-import { useRouter } from "expo-router";
+import { Alert } from "react-native";
+import axios from "axios";
+import * as ImagePicker from "expo-image-picker";
 
+// Mocks globales
 jest.mock("expo-router", () => ({
-  useRouter: jest.fn(),
+  useRouter: jest.fn(() => ({ push: jest.fn() })),
 }));
 
-describe("CompleteInfo Screen - Pruebas exitosas ✅", () => {
-  let router: any;
+jest.mock("axios");
 
+jest.mock("@/services/location", () => ({
+  getCountries: jest.fn(() =>
+    Promise.resolve([
+      { name: "Colombia", iso2: "CO" },
+      { name: "Estados Unidos", iso2: "US" },
+    ])
+  ),
+  getStates: jest.fn(),
+  getCities: jest.fn(),
+  getCountryPhoneCode: jest.fn(),
+}));
+
+jest.mock("@/services/auth", () => ({
+  getUserData: jest.fn(() => Promise.resolve({ id: 1 })),
+}));
+
+describe("CompleteInfo Screen", () => {
   beforeEach(() => {
-    router = { push: jest.fn() };
-    (useRouter as jest.Mock).mockReturnValue(router);
+    jest.clearAllMocks();
   });
 
-  it("Renderiza correctamente los elementos esenciales", () => {
+  it("Renderiza correctamente", () => {
     const { getByText, getByPlaceholderText } = render(<CompleteInfo />);
 
-    // Verifica que los elementos clave de la pantalla se rendericen
     expect(getByText("Completa tu perfil")).toBeTruthy();
-    expect(getByText("fecha de nacimiento *")).toBeTruthy();
-    expect(getByPlaceholderText("Teléfono *")).toBeTruthy();
-    expect(getByPlaceholderText("Dirección de correspondencia *")).toBeTruthy();
-    expect(getByText("Subir una foto de perfil (Opcional)")).toBeTruthy();
-    expect(getByText("Siguiente")).toBeTruthy();
+    expect(getByPlaceholderText("Dirección")).toBeTruthy();
+    expect(getByPlaceholderText("Teléfono")).toBeTruthy();
   });
 
-  it("Permite ingresar datos en los campos de texto", () => {
-    const { getByPlaceholderText } = render(<CompleteInfo />);
+  it("Permite seleccionar imagen", async () => {
+    const { getByText } = render(<CompleteInfo />);
+    const uploadButton = getByText("Subir");
 
-    // Encuentra los inputs de teléfono y dirección
-    const phoneInput = getByPlaceholderText("Teléfono *");
-    const addressInput = getByPlaceholderText("Dirección de correspondencia *");
+    fireEvent.press(uploadButton);
 
-    // Simula la escritura en los campos
-    fireEvent.changeText(phoneInput, "1234567890");
-    fireEvent.changeText(addressInput, "Calle 123");
+    await waitFor(() => {
+      expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalled();
+    });
+  });
 
-    // Verifica que los valores han sido actualizados correctamente
-    expect(phoneInput.props.value).toBe("1234567890");
-    expect(addressInput.props.value).toBe("Calle 123");
+  it("Muestra error si faltan campos", async () => {
+    const { getByText } = render(<CompleteInfo />);
+    fireEvent.press(getByText("Registrarse"));
+
+    await waitFor(() => {
+      expect(Alert.alert).toHaveBeenCalledWith(
+        "Error",
+        "Por favor completa todos los campos."
+      );
+    });
   });
 });

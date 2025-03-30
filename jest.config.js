@@ -2,8 +2,16 @@ const path = require("path");
 
 module.exports = {
   preset: "jest-expo",
-  setupFiles: [
-    "<rootDir>/node_modules/react-native-gesture-handler/jestSetup.js",
+  moduleNameMapper: {
+    "^@/(.*)$": "<rootDir>/$1",
+    "^@components/(.*)$": "<rootDir>/components/$1",
+    "^@config/(.*)$": "<rootDir>/config/$1",
+    "^@app/(.*)$": "<rootDir>/app/$1",
+    "^@assets/(.*)$": "<rootDir>/assets/$1",
+    "^@services/(.*)$": "<rootDir>/services/$1",
+  },
+  transformIgnorePatterns: [
+    "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|react-native-reanimated)",
   ],
   setupFilesAfterEnv: [
     "<rootDir>/jest.setup.js",
@@ -11,14 +19,7 @@ module.exports = {
     "jest-fetch-mock",
   ],
   testEnvironment: "jsdom",
-  transformIgnorePatterns: [
-    "node_modules/(?!(react-native|@react-native|@react-native-community|expo-router|expo-asset|expo-constants|expo-font|expo-linking|expo-modules-core|expo-status-bar|expo|expo-image-picker)/)",
-  ],
-  testPathIgnorePatterns: ["<rootDir>/__tests__/setupTests.ts"],
-  moduleNameMapper: {
-    "\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$":
-      "<rootDir>/__mocks__/fileMock.js",
-  },
+  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   transform: {
     "^.+\\.(js|jsx|ts|tsx)$": "babel-jest",
   },
@@ -35,4 +36,6 @@ module.exports = {
       },
     ],
   ],
+  testPathIgnorePatterns: ["<rootDir>/node_modules/", "<rootDir>/e2e/", "/__tests__/setupTests.ts"],
+  modulePaths: ["<rootDir>"],
 };

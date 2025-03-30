@@ -8,51 +8,67 @@ import {
   Platform,
   StatusBar,
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
 import CustomHeader from "@/components/CustomHeader";
 import LotCard from "@/components/LotCard";
+import LotInfoCard from "@/components/LotInfoCard";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
+import { useRouter } from "expo-router";
+import { useLotContext } from "@/context/LotContext";
 
 export default function DetailsLots() {
-  // Obtener los parámetros pasados en la navegación
-  const {
-    id,
-    name,
-    real_estate_registration_number,
-    latitude,
-    longitude,
-    extension,
-    cropType,
-    paymentInterval,
-  } = useLocalSearchParams();
+  const router = useRouter();
+  const { currentLot } = useLotContext();
+
+  if (!currentLot) return null;
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {/* Encabezado personalizado con botón de volver */}
-          <CustomHeader title="Detalles del Lote" backRoute="/(tabs)/home" />
+          <CustomHeader
+            title="Detalles del Lote"
+            backRoute={() => router.replace("/properties/detailsProperties")}
+          />
 
-          {/* Descripción */}
-          <View style={styles.textContainer}>
-            <Text style={[typography.regular.big, { color: colors.gray }]}>
-              En esta sección podrás visualizar información detallada sobre{" "}
-              {name}.
-            </Text>
+          <View style={styles.innerContainer}>
+            <View style={styles.textContainer}>
+              <Text style={[typography.regular.big, { color: colors.gray }]}>
+                En esta sección podrás visualizar información detallada sobre{" "}
+                {currentLot.name}.
+              </Text>
 
-            {/* Tarjeta con la información del lote */}
-            <View style={styles.propContainer}>
-              <LotCard
-                name={name as string}
-                id={id as string}
-                folio={real_estate_registration_number as string}
-                extension={extension as string}
-                latitud={latitude as string}
-                longitud={longitude as string}
-                cropType={cropType as string}
-                paymentInterval={paymentInterval as string}
-              />
+              <View style={styles.propContainer}>
+                <LotCard
+                  name={currentLot.name}
+                  id={currentLot.id}
+                  folio={currentLot.real_estate_registration_number}
+                  extension={currentLot.extension}
+                  latitud={currentLot.latitude}
+                  longitud={currentLot.longitude}
+                  minimal={false}
+                  showCropType={false}
+                />
+              </View>
+
+              <View style={styles.cropContainer}>
+                <LotInfoCard
+                  onEditPress={() => {
+                    router.push({
+                      pathname: "/properties/updateCrops",
+                      params: {
+                        lotId: currentLot.id,
+                        name: currentLot.name,
+                        cropType: currentLot.cropType,
+                        paymentInterval: currentLot.paymentInterval,
+                        plantingDate: currentLot.plantingDate,
+                        estimatedHarvestDate: currentLot.estimatedHarvestDate,
+                      },
+                    });
+                  }}
+                />
+              </View>
+
             </View>
           </View>
         </ScrollView>
@@ -67,44 +83,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.base,
     paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingBottom: 24,
-  },
-  textContainer: {
-    marginVertical: 10,
-  },
-  propContainer: {
-    marginTop: 12,
-  },
-  detailsContainer: {
-    backgroundColor: colors.white,
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 12,
-    elevation: 2,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-  },
-  label: {
-    color: colors.darkGray,
-    fontSize: 14,
-  },
-  value: {
-    color: colors.darkGray,
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: 4,
-  },
+  container: { flex: 1, paddingBottom: 16 },
+  scrollContainer: { flexGrow: 1 },
+  innerContainer: { paddingHorizontal: 20 },
+  textContainer: { marginVertical: 10 },
+  propContainer: { marginTop: 12 },
+  cropContainer: { marginTop: 12 },
 });

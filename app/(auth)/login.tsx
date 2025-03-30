@@ -24,6 +24,8 @@ import Header from "@/components/Header";
 import LoginButton from "@/components/LoginButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Eye, EyeOff } from "lucide-react-native";
+import axios from "axios";
+import { API_FRONT, API_URL } from "@/services/config";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -35,25 +37,84 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    const checkToken = async () => {
+    const checkFirstLogin = async () => {
       try {
         const token = await AsyncStorage.getItem("token");
-        console.log(
-          "Token almacenado:",
-          token ? token : "No hay token guardado"
-        );
+        const isFirstLogin = await AsyncStorage.getItem("isFirstLogin");
 
-        // Si hay token almacenado, redirigir al home
-        if (token) {
+        console.log("Token almacenado:", token);
+        console.log("Es primer login:", isFirstLogin);
+
+        // Si hay token pero no se ha establecido isFirstLogin, considerarlo primer login
+        if (token && (isFirstLogin === null || isFirstLogin === undefined)) {
+          await AsyncStorage.setItem("isFirstLogin", "true");
+          router.replace("/completeInfo");
+          return;
+        }
+
+        // Si hay token y ya no es primer login, redirigir al home
+        if (token && isFirstLogin === "false") {
           router.replace("(tabs)/home");
         }
       } catch (error) {
-        console.error("Error al verificar el token:", error);
+        console.error("Error al verificar el primer login:", error);
       }
     };
 
-    checkToken();
+    checkFirstLogin();
   }, [router]);
+
+  // Función para enviar correo de activación
+  const sendActivationEmail = async (
+    email: string,
+    activationToken: string
+  ) => {
+    try {
+      console.log("Token de activación a usar:", activationToken);
+
+      // URL de activación que se incluirá en el correo
+      const activationUrl = `${API_FRONT}/signup/${activationToken}`;
+
+      // Configuración del servicio de correo EmailJS
+      const payload = {
+        service_id: "service_c35ss8k", // ID del servicio EmailJS
+        template_id: "template_redcikh", // ID de la plantilla EmailJS
+        user_id: "hMGKOWPvqqS5l9Qsf", // Clave pública de EmailJS
+        accessToken: "Qm3WiVQBa3J59N-sE7iKa", // Clave privada de EmailJS
+        template_params: {
+          to_name: "Usuario",
+          to_email: email,
+          message: `Para activar tu cuenta, haz clic en el siguiente enlace: ${activationUrl}`,
+          reply_to: email,
+        },
+      };
+
+      console.log("Correo a enviar:", JSON.stringify(payload, null, 2));
+
+      // Envío del correo a través de la API de EmailJS
+      const emailResponse = await fetch(
+        "https://api.emailjs.com/api/v1.0/email/send",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const responseText = await emailResponse.text();
+      console.log("Respuesta del servidor de correo:", responseText);
+
+      if (!emailResponse.ok) {
+        throw new Error(responseText);
+      }
+
+      console.log("Correo enviado exitosamente.");
+      return true;
+    } catch (error) {
+      console.error("Error al enviar el correo:", error);
+      return false;
+    }
+  };
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -66,17 +127,80 @@ export default function LoginScreen() {
       const token = await login(email, password);
       console.log("Token obtenido:", token);
 
+      // Obtener datos de usuario completos
+      const userDataString = await AsyncStorage.getItem("userData");
+      const userData = userDataString ? JSON.parse(userDataString) : null;
+
+      console.log("Datos de usuario completos:", userData);
+      console.log("first_login_complete:", userData?.first_login_complete);
+
       if (token) {
-        await AsyncStorage.setItem("token", token);
-        Alert.alert("Éxito", "Inicio de sesión exitoso.");
-        router.replace("(tabs)/home");
-      } else {
-        throw new Error("Credenciales incorrectas.");
+        const firstLoginComplete = await AsyncStorage.getItem(
+          "first_login_complete"
+        );
+
+        Alert.alert("Éxito", "Inicio de sesión exitoso.", [
+          {
+            text: "OK",
+            onPress: () => {
+              if (firstLoginComplete === "false") {
+                router.replace("/completeInfo");
+              } else {
+                router.replace("(tabs)/home");
+              }
+            },
+          },
+        ]);
       }
     } catch (error) {
-      Alert.alert("Error", "Correo o contraseña incorrectos.");
-      setEmailError(true);
-      setPasswordError(true);
+      if (error instanceof Error) {
+        console.error("Error de login:", error.message);
+      } else {
+        console.error("Error de login:", error);
+      }
+
+      // Manejar caso específico de cuenta no activada
+      if (
+        error instanceof Error &&
+        error.message.includes("Cuenta no activada")
+      ) {
+        // Obtener el token de activación desde AsyncStorage que el servicio de auth debió guardar
+        const activationToken = await AsyncStorage.getItem("activation_token");
+
+        if (activationToken) {
+          // Intentar enviar el correo de activación
+          const emailSent = await sendActivationEmail(email, activationToken);
+
+          if (emailSent) {
+            Alert.alert(
+              "Cuenta no activada",
+              "Se ha enviado un correo con el enlace de activación a su dirección de email. Por favor, revise su bandeja de entrada."
+            );
+          } else {
+            Alert.alert(
+              "Error al enviar correo",
+              "No se pudo enviar el correo de activación. Inténtelo de nuevo más tarde."
+            );
+          }
+        } else {
+          Alert.alert(
+            "Error de activación",
+            "No se encontró el token de activación. Por favor, intente registrarse nuevamente."
+          );
+        }
+      } else if (
+        error instanceof Error &&
+        error.message.includes("Cuenta inactiva o bloqueada")
+      ) {
+        Alert.alert(
+          "Cuenta bloqueada",
+          "Su cuenta está inactiva o bloqueada. Por favor contacte con soporte."
+        );
+      } else {
+        Alert.alert("Error", "Correo o contraseña incorrectos.");
+        setEmailError(true);
+        setPasswordError(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -156,24 +280,6 @@ export default function LoginScreen() {
                       Haz clic aquí
                     </Text>
                   </Text>
-                </View>
-
-                <Image
-                  source={require("../../assets/images/divisor.png")}
-                  style={styles.divisor}
-                />
-
-                <View style={styles.loginWrapper}>
-                  <LoginButton
-                    text="Ingresa con Google"
-                    icon={require("../../assets/images/googleLogo.png")}
-                    onPress={() => console.log("Google Login")}
-                  />
-                  <LoginButton
-                    text="Ingresa con Outlook"
-                    icon={require("../../assets/images/outlookLogo.png")}
-                    onPress={() => console.log("Outlook Login")}
-                  />
                 </View>
               </View>
 

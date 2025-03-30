@@ -1,16 +1,50 @@
 import React from "react";
 import { render, fireEvent, waitFor } from "@testing-library/react-native";
 import RegisterScreen from "@/app/(auth)/register";
-import { Picker } from "@react-native-picker/picker";
 
-// Mock de `useRouter` para evitar errores de navegación en pruebas
-jest.mock("expo-router", () => ({
-  useRouter: () => ({
-    push: jest.fn(),
+// Mock simplificado de usePasswordValidation
+jest.mock("@/hooks/passwordValidation", () => ({
+  usePasswordValidation: () => ({
+    errors: {
+      password: false,
+      confirmPassword: false,
+    },
+    handlePasswordChange: jest.fn((text, setter) => setter(text)),
+    handleConfirmPasswordChange: jest.fn((text, currentPassword, setter) => setter(text)),
   }),
 }));
 
+// Mocks de otras dependencias
+jest.mock("@expo/vector-icons", () => ({
+  AntDesign: jest.fn(() => null),
+}));
+
+jest.mock("@react-native-async-storage/async-storage", () => ({
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+}));
+
+jest.mock("axios", () => ({
+  isAxiosError: jest.fn(),
+  post: jest.fn(),
+}));
+
+jest.mock("expo-router", () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+  }),
+}));
+
+jest.mock("react-native/Libraries/Alert/Alert", () => ({
+  alert: jest.fn(),
+}));
+
 describe("RegisterScreen - Pruebas exitosas ✅", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it("Renderiza correctamente la pantalla de registro", () => {
     const { getAllByText, getByText, getByPlaceholderText } = render(
       <RegisterScreen />
@@ -23,38 +57,33 @@ describe("RegisterScreen - Pruebas exitosas ✅", () => {
       )
     ).toBeTruthy();
 
-    // Aquí usamos una expresión regular para evitar fallos
     expect(getByText(/¿Tienes una cuenta\?/i)).toBeTruthy();
     expect(getByText("Inicia sesión aquí")).toBeTruthy();
 
-    // Verifica los inputs de CustomInput
-    expect(getByPlaceholderText("No. de Identificación *")).toBeTruthy();
-    expect(getByPlaceholderText("Fecha de Expedición *")).toBeTruthy();
+    expect(getByPlaceholderText("Correo Electrónico")).toBeTruthy();
+    expect(getByPlaceholderText("Contraseña nueva")).toBeTruthy();
+    expect(getByPlaceholderText("Confirmar contraseña")).toBeTruthy();
   });
 
-  it("Permite ingresar un número de identificación", async () => {
+  it("Permite ingresar un correo electrónico", async () => {
     const { getByPlaceholderText } = render(<RegisterScreen />);
+    const input = getByPlaceholderText("Correo Electrónico");
 
-    // Obtener el input por su placeholder
-    const input = getByPlaceholderText("No. de Identificación *");
+    fireEvent.changeText(input, "test@example.com");
 
-    // Simular el cambio de texto
-    fireEvent.changeText(input, "123456789");
-
-    // Esperar y verificar el valor actualizado en el estado
     await waitFor(() => {
-      expect(input.props.value).toBe("123456789");
+      expect(input.props.value).toBe("test@example.com");
     });
   });
 
-  it("Permite ingresar un número de identificación", async () => {
+  it("Permite ingresar una contraseña", async () => {
     const { getByPlaceholderText } = render(<RegisterScreen />);
-    const input = getByPlaceholderText("No. de Identificación *");
+    const input = getByPlaceholderText("Contraseña nueva");
 
-    fireEvent.changeText(input, "123456789");
+    fireEvent.changeText(input, "password123");
 
     await waitFor(() => {
-      expect(input.props.defaultValue || input.props.value).toBe("123456789");
+      expect(input.props.value).toBe("password123");
     });
   });
 
