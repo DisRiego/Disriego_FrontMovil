@@ -2,7 +2,7 @@ import React from "react";
 import { render, waitFor } from "@testing-library/react-native";
 import SeeProfile from "@/app/profile/seeProfile";
 
-// Mocks mejoradoss
+// Mocks mejorados
 jest.mock("@/services/auth", () => ({
   getUserData: jest.fn(),
 }));
