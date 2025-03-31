@@ -21,7 +21,6 @@ import { typography } from "@/config/typography";
 import Button from "@/components/Button";
 import CustomInput from "@/components/CustomInput";
 import Header from "@/components/Header";
-import LoginButton from "@/components/LoginButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Eye, EyeOff } from "lucide-react-native";
 import axios from "axios";
@@ -82,7 +81,6 @@ export default function LoginScreen() {
         user_id: "hMGKOWPvqqS5l9Qsf", // Clave pública de EmailJS
         accessToken: "Qm3WiVQBa3J59N-sE7iKa", // Clave privada de EmailJS
         template_params: {
-          to_name: "Usuario",
           to_email: email,
           message: `Para activar tu cuenta, haz clic en el siguiente enlace: ${activationUrl}`,
           reply_to: email,
@@ -301,7 +299,7 @@ export default function LoginScreen() {
                   ¿No tienes una cuenta?
                   <Text
                     style={styles.link}
-                    onPress={() => router.push("/register")}
+                    onPress={() => router.push("/validation")}
                   >
                     {" "}
                     Regístrate aquí
