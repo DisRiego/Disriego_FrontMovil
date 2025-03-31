@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-
 import {
   View,
   Text,
@@ -10,42 +9,33 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import NavigationButton from "@/components/NavigationButton";
-
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
 import { getToken } from "@/services/auth";
 
-/**
- * WelcomeScreen
- * Pantalla de bienvenida de la aplicación.
- * Verifica el estado de autenticación y muestra diferentes opciones según el resultado.
- *
- * @returns {JSX.Element|null} Componente de pantalla de bienvenida o null mientras verifica autenticación.
- */
 export default function WelcomeScreen() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
-  /**
-   * Verifica si existe un token de autenticación válido.
-   * Actualiza el estado local `isAuthenticated`.
-   */
   useEffect(() => {
     const checkAuth = async () => {
       const token = await getToken();
       setIsAuthenticated(!!token);
+
+      // Solo redirigir si ya se ha determinado el estado de autenticación
+      if (token) {
+        // Si hay token, redirigir al home
+        router.replace("/(tabs)/home");
+      } else {
+        // Si no hay token, permanecer en la pantalla de bienvenida
+        // No hacemos redirección aquí, solo se permite la interacción
+      }
     };
 
     checkAuth();
-  }, []);
+  }, [router]);
 
-  /**
-   * Redirige al usuario autenticado a la pantalla principal (home).
-   */
-  const handleContinue = () => {
-    router.replace("/(tabs)/home");
-  };
-
+  // Mientras se verifica la autenticación, no renderizar nada
   if (isAuthenticated === null) return null;
 
   return (
@@ -58,33 +48,21 @@ export default function WelcomeScreen() {
             style={styles.logo}
           />
 
-          {/* Imagen principal de bienvenida */}
           <Image
             source={require("../assets/images/welcome.png")}
             style={styles.image}
           />
 
-          {/* Título de bienvenida */}
           <Text style={styles.title}>¡Bienvenido a DisRiego!</Text>
 
-          {/* Subtítulo según autenticación */}
           <Text style={styles.subtitle}>
             {isAuthenticated
               ? "¡Ya estás autenticado! Haz clic en 'Continuar' para acceder."
               : "Para acceder a todas las funcionalidades, por favor regístrate o inicia sesión con tu cuenta."}
           </Text>
 
-          {/* Botones condicionales */}
-          {isAuthenticated ? (
-            <NavigationButton
-              text="Continuar"
-              color={colors.tertiary}
-              textColor={colors.primary}
-              borderColor={colors.secondary}
-              onPress={handleContinue}
-              route="/(tabs)/home"
-            />
-          ) : (
+          {/* Si el usuario no está autenticado, muestra botones de registro e inicio de sesión */}
+          {!isAuthenticated && (
             <>
               <NavigationButton
                 text="Registrarse"
@@ -108,9 +86,6 @@ export default function WelcomeScreen() {
   );
 }
 
-/**
- * Estilos para los componentes de la pantalla de bienvenida.
- */
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
