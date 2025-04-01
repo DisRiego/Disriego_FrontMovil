@@ -3,44 +3,41 @@ import { Stack, useRouter } from "expo-router";
 import { KeyboardAvoidingView, Platform } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import { getToken } from "@/services/auth";
-import { LotProvider } from "@/context/LotContext"; // 👈 Importa tu context
+import { LotProvider } from "@/context/LotContext";
 
 SplashScreen.preventAutoHideAsync();
 
-export default function AuthLayout() {
+export default function PropertiesLayout() {
+  // Estado para controlar si el usuario está autenticado
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     const checkAuth = async () => {
-      try {
-        const token = await getToken();
-        if (token) {
-          setIsAuthenticated(true);
-        } else {
-          setIsAuthenticated(false);
-          router.replace("/login");
-        }
-      } catch (error) {
-        console.error("Error al verificar autenticación:", error);
+      const token = await getToken();
+
+      if (token) {
+        setIsAuthenticated(true);
+      } else {
         setIsAuthenticated(false);
         router.replace("/login");
-      } finally {
-        await SplashScreen.hideAsync();
       }
+
+      await SplashScreen.hideAsync();
     };
 
     checkAuth();
   }, []);
 
-  if (isAuthenticated === null) return null;
+  if (isAuthenticated === null) {
+    return null;
+  }
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={{ flex: 1 }}
     >
-      {/* 👇 Aquí envuelves el Stack dentro del Provider */}
       <LotProvider>
         <Stack screenOptions={{ headerShown: false }} />
       </LotProvider>
