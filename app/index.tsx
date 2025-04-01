@@ -22,46 +22,42 @@ export default function WelcomeScreen() {
       const token = await getToken();
       setIsAuthenticated(!!token);
 
-      // Solo redirigir si ya se ha determinado el estado de autenticación
       if (token) {
-        // Si hay token, redirigir al home
         router.replace("/(tabs)/home");
-      } else {
-        // Si no hay token, permanecer en la pantalla de bienvenida
-        // No hacemos redirección aquí, solo se permite la interacción
       }
     };
 
     checkAuth();
   }, [router]);
 
-  // Mientras se verifica la autenticación, no renderizar nada
   if (isAuthenticated === null) return null;
 
   return (
     <SafeAreaView style={styles.safeContainer}>
       <ScrollView contentContainerStyle={{ height: "100%" }}>
         <View style={styles.container}>
-          {/* Logo de la aplicación */}
+          {/* Logo */}
           <Image
             source={require("../assets/images/logo.png")}
             style={styles.logo}
           />
 
+          {/* Imagen principal */}
           <Image
             source={require("../assets/images/welcome.png")}
             style={styles.image}
           />
 
+          {/* Título */}
           <Text style={styles.title}>¡Bienvenido a DisRiego!</Text>
 
+          {/* Subtítulo fijo solo para no autenticados */}
           <Text style={styles.subtitle}>
-            {isAuthenticated
-              ? "¡Ya estás autenticado! Haz clic en 'Continuar' para acceder."
-              : "Para acceder a todas las funcionalidades, por favor regístrate o inicia sesión con tu cuenta."}
+            Para acceder a todas las funcionalidades, por favor regístrate o
+            inicia sesión con tu cuenta.
           </Text>
 
-          {/* Si el usuario no está autenticado, muestra botones de registro e inicio de sesión */}
+          {/* Botones solo si no hay sesión */}
           {!isAuthenticated && (
             <>
               <NavigationButton
