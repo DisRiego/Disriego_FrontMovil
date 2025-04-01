@@ -6,26 +6,28 @@ Este repositorio contiene el frontend móvil de **DisRiego**, desarrollado en **
 
 ## 1. Organización del Repositorio y Ramas
 
-- **Ramas Principales:**
+### Ramas Principales:
 
-  - **develop:** Rama de desarrollo activa.
-  - **test:** Rama para integración y pruebas.
-  - **main:** Rama de producción.
+- `develop` → Rama de desarrollo activa.
+- `test` → Rama para integración y pruebas.
+- `main` → Rama de producción.
 
-- **Flujo de Trabajo:**
-  1. Desarrollo en `develop`.
-  2. Merge a `test` para ejecutar pruebas y validaciones.
-  3. Merge a `main` para el despliegue en producción (publicación en la Google Play Store).
+### Flujo de trabajo:
+
+1. Desarrollar nuevas funcionalidades en `develop`
+2. Merge a `test` para ejecutar pruebas y validaciones.
+3. Merge a `main` para el despliegue en producción (publicación en la Google Play Store).
 
 ---
 
 ## 2. Configuración del Entorno Local
 
-### Requisitos
+### Requisitos previos
 
 - [Visual Studio Code](https://code.visualstudio.com/) u otro IDE de preferencia.
 - Node.js (versión LTS recomendada).
 - React Native CLI y/o Expo CLI (según la solución adoptada).
+- Expo go (para ejecutar la app en dispositivos móviles).
 - Android Studio (para emulación y pruebas).
 
 ### Pasos
@@ -46,8 +48,10 @@ Este repositorio contiene el frontend móvil de **DisRiego**, desarrollado en **
    o, si usas Expo:
 
    ```bash
-   expo install
+   npx expo install
    ```
+
+   > Esto abrirá el navegador con un QR para ejecutar en Expo Go o en tu emulador Android.
 
 3. **Configurar Variables de Entorno:**
 
@@ -71,6 +75,17 @@ Este repositorio contiene el frontend móvil de **DisRiego**, desarrollado en **
      ```bash
      npm test
      ```
+
+### Backend: Configuración Local
+
+Para que la app móvil se conecte correctamente al backend, asegúrate de levantar **ambos servicios** en tu computador con puertos distintos:
+
+| Servicio          | Comando para ejecutar                                      | Puerto ej. |
+| ----------------- | ---------------------------------------------------------- | ---------- |
+| Backend principal | `uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload` | `8000`     |
+| Backend IoT       | `uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload` | `8002`     |
+
+> En el código, las URLs del backend están en `src/services/config.ts`. Puedes usar una IP local como `http://ip:port` para desarrollo. Para obtener tu IP local, ejecuta ipconfig en la terminal (cmd).
 
 ---
 
@@ -143,55 +158,12 @@ jobs:
 - **Soporte:**
   - Para dudas o incidencias, abre un issue en el repositorio o contacta al líder del equipo.
 
+---
+
+## 6. Recomendaciones
+
+- No subas IPs reales ni tokens al repositorio.
+- Usa `.env` para credenciales y rutas sensibles.
+- Documenta las ramas y PRs con mensajes como `add`, `update`, `fix`, `remove`.
+
 ¡A desarrollar una aplicación móvil de calidad para DisRiego y prepararse para su publicación en la Google Play Store!
-
-# Welcome to your Expo app 👋
-
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
-
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-    npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
