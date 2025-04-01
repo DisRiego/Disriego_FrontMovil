@@ -299,7 +299,7 @@ export default function LoginScreen() {
                   ¿No tienes una cuenta?
                   <Text
                     style={styles.link}
-                    onPress={() => router.push("/validation")}
+                    onPress={() => router.replace("/validation")}
                   >
                     {" "}
                     Regístrate aquí
