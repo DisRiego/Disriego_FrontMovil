@@ -11,4 +11,5 @@ export const colors = {
   white: "#FFFFFF", // Blanco
   error: "#B3261E", // Rojo
   success: "#34A853", // Verde
+  activeTab: "#F0F0F0",
 };
