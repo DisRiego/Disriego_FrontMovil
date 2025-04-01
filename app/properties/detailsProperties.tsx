@@ -1,5 +1,4 @@
-// detailsProperties.tsx actualizado para refrescar al enfocar pantalla
-import React, { useState, useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -17,12 +16,14 @@ import { useLotContext } from "@/context/LotContext";
 import PropertyCard from "@/components/PropertyCard";
 import LotCard from "@/components/LotCard";
 import LotDetailsModal from "@/components/LotDetailsModal";
+import SearchBar from "@/components/SearchBar";
 import { useFocusEffect } from "@react-navigation/native";
 
 export default function DetailsProperties() {
   const router = useRouter();
   const { currentProperty, lots, refreshLotsByProperty } = useLotContext();
   const [selectedLot, setSelectedLot] = useState<any | null>(null);
+  const [searchText, setSearchText] = useState("");
 
   useFocusEffect(
     useCallback(() => {
@@ -34,6 +35,12 @@ export default function DetailsProperties() {
 
   if (!currentProperty) return null;
 
+  const filteredLots = lots.filter((lot) =>
+    [lot.name, lot.id, lot.real_estate_registration_number].some((value) =>
+      value?.toLowerCase().includes(searchText.toLowerCase())
+    )
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -44,49 +51,45 @@ export default function DetailsProperties() {
           />
 
           <View style={styles.innerContainer}>
-            <View style={styles.textContainer}>
-              <Text style={[typography.regular.big, { color: colors.gray }]}>
-                En esta sección podrás visualizar información detallada del
-                predio {currentProperty.name}.
-              </Text>
+            <Text style={[typography.regular.big, { color: colors.gray }]}>
+              En esta sección podrás visualizar información detallada del predio{" "}
+              {currentProperty.name}.
+            </Text>
 
-              <View style={styles.propContainer}>
-                <PropertyCard
-                  name={currentProperty.name}
-                  id={currentProperty.id}
-                  folio={currentProperty.real_estate_registration_number}
-                  extension={currentProperty.extension}
-                  latitud={currentProperty.latitude}
-                  longitud={currentProperty.longitude}
-                />
-              </View>
-
-              <Text
-                style={[
-                  typography.regular.big,
-                  { color: colors.gray, marginTop: 20 },
-                ]}
-              >
-                Lotes asociados:
-              </Text>
-
-              {lots.map((lot) => (
-                <LotCard
-                  key={lot.id}
-                  name={lot.name}
-                  id={lot.id}
-                  folio={lot.real_estate_registration_number}
-                  extension={lot.extension}
-                  latitud={lot.latitude}
-                  longitud={lot.longitude}
-                  cropType={lot.cropType}
-                  paymentInterval={lot.paymentInterval}
-                  plantingDate={lot.plantingDate}
-                  estimatedHarvestDate={lot.estimatedHarvestDate}
-                  onPress={() => setSelectedLot(lot)}
-                />
-              ))}
+            <View style={styles.propContainer}>
+              <PropertyCard
+                name={currentProperty.name}
+                id={currentProperty.id}
+                folio={currentProperty.real_estate_registration_number}
+                extension={currentProperty.extension}
+                latitud={currentProperty.latitude}
+                longitud={currentProperty.longitude}
+              />
             </View>
+
+            <Text style={styles.sectionTitle}>Lotes asociados:</Text>
+
+            <View style={{ marginBottom: 12 }}>
+              <SearchBar
+                searchText={searchText}
+                onSearchChange={setSearchText}
+                placeholder="Búsqueda"
+              />
+            </View>
+
+            {filteredLots.map((lot) => (
+              <LotCard
+                key={lot.id}
+                name={lot.name}
+                id={lot.id}
+                folio={lot.real_estate_registration_number}
+                extension={lot.extension}
+                cropType={lot.cropType}
+                minimal={true}
+                showCropType={true}
+                onPress={() => setSelectedLot(lot)}
+              />
+            ))}
           </View>
         </ScrollView>
 
@@ -130,11 +133,14 @@ const styles = StyleSheet.create({
   },
   innerContainer: {
     paddingHorizontal: 20,
-  },
-  textContainer: {
-    marginVertical: 10,
+    paddingBottom: 20,
   },
   propContainer: {
     marginTop: 12,
+  },
+  sectionTitle: {
+    ...typography.regular.big,
+    color: colors.gray,
+    marginVertical: 12,
   },
 });

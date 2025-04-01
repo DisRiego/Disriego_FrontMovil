@@ -114,7 +114,7 @@ const UpdatePassword = () => {
       );
 
       Alert.alert("Éxito", "Contraseña actualizada correctamente.");
-      router.push("/(tabs)/profile");
+      router.replace("/(tabs)/profile");
     } catch (error) {
       Alert.alert(
         "Error",

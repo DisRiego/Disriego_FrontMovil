@@ -45,21 +45,32 @@ export default function ValidationScreen() {
 
   // Función para obtener los tipos de documentos desde el backend
   const fetchDocumentTypes = async () => {
+    setLoadingDropdown(true);
     try {
-      const response = await axios.get(`${API_URL}/users/type-documents`);
-      if (response.data.success) {
-        // Mapear los datos al formato requerido por el dropdown
-        const formattedData = response.data.data.map(
-          (item: { id: number; name: string }) => ({
-            label: item.name,
-            value: String(item.id),
-          })
-        );
+      const cachedData = await AsyncStorage.getItem("documentTypes");
+      if (cachedData) {
+        setDocumentTypes(JSON.parse(cachedData)); // Carga desde el caché si existe
+      } else {
+        const response = await axios.get(`${API_URL}/users/type-documents`);
+        if (response.data.success) {
+          const formattedData = response.data.data.map(
+            (item: { id: number; name: string }) => ({
+              label: item.name,
+              value: String(item.id),
+            })
+          );
 
-        setDocumentTypes([
-          { label: "Selecciona un tipo de documento", value: "" },
-          ...formattedData,
-        ]);
+          const dataToStore = [
+            { label: "Selecciona un tipo de documento", value: "" },
+            ...formattedData,
+          ];
+
+          await AsyncStorage.setItem(
+            "documentTypes",
+            JSON.stringify(dataToStore)
+          ); // Guarda en caché
+          setDocumentTypes(dataToStore);
+        }
       }
     } catch (error) {
       console.error("Error al obtener tipos de documentos:", error);
@@ -79,8 +90,72 @@ export default function ValidationScreen() {
     if (selectedDate) setDateIssuanceDocument(selectedDate);
   };
 
+  // Función para personalizar los mensajes de error
+  const handleErrorMessages = (rawMessage: string) => {
+    // Extrae status simulado si viene tipo: "Error inesperado: 400: mensaje"
+    const extractedStatus = (() => {
+      const match = rawMessage.match(/Error inesperado:\s*(\d+):/);
+      return match ? parseInt(match[1]) : null;
+    })();
+
+    const message = rawMessage
+      .replace(/^Error inesperado:\s*\d+:\s*/, "")
+      .trim();
+
+    // Evaluamos por contenido y no por status real
+    if (message.includes("fecha de expedición no coincide")) {
+      return {
+        title: "Fecha de expedición incorrecta",
+        message:
+          "La fecha de expedición no coincide con nuestros registros. Por favor, verifica los datos.",
+      };
+    } else if (message.includes("ya ha realizado su pre-registro")) {
+      return {
+        title: "Ya realizaste el pre-registro",
+        message:
+          "Este usuario ya completó el pre-registro. Inicia sesión o recupera tu contraseña.",
+      };
+    } else if (message.includes("Correo electrónico ya registrado")) {
+      return {
+        title: "Correo ya registrado",
+        message:
+          "Este correo ya está vinculado a una cuenta. Intenta iniciar sesión o recuperar tu contraseña.",
+      };
+    } else if (message.includes("usuario con estos datos")) {
+      return {
+        title: "No encontramos tu información",
+        message:
+          "No existe un usuario con estos datos en el sistema. Por favor, verifica los datos.",
+      };
+    } else if (extractedStatus === 400) {
+      return {
+        title: "Verifica los datos",
+        message:
+          message || "Ocurrió un error de validación. Intenta nuevamente.",
+      };
+    } else if (extractedStatus === 404) {
+      return {
+        title: "No encontrado",
+        message: message || "No se encontró lo que estás buscando.",
+      };
+    } else if (extractedStatus === 500) {
+      return {
+        title: "¡Uy! Estamos teniendo problemas",
+        message:
+          "Tuvimos un problema interno. Intenta más tarde o contacta soporte si el error persiste.",
+      };
+    } else {
+      return {
+        title: "Algo salió mal",
+        message:
+          message ||
+          "No pudimos procesar tu solicitud. Revisa tu conexión o intenta más tarde.",
+      };
+    }
+  };
+
   // Maneja la validación y el envío de datos al backend
-  async function handleValidation() {
+  const handleValidation = async () => {
     // Verificar si el tipo de documento es el placeholder
     const placeholderDocumentType = documentTypes.find(
       (type) => type.label === "Selecciona un tipo de documento"
@@ -137,21 +212,23 @@ export default function ValidationScreen() {
       if (response.data.success) {
         await AsyncStorage.setItem("preRegisterToken", response.data.token);
         Alert.alert("Éxito", "Validación completada.", [
-          { text: "Continuar", onPress: () => router.push("/register") },
+          { text: "Continuar", onPress: () => router.replace("/register") },
         ]);
       } else {
-        Alert.alert("Error", response.data.message || "Error inesperado.");
+        const { title, message } = handleErrorMessages(response.data.message);
+        Alert.alert(title, message); // Solo título y mensaje
       }
     } catch (error: any) {
       console.error("Error en la validación:", error.response?.data || error);
-      Alert.alert(
-        "Cuenta Existente",
-        "Este usuario ya completó el pre-registro. Por favor, inicie sesión o restablezca su contraseña."
+      const { title, message } = handleErrorMessages(
+        error.response?.data?.detail || "Ocurrió un error inesperado."
       );
+
+      Alert.alert(title, message); // Solo el título y el mensaje sin el código de error
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -237,7 +314,10 @@ export default function ValidationScreen() {
             />
             <Text style={[typography.medium.regular, { color: colors.gray }]}>
               ¿Tienes una cuenta?
-              <Text style={styles.link} onPress={() => router.push("/login")}>
+              <Text
+                style={styles.link}
+                onPress={() => router.replace("/login")}
+              >
                 {" "}
                 Inicia sesión aquí
               </Text>

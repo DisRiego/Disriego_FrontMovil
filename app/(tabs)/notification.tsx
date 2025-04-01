@@ -65,9 +65,6 @@ const Notification = () => {
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F8F8" }}>
       {/* Encabezado */}
       <View style={{ flexDirection: "row", alignItems: "center", padding: 20 }}>
-        <TouchableOpacity onPress={() => router.push("/home")}>
-          <AntDesign name="left" size={22} color="black" />
-        </TouchableOpacity>
         <Text
           style={{
             flex: 1,

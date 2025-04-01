@@ -192,7 +192,7 @@ export default function CompleteInfo() {
 
       console.log("Respuesta del servidor:", response.data);
       Alert.alert("Éxito", "Registro completado correctamente.");
-      router.push("/home");
+      router.replace("/home");
     } catch (error) {
       console.error("Error al registrar:", error);
       Alert.alert(

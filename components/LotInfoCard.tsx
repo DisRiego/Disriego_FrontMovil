@@ -4,7 +4,7 @@ import { Pencil } from "lucide-react-native";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
 import { useLotContext } from "@/context/LotContext";
-import moment from "moment"; // Asegúrate de importar moment
+import moment from "moment";
 
 export default function LotInfoCard({
   onEditPress,
