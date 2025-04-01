@@ -36,28 +36,19 @@ export default function WelcomeScreen() {
     <SafeAreaView style={styles.safeContainer}>
       <ScrollView contentContainerStyle={{ height: "100%" }}>
         <View style={styles.container}>
-          {/* Logo */}
           <Image
             source={require("../assets/images/logo.png")}
             style={styles.logo}
           />
-
-          {/* Imagen principal */}
           <Image
             source={require("../assets/images/welcome.png")}
             style={styles.image}
           />
-
-          {/* Título */}
           <Text style={styles.title}>¡Bienvenido a DisRiego!</Text>
-
-          {/* Subtítulo fijo solo para no autenticados */}
           <Text style={styles.subtitle}>
             Para acceder a todas las funcionalidades, por favor regístrate o
             inicia sesión con tu cuenta.
           </Text>
-
-          {/* Botones solo si no hay sesión */}
           {!isAuthenticated && (
             <>
               <NavigationButton
