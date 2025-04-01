@@ -2,7 +2,6 @@
 
 Este repositorio contiene el frontend móvil de **DisRiego**, desarrollado en **React Native** y gestionado con **Android Studio** para pruebas y emulación. Se desplegará en la Google Play Store utilizando herramientas como Expo (u otra solución similar).
 
----
 
 ## 1. Organización del Repositorio y Ramas
 
@@ -18,7 +17,6 @@ Este repositorio contiene el frontend móvil de **DisRiego**, desarrollado en **
 2. Merge a `test` para ejecutar pruebas y validaciones.
 3. Merge a `main` para el despliegue en producción (publicación en la Google Play Store).
 
----
 
 ## 2. Configuración del Entorno Local
 
@@ -87,7 +85,6 @@ Para que la app móvil se conecte correctamente al backend, asegúrate de levant
 
 > En el código, las URLs del backend están en `src/services/config.ts`. Puedes usar una IP local como `http://ip:port` para desarrollo. Para obtener tu IP local, ejecuta ipconfig en la terminal (cmd).
 
----
 
 ## 3. Integración de CI/CD con GitHub Actions
 
@@ -134,8 +131,6 @@ jobs:
         run: echo "Deploying mobile build..."
 ```
 
----
-
 ## 4. Despliegue en la Google Play Store
 
 - **Proceso de Publicación:**
@@ -147,7 +142,6 @@ jobs:
   - Configura las variables de entorno necesarias en el panel del servicio de despliegue.
   - Asegúrate de que las credenciales y certificados se gestionen de forma segura (por ejemplo, mediante GitHub Secrets).
 
----
 
 ## 5. Consideraciones Finales
 
@@ -158,7 +152,6 @@ jobs:
 - **Soporte:**
   - Para dudas o incidencias, abre un issue en el repositorio o contacta al líder del equipo.
 
----
 
 ## 6. Recomendaciones
 
