@@ -18,13 +18,12 @@ export default function CustomHeader({
 
   return (
     <View style={styles.customHeader}>
-      {/* Botón de retroceso */}
       <TouchableOpacity
         onPress={() => {
           if (typeof backRoute === "function") {
-            backRoute(); // Si es una función, la ejecuta
+            backRoute();
           } else {
-            router.push(backRoute); // Si es string, navega a la ruta
+            router.push(backRoute);
           }
         }}
         style={styles.backButton}
@@ -32,10 +31,8 @@ export default function CustomHeader({
         <AntDesign name="left" size={22} color={colors.gray} />
       </TouchableOpacity>
 
-      {/* Título centrado */}
       <Text style={styles.headerTitle}>{title}</Text>
 
-      {/* Espacio a la derecha para balancear la vista */}
       <View style={styles.placeholder} />
     </View>
   );
