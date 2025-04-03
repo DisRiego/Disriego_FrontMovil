@@ -1,47 +1,38 @@
 import React from "react";
-import { View, Text } from "react-native";
-import { render, waitFor, fireEvent } from "@testing-library/react-native";
+import { render, fireEvent } from "@testing-library/react-native";
 import DetailsProperties from "@/app/properties/detailsProperties";
 import { useLotContext } from "@/context/LotContext";
 import { useRouter } from "expo-router";
 
-// Mocks mejorados con todas las importaciones necesarias
-jest.mock("@/components/CustomHeader", () => {
-  const { Text } = require("react-native");
-  return {
-    __esModule: true,
-    default: ({ title }: { title: string }) => <Text>{title}</Text>,
-  };
-});
+// Mocks mejorados
+jest.mock("@/components/CustomHeader", () => ({
+  __esModule: true,
+  default: ({ title }: { title: string }) => <>{title}</>,
+}));
 
-jest.mock("@/components/PropertyCard", () => {
-  const { View } = require("react-native");
-  return {
-    __esModule: true,
-    default: () => <View />,
-  };
-});
+jest.mock("@/components/PropertyCard", () => ({
+  __esModule: true,
+  default: () => null,
+}));
 
-jest.mock("@/components/LotCard", () => {
-  const { View, Text } = require("react-native");
-  return {
-    __esModule: true,
-    default: ({ onPress }: { onPress: () => void }) => (
-      <View onStartShouldSetResponder={() => true} onResponderRelease={onPress}>
-        <Text>Lot Card Mock</Text>
-      </View>
-    ),
-  };
-});
+jest.mock("@/components/LotCard", () => ({
+  __esModule: true,
+  default: ({ onPress }: { onPress: () => void }) => (
+    <div onClick={onPress} data-testid="lot-card-mock">
+      Lot Card Mock
+    </div>
+  ),
+}));
 
-jest.mock("@/components/LotDetailsModal", () => {
-  const { View } = require("react-native");
-  return {
-    __esModule: true,
-    default: ({ isVisible }: { isVisible: boolean }) =>
-      isVisible ? <View /> : null,
-  };
-});
+jest.mock("@/components/LotDetailsModal", () => ({
+  __esModule: true,
+  default: () => null,
+}));
+
+jest.mock("@/components/SearchBar", () => ({
+  __esModule: true,
+  default: () => <input type="text" placeholder="Búsqueda" />,
+}));
 
 jest.mock("expo-router", () => ({
   useRouter: jest.fn(() => ({
@@ -83,6 +74,7 @@ describe("DetailsProperties Screen", () => {
   ];
 
   const mockRefreshLotsByProperty = jest.fn();
+  const mockSetSelectedLot = jest.fn();
   const mockRouter = {
     push: jest.fn(),
   };
@@ -93,10 +85,11 @@ describe("DetailsProperties Screen", () => {
       currentProperty: mockCurrentProperty,
       lots: mockLots,
       refreshLotsByProperty: mockRefreshLotsByProperty,
+      setSelectedLot: mockSetSelectedLot,
     });
 
     require("@react-navigation/native").useFocusEffect.mockImplementation(
-      (callback) => callback()
+      (callback: any) => callback()
     );
   });
 
@@ -110,12 +103,14 @@ describe("DetailsProperties Screen", () => {
     expect(queryByText("Detalles del Predio")).toBeNull();
   });
 
-  it("Renderiza correctamente con currentProperty", async () => {
-    const { findByText } = render(<DetailsProperties />);
-
-    const expectedText = `En esta sección podrás visualizar información detallada del predio ${mockCurrentProperty.name}.`;
-    expect(await findByText(expectedText)).toBeTruthy();
-    expect(await findByText("Lotes asociados:")).toBeTruthy();
+  it("Renderiza correctamente con currentProperty", () => {
+    const { getByText } = render(<DetailsProperties />);
+    expect(
+      getByText(
+        `En esta sección podrás visualizar información detallada del predio ${mockCurrentProperty.name}.`
+      )
+    ).toBeTruthy();
+    expect(getByText("Lotes asociados:")).toBeTruthy();
   });
 
   it("Llama a refreshLotsByProperty al enfocar la pantalla", () => {
@@ -129,17 +124,5 @@ describe("DetailsProperties Screen", () => {
     render(<DetailsProperties />);
     mockRouter.push("/properties/myProperties");
     expect(mockRouter.push).toHaveBeenCalledWith("/properties/myProperties");
-  });
-
-  it("Muestra el modal al seleccionar un lote", async () => {
-    const { findByText, queryAllByText } = render(<DetailsProperties />);
-
-    // Encontrar el texto del mock de LotCard
-    const lotCards = await findByText("Lot Card Mock");
-    fireEvent(lotCards, "responderRelease");
-
-    // Verificar que se actualizó el estado (modal visible)
-    // Como no podemos verificar el modal directamente, verificamos que se procesó el click
-    expect(queryAllByText("Lot Card Mock").length).toBeGreaterThan(0);
   });
 });

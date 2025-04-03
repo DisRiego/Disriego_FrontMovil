@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState } from "react";
 import { Alert } from "react-native";
 import axios from "axios";
-import { API_URL } from "@/services/config";
+import { API_URL, API_URL_IOT } from "@/services/config";
+import { colors } from "@/config/theme";
 import moment from "moment";
 
 interface Property {
@@ -26,6 +27,20 @@ interface Lot {
   estimatedHarvestDate: string;
 }
 
+interface Device {
+  id: number;
+  lot_id: number;
+  maintenance_interval_id: number | null;
+  status: number;
+  data_device: any;
+  serial_number: number;
+  model: string;
+  installation_date: string;
+  estimated_maintenance_date: string;
+  devices_id: number;
+  status_name: string;
+}
+
 interface CropType {
   id: number;
   name: string;
@@ -39,12 +54,19 @@ interface PaymentInterval {
   interval_days: number;
 }
 
+interface StatusBadge {
+  text: string;
+  color: string;
+  bg: string;
+}
+
 interface LotContextType {
   currentProperty: Property | null;
   currentLot: Lot | null;
   lots: Lot[];
   cropTypes: CropType[];
   paymentIntervals: PaymentInterval[];
+  devices: Device[];
   setProperty: (prop: Property) => void;
   setLot: (lot: Lot) => void;
   updateLotField: (key: keyof Lot, value: any) => void;
@@ -52,6 +74,7 @@ interface LotContextType {
   clearLot: () => void;
   refreshLotsByProperty: (propertyId: string) => Promise<void>;
   fetchCropOptions: () => Promise<void>;
+  fetchDevicesByLot: (lotId: string) => Promise<void>;
   saveLotToBackend: (
     lotId: string,
     data: {
@@ -61,6 +84,7 @@ interface LotContextType {
       estimatedHarvestDate: string;
     }
   ) => Promise<boolean>;
+  getStatusBadge: (status: string) => StatusBadge;
 }
 
 const LotContext = createContext<LotContextType | undefined>(undefined);
@@ -73,6 +97,7 @@ export const LotProvider = ({ children }: { children: React.ReactNode }) => {
   const [paymentIntervals, setPaymentIntervals] = useState<PaymentInterval[]>(
     []
   );
+  const [devices, setDevices] = useState<Device[]>([]);
 
   const setProperty = (prop: Property) => setCurrentProperty(prop);
   const setLot = (lot: Lot) => setCurrentLot(lot);
@@ -119,6 +144,40 @@ export const LotProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       console.error("Error al obtener lotes:", error);
       Alert.alert("Error", "Hubo un problema al cargar los lotes del predio.");
+    }
+  };
+
+  const fetchDevicesByLot = async (lotId: string) => {
+    try {
+      const res = await fetch(`${API_URL_IOT}/devices/lot/${lotId}`);
+      const data = await res.json();
+
+      console.log(
+        "Dispositivos recibidos del backend:",
+        JSON.stringify(data, null, 2)
+      );
+
+      if (data.success) {
+        const formattedDevices = data.data.devices.map((device: any) => ({
+          ...device,
+          installation_date: device.installation_date
+            ? moment(device.installation_date).format("YYYY-MM-DD")
+            : "",
+          estimated_maintenance_date: device.estimated_maintenance_date
+            ? moment(device.estimated_maintenance_date).format("YYYY-MM-DD")
+            : "",
+        }));
+
+        setDevices(formattedDevices);
+      } else {
+        Alert.alert(
+          "Error",
+          "No se pudieron obtener los dispositivos del lote."
+        );
+      }
+    } catch (error) {
+      console.error("Error al obtener dispositivos:", error);
+      Alert.alert("Error", "Hubo un problema al cargar los dispositivos.");
     }
   };
 
@@ -194,6 +253,36 @@ export const LotProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const getStatusBadge = (status: string): StatusBadge => {
+    const map: Record<string, StatusBadge> = {
+      operativo: { text: "Operativo", color: "#27AE60", bg: "#E8F9F0" },
+      "no operativo": { text: "No Operativo", color: "#E74C3C", bg: "#FCEAEA" },
+      "fallo detectado": {
+        text: "Fallo detectado",
+        color: "#E74C3C",
+        bg: "#FCEAEA",
+      },
+      "en mantenimiento": {
+        text: "En mantenimiento",
+        color: "#F39C12",
+        bg: "#FFF6E0",
+      },
+      "sin instalar": {
+        text: "Sin instalar",
+        color: colors.gray,
+        bg: "#F4F4F4",
+      },
+    };
+
+    return (
+      map[status.toLowerCase()] ?? {
+        text: status,
+        color: colors.gray,
+        bg: colors.base,
+      }
+    );
+  };
+
   return (
     <LotContext.Provider
       value={{
@@ -202,6 +291,7 @@ export const LotProvider = ({ children }: { children: React.ReactNode }) => {
         lots,
         cropTypes,
         paymentIntervals,
+        devices,
         setProperty,
         setLot,
         updateLotField,
@@ -209,7 +299,9 @@ export const LotProvider = ({ children }: { children: React.ReactNode }) => {
         clearLot,
         refreshLotsByProperty,
         fetchCropOptions,
+        fetchDevicesByLot,
         saveLotToBackend,
+        getStatusBadge,
       }}
     >
       {children}

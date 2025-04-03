@@ -150,9 +150,4 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: colors.darkGray,
   },
-  separator: {
-    height: 0.5,
-    backgroundColor: colors.border,
-    marginVertical: 5,
-  },
 });

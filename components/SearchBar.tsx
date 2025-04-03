@@ -7,18 +7,20 @@ import { typography } from "@/config/typography";
 interface SearchBarProps {
   searchText: string;
   onSearchChange: (text: string) => void;
+  placeholder?: string;
 }
 
 export default function SearchBar({
   searchText,
   onSearchChange,
+  placeholder,
 }: SearchBarProps) {
   return (
     <View style={styles.container}>
       <Ionicons name="search" size={18} color={colors.gray} />
       <TextInput
         style={styles.input}
-        placeholder="Búsqueda"
+        placeholder={placeholder || "Búsqueda"}
         placeholderTextColor={colors.gray}
         value={searchText}
         onChangeText={onSearchChange}
@@ -35,7 +37,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 10,
     flex: 1,
-    height: 40,
+    height: 45,
     borderWidth: 1,
     borderColor: colors.border,
   },

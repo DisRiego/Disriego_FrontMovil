@@ -214,6 +214,20 @@ const UpdateProfile = () => {
   const handleSaveChanges = async () => {
     if (!user) return;
     setSavingChanges(true);
+
+    // Validar campos obligatorios
+    if (
+      !direccion.trim() ||
+      !telefono.trim() ||
+      !selectedCountry ||
+      !selectedState ||
+      !selectedCity
+    ) {
+      Alert.alert("Error", "No se pueden enviar los campos vacíos.");
+      setSavingChanges(false);
+      return;
+    }
+
     try {
       const token = await AsyncStorage.getItem("token");
       if (!token) throw new Error("No se encontró el token de autenticación.");
