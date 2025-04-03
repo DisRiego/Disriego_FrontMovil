@@ -1,5 +1,5 @@
 import React from "react";
-import { render, waitFor } from "@testing-library/react-native";
+import { render, waitFor, fireEvent } from "@testing-library/react-native";
 import DetailsLots from "@/app/properties/detailsLot";
 import { useLotContext } from "@/context/LotContext";
 import { useRouter } from "expo-router";
@@ -20,6 +20,35 @@ jest.mock("@/components/LotInfoCard", () => ({
   default: ({ onEditPress }: { onEditPress: () => void }) => (
     <button onClick={onEditPress}>Edit</button>
   ),
+}));
+
+jest.mock("@/components/DeviceCard", () => ({
+  __esModule: true,
+  default: () => null,
+}));
+
+jest.mock("@/components/ValveCard", () => ({
+  __esModule: true,
+  default: () => null,
+}));
+
+jest.mock("@/components/SearchBar", () => ({
+  __esModule: true,
+  default: () => <input type="text" placeholder="Buscar..." />,
+}));
+
+jest.mock("@expo/vector-icons", () => ({
+  Ionicons: "Ionicons",
+}));
+
+jest.mock("@/components/ValveDetailsModal", () => ({
+  __esModule: true,
+  default: () => null,
+}));
+
+jest.mock("@/components/DeviceDetailsModal", () => ({
+  __esModule: true,
+  default: () => null,
 }));
 
 jest.mock("expo-router", () => ({
@@ -47,32 +76,46 @@ describe("DetailsLots Screen", () => {
     estimatedHarvestDate: "2023-07-20",
   };
 
+  const mockDevices = [
+    {
+      id: "device-1",
+      model: "Modelo 1",
+      serial_number: "12345",
+      status_name: "Activo",
+      devices_id: 1,
+      installation_date: "2023-01-01",
+      estimated_maintenance_date: "2023-12-31",
+    },
+  ];
+
   const mockRouter = {
     replace: jest.fn(),
     push: jest.fn(),
   };
 
+  const mockFetchDevicesByLot = jest.fn();
+
   beforeEach(() => {
     (useRouter as jest.Mock).mockReturnValue(mockRouter);
     (useLotContext as jest.Mock).mockReturnValue({
       currentLot: mockCurrentLot,
+      devices: mockDevices,
+      fetchDevicesByLot: mockFetchDevicesByLot,
     });
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
   it("No renderiza nada cuando no hay currentLot", () => {
-    (useLotContext as jest.Mock).mockReturnValueOnce({ currentLot: null });
+    (useLotContext as jest.Mock).mockReturnValueOnce({
+      currentLot: null,
+      devices: [], // Añade esto para evitar el error de filter
+      fetchDevicesByLot: mockFetchDevicesByLot,
+    });
     const { queryByText } = render(<DetailsLots />);
     expect(queryByText("Detalles del Lote")).toBeNull();
   });
 
   it("Renderiza correctamente con currentLot", async () => {
     const { findByText } = render(<DetailsLots />);
-
-    // Buscamos el texto dividido como aparece en el error
     const fullText = `En esta sección podrás visualizar información detallada sobre ${mockCurrentLot.name}.`;
     expect(await findByText(fullText)).toBeTruthy();
   });
@@ -85,5 +128,10 @@ describe("DetailsLots Screen", () => {
   it("Configura la navegación al editar", () => {
     render(<DetailsLots />);
     expect(mockRouter.push).toBeDefined();
+  });
+
+  it("Llama a fetchDevicesByLot al cargar", () => {
+    render(<DetailsLots />);
+    expect(mockFetchDevicesByLot).toHaveBeenCalledWith(mockCurrentLot.id);
   });
 });

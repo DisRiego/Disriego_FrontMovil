@@ -32,7 +32,7 @@ describe("ForgotPasswordScreen", () => {
 
     expect(Alert.alert).toHaveBeenCalledWith(
       "Error",
-      "Por favor, ingresa tu correo electrónico."
+      "No se pueden enviar los campos vacíos."
     );
   });
 

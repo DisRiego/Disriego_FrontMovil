@@ -24,10 +24,6 @@ import axios from "axios";
 import { API_FRONT, API_URL } from "@/services/config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-/**
- * Pantalla de registro de usuarios
- * Permite completar el registro con email y contraseña después de la validación previa
- */
 export default function RegisterScreen() {
   const router = useRouter();
   const [documentType, setDocumentType] = useState("CC");
@@ -44,37 +40,20 @@ export default function RegisterScreen() {
   const { errors, handlePasswordChange, handleConfirmPasswordChange } =
     usePasswordValidation();
 
-  /**
-   * Valida el formato del correo electrónico
-   * @param email Correo electrónico a validar
-   * @returns true si el formato es válido, false en caso contrario
-   */
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  /**
-   * Navega a la pantalla de inicio
-   */
   const navigateToHome = () => {
-    router.push("/home");
+    router.replace("/home");
   };
 
-  /**
-   * Actualiza el correo electrónico y reinicia el estado de error
-   * @param text Nuevo valor del correo electrónico
-   */
   const handleEmailChange = (text: string) => {
     setEmail(text);
     setEmailError(false);
   };
 
-  /**
-   * Envía un correo electrónico de activación al usuario
-   * @param email Correo electrónico del destinatario
-   * @param activationToken Token de activación para incluir en el enlace
-   */
   const sendActivationEmail = async (
     email: string,
     activationToken: string
@@ -93,7 +72,6 @@ export default function RegisterScreen() {
         user_id: "hMGKOWPvqqS5l9Qsf", // Clave pública de EmailJS
         accessToken: "Qm3WiVQBa3J59N-sE7iKa", // Clave privada de EmailJS
         template_params: {
-          to_name: "Usuario",
           to_email: email,
           message: `Para activar tu cuenta, haz clic en el siguiente enlace: ${activationUrl}`,
           reply_to: email,
@@ -125,9 +103,6 @@ export default function RegisterScreen() {
     }
   };
 
-  /**
-   * Valida los campos y procesa el registro del usuario
-   */
   const handleRegister = async () => {
     Keyboard.dismiss();
 
@@ -224,9 +199,6 @@ export default function RegisterScreen() {
     }
   };
 
-  /**
-   * Renderiza los requisitos de contraseña
-   */
   const renderPasswordRequirements = () => (
     <View style={styles.validationContainer}>
       <Text style={styles.validationText}>
@@ -248,9 +220,6 @@ export default function RegisterScreen() {
     </View>
   );
 
-  /**
-   * Renderiza el formulario de registro
-   */
   const renderForm = () => (
     <View style={styles.formContainer}>
       <Text style={[typography.semibold.big, { color: colors.darkGray }]}>
@@ -315,9 +284,6 @@ export default function RegisterScreen() {
     </View>
   );
 
-  /**
-   * Renderiza el botón de registro
-   */
   const renderFooter = () => (
     <View style={styles.footerContainer}>
       <Button
@@ -333,7 +299,7 @@ export default function RegisterScreen() {
       />
       <Text style={[typography.medium.regular, { color: colors.gray }]}>
         ¿Tienes una cuenta?
-        <Text style={styles.link} onPress={() => router.push("/login")}>
+        <Text style={styles.link} onPress={() => router.replace("/login")}>
           {" "}
           Inicia sesión aquí
         </Text>

@@ -2,6 +2,19 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { API_URL } from "./config";
 import { jwtDecode } from "jwt-decode";
+import { useRouter } from "expo-router";
+
+interface DecodedToken {
+  id: number;
+  email: string;
+  exp: number;
+}
+
+interface NotActivatedError {
+  status: string;
+  message: string;
+  token: string;
+}
 
 interface User {
   gender: string;
@@ -17,13 +30,6 @@ interface User {
   roles: { id: number; name: string }[];
 }
 
-// Interfaz para el error específico de cuenta no activada
-interface NotActivatedError {
-  status: string;
-  message: string;
-  token: string;
-}
-
 // Cache en memoria para evitar llamadas innecesarias a AsyncStorage
 let tokenCache: string | null = null;
 let emailCache: string | null = null;
@@ -32,6 +38,32 @@ let emailCache: string | null = null;
 const getAuthHeaders = async () => {
   const token = await getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+// Obtener el token desde memoria o AsyncStorage (si es necesario)
+export const getToken = async (): Promise<string | null> => {
+  if (tokenCache) return tokenCache;
+
+  try {
+    tokenCache = await AsyncStorage.getItem("token");
+    return tokenCache;
+  } catch (error) {
+    console.error("Error al obtener el token:", error);
+    return null;
+  }
+};
+
+// Obtener el email del usuario desde memoria o AsyncStorage
+export const getEmail = async (): Promise<string | null> => {
+  if (emailCache) return emailCache;
+
+  try {
+    emailCache = await AsyncStorage.getItem("email");
+    return emailCache;
+  } catch (error) {
+    console.error("Error al obtener el email:", error);
+    return null;
+  }
 };
 
 // Iniciar sesión y almacenar token en AsyncStorage + memoria
@@ -56,14 +88,11 @@ export const login = async (email: string, password: string) => {
       await AsyncStorage.multiSet([
         ["token", tokenCache],
         ["email", email],
-        // Guardar datos de usuario completos
         ["userData", JSON.stringify(response.data)],
-        // Guardar first_login_complete como string explícito
         [
           "first_login_complete",
           decodedToken.first_login_complete ? "true" : "false",
         ],
-        // Establecer flag de first login basado en el token
         ["isFirstLogin", decodedToken.first_login_complete ? "false" : "true"],
       ]);
     } else {
@@ -106,62 +135,50 @@ export const login = async (email: string, password: string) => {
   }
 };
 
-// Obtener el token desde memoria o AsyncStorage (si es necesario)
-export const getToken = async (): Promise<string | null> => {
-  if (tokenCache) return tokenCache;
-
-  try {
-    tokenCache = await AsyncStorage.getItem("token");
-    return tokenCache;
-  } catch (error) {
-    console.error("Error al obtener el token:", error);
-    return null;
-  }
-};
-
-// Obtener el email del usuario desde memoria o AsyncStorage
-export const getEmail = async (): Promise<string | null> => {
-  if (emailCache) return emailCache;
-
-  try {
-    emailCache = await AsyncStorage.getItem("email");
-    return emailCache;
-  } catch (error) {
-    console.error("Error al obtener el email:", error);
-    return null;
-  }
-};
-
-// Cerrar sesión y limpiar memoria + AsyncStorage
+// Manejo del Logout
 export const logout = async () => {
   try {
     const token = await getToken();
-    if (!token) {
-      console.warn("Intento de logout sin token almacenado.");
-      return;
+    if (token) {
+      await axios.post(
+        `${API_URL}/auth/logout`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
     }
-
-    await axios.post(
-      `${API_URL}/auth/logout`,
-      {},
-      { headers: await getAuthHeaders() }
-    );
-
-    await AsyncStorage.multiRemove(["token", "email"]);
-    tokenCache = null;
-    emailCache = null;
-    console.log("Cierre de sesión exitoso.");
   } catch (error) {
     console.error("Error al cerrar sesión:", error);
+  } finally {
+    // Esto siempre se ejecuta, con o sin error
+    await AsyncStorage.multiRemove([
+      "token",
+      "email",
+      "userData",
+      "first_login_complete",
+      "isFirstLogin",
+    ]);
+    tokenCache = null;
+    emailCache = null;
   }
 };
 
-// Interfaz del token decodificado
-interface DecodedToken {
-  id: number;
-  email: string;
-  exp: number; // Expiración del token
-}
+// Verificación de sesión y redirección si no está autenticado
+export const checkAuth = async () => {
+  const token = await getToken();
+  const router = useRouter();
+
+  if (!token) {
+    router.replace("/login"); // Redirige a la página de login si no hay token
+  } else {
+    const decoded: DecodedToken = jwtDecode(token);
+    const now = Date.now() / 1000;
+
+    if (decoded.exp < now) {
+      // Token expirado, hacer logout
+      logout();
+    }
+  }
+};
 
 export const getUserData = async () => {
   try {

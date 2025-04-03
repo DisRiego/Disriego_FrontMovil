@@ -79,7 +79,7 @@ const Profile = () => {
   }, []);
 
   /**
-   * Maneja el cierre de sesión
+   * Maneja el cierre de sesión y redirige al login
    */
   const handleLogout = async () => {
     try {
