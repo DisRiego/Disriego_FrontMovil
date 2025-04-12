@@ -1,5 +1,5 @@
 // LotDetailsModal.tsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import Modal from "react-native-modal";
 import { colors } from "@/config/theme";
@@ -43,10 +43,16 @@ export default function LotDetailsModal({
   propertyName,
 }: LotDetailsModalProps) {
   const router = useRouter();
-  const { setLot, setProperty } = useLotContext();
+  const { setLot, setProperty, devices } = useLotContext();
+  const { fetchDevicesByLot } = useLotContext();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleDownload = async () => {
+    if (isLoading) return;
+
+    setIsLoading(true);
     try {
+      await fetchDevicesByLot(id);
       await generateLotPDF({
         propertyId,
         propertyName,
@@ -58,9 +64,12 @@ export default function LotDetailsModal({
         extension,
         cropType,
         paymentInterval,
+        devices,
       });
     } catch (error) {
       console.error("Error al generar o descargar el PDF:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -151,10 +160,14 @@ export default function LotDetailsModal({
           <TouchableOpacity
             style={styles.downloadButton}
             onPress={handleDownload}
+            disabled={isLoading}
           >
             <AntDesign name="download" size={17} color={colors.darkGray} />
-            <Text style={styles.downloadText}>Descargar</Text>
+            <Text style={styles.downloadText}>
+              {isLoading ? "Generando..." : "Descargar"}
+            </Text>
           </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.detailsButton}
             onPress={handleViewDetails}
@@ -217,7 +230,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   separator: {
-    height: 0.5,
+    height: 0.8,
     backgroundColor: colors.border,
     marginVertical: 5,
   },

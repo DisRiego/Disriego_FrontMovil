@@ -146,10 +146,12 @@ export const logout = async () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
     }
-  } catch (error) {
-    console.error("Error al cerrar sesión:", error);
+  } catch (error: any) {
+    if (__DEV__) {
+      console.warn("Error al cerrar sesión (API):", error?.message || error);
+    }
+    // No hacemos nada más: el error se maneja silenciosamente
   } finally {
-    // Esto siempre se ejecuta, con o sin error
     await AsyncStorage.multiRemove([
       "token",
       "email",
