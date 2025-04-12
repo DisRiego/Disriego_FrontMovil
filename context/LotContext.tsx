@@ -39,6 +39,7 @@ interface Device {
   estimated_maintenance_date: string;
   devices_id: number;
   status_name: string;
+  device_type_name: string;
 }
 
 interface CropType {
@@ -85,7 +86,46 @@ interface LotContextType {
     }
   ) => Promise<boolean>;
   getStatusBadge: (status: string) => StatusBadge;
+  fetchValveOpeningTypes: () => Promise<
+    { label: string; value: string; id: number }[]
+  >;
+  createValveRequest: (params: {
+    typeOpeningId: number;
+    lotId: string;
+    userId: number;
+    deviceIotId: number;
+    openDate: string;
+    closeDate: string;
+    volumeWater: number | null;
+  }) => Promise<boolean>;
+  getRequestByDeviceId: (deviceId: number) => Promise<any[]>;
+  canCreateValveRequest: (deviceId: number) => Promise<boolean>;
+  currentDeviceId: number | null;
+  setCurrentDeviceId: (id: number | null) => void;
+  currentValveId: number | null;
+  setCurrentValveId: (id: number | null) => void;
 }
+
+const getDeviceTypeName = (device: any): string => {
+  const deviceTypeMap: Record<number, string> = {
+    1: "Válvula",
+    2: "Medidor",
+    3: "Controlador",
+    4: "Adaptador",
+    5: "Inversor",
+    6: "Batería",
+    7: "Panel",
+    8: "Antena",
+    9: "Breaker",
+    10: "DPS",
+    11: "Portafusible",
+    12: "Fusible",
+    13: "Fuente de poder",
+    14: "Relé",
+  };
+
+  return deviceTypeMap[device.devices_id] || "Dispositivo desconocido";
+};
 
 const LotContext = createContext<LotContextType | undefined>(undefined);
 
@@ -97,6 +137,8 @@ export const LotProvider = ({ children }: { children: React.ReactNode }) => {
   const [paymentIntervals, setPaymentIntervals] = useState<PaymentInterval[]>(
     []
   );
+  const [currentDeviceId, setCurrentDeviceId] = useState<number | null>(null);
+  const [currentValveId, setCurrentValveId] = useState<number | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
 
   const setProperty = (prop: Property) => setCurrentProperty(prop);
@@ -118,10 +160,8 @@ export const LotProvider = ({ children }: { children: React.ReactNode }) => {
 
   const refreshLotsByProperty = async (propertyId: string) => {
     try {
-      console.log("Solicitando lotes del predio con ID:", propertyId);
       const res = await fetch(`${API_URL}/properties/${propertyId}/lots`);
       const data = await res.json();
-      console.log("Respuesta del backend:", JSON.stringify(data, null, 2));
 
       if (data.success) {
         const mappedLots: Lot[] = data.data.map((item: any) => ({
@@ -152,21 +192,24 @@ export const LotProvider = ({ children }: { children: React.ReactNode }) => {
       const res = await fetch(`${API_URL_IOT}/devices/lot/${lotId}`);
       const data = await res.json();
 
-      console.log(
-        "Dispositivos recibidos del backend:",
-        JSON.stringify(data, null, 2)
-      );
-
       if (data.success) {
-        const formattedDevices = data.data.devices.map((device: any) => ({
-          ...device,
-          installation_date: device.installation_date
-            ? moment(device.installation_date).format("YYYY-MM-DD")
-            : "",
-          estimated_maintenance_date: device.estimated_maintenance_date
-            ? moment(device.estimated_maintenance_date).format("YYYY-MM-DD")
-            : "",
-        }));
+        console.log(
+          "Raw response completa del backend:",
+          JSON.stringify(data, null, 2)
+        );
+        const formattedDevices = data.data.devices.map((device: any) => {
+          console.log("Dispositivo recibido desde backend:", device);
+          return {
+            ...device,
+            installation_date: device.installation_date
+              ? moment(device.installation_date).format("YYYY-MM-DD")
+              : "",
+            estimated_maintenance_date: device.estimated_maintenance_date
+              ? moment(device.estimated_maintenance_date).format("YYYY-MM-DD")
+              : "",
+            device_type_name: getDeviceTypeName(device),
+          };
+        });
 
         setDevices(formattedDevices);
       } else {
@@ -190,9 +233,6 @@ export const LotProvider = ({ children }: { children: React.ReactNode }) => {
 
       const cropData = await cropRes.json();
       const intervalData = await intervalRes.json();
-
-      console.log("Tipos de cultivo recibidos:", cropData.data);
-      console.log("Intervalos de pago recibidos:", intervalData.data);
 
       if (cropData.success && intervalData.success) {
         setCropTypes(cropData.data);
@@ -228,13 +268,6 @@ export const LotProvider = ({ children }: { children: React.ReactNode }) => {
         moment(data.estimatedHarvestDate).format("YYYY-MM-DD")
       );
 
-      console.log("Enviando a backend (FormData):", {
-        type_crop_id: data.typeCropId,
-        payment_interval: data.paymentIntervalId,
-        planting_date: data.plantingDate,
-        estimated_harvest_date: data.estimatedHarvestDate,
-      });
-
       await axios.put(
         `${API_URL}/properties/lot/${lotId}/edit-crop`,
         formData,
@@ -245,12 +278,113 @@ export const LotProvider = ({ children }: { children: React.ReactNode }) => {
         }
       );
 
-      console.log("Lote guardado en el backend");
       return true;
     } catch (error) {
       console.error("Error al guardar lote:", error);
       return false;
     }
+  };
+
+  const fetchValveOpeningTypes = async (): Promise<
+    { label: string; value: string; id: number }[]
+  > => {
+    try {
+      const res = await axios.get(`${API_URL_IOT}/devices-request/type-open/`);
+      if (res.data.success) {
+        return res.data.data.map((item: any) => ({
+          label: item.type_opening,
+          value: item.type_opening,
+          id: item.id,
+        }));
+      }
+      return [];
+    } catch (error) {
+      console.error("Error al obtener tipos de apertura:", error);
+      return [];
+    }
+  };
+
+  const createValveRequest = async ({
+    typeOpeningId,
+    lotId,
+    userId,
+    deviceIotId,
+    openDate,
+    closeDate,
+    volumeWater,
+  }: {
+    typeOpeningId: number;
+    lotId: string;
+    userId: number;
+    deviceIotId: number;
+    openDate: string;
+    closeDate: string;
+    volumeWater: number | null;
+  }): Promise<boolean> => {
+    try {
+      const formatDate = (date: string) => date.split(".")[0];
+
+      const payload = {
+        type_opening_id: typeOpeningId,
+        lot_id: Number(lotId),
+        user_id: userId,
+        device_iot_id: deviceIotId,
+        open_date: formatDate(openDate),
+        close_date: formatDate(closeDate),
+        volume_water: volumeWater,
+      };
+
+      console.log(
+        "Payload enviado a create-request:",
+        JSON.stringify(payload, null, 2)
+      );
+
+      const res = await axios.post(
+        `${API_URL_IOT}/devices-request/create-request/`,
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (res.data?.success) {
+        Alert.alert("Éxito", "La solicitud fue enviada correctamente.");
+        return true;
+      } else {
+        Alert.alert(
+          "Error",
+          res.data?.message || "No se pudo enviar la solicitud."
+        );
+        return false;
+      }
+    } catch (error: any) {
+      console.error(
+        "Error al crear solicitud de apertura:",
+        error.response?.data || error.message
+      );
+      Alert.alert("Error", "Hubo un problema al enviar la solicitud.");
+      return false;
+    }
+  };
+
+  const getRequestByDeviceId = async (deviceId: number): Promise<any[]> => {
+    try {
+      const res = await axios.get(`${API_URL_IOT}/devices-request/request/`);
+      if (res.data.success) {
+        return res.data.data.filter((r: any) => r.device_iot_id === deviceId);
+      }
+      return [];
+    } catch (error) {
+      console.error("Error al obtener solicitudes por dispositivo:", error);
+      return [];
+    }
+  };
+
+  const canCreateValveRequest = async (deviceId: number): Promise<boolean> => {
+    const request = await getRequestByDeviceId(deviceId);
+    return request === null;
   };
 
   const getStatusBadge = (status: string): StatusBadge => {
@@ -302,6 +436,14 @@ export const LotProvider = ({ children }: { children: React.ReactNode }) => {
         fetchDevicesByLot,
         saveLotToBackend,
         getStatusBadge,
+        fetchValveOpeningTypes,
+        createValveRequest,
+        getRequestByDeviceId,
+        canCreateValveRequest,
+        currentDeviceId,
+        setCurrentDeviceId,
+        currentValveId,
+        setCurrentValveId,
       }}
     >
       {children}

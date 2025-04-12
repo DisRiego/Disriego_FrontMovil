@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import Modal from "react-native-modal";
 import { colors } from "@/config/theme";
@@ -31,6 +31,7 @@ export default function PropertyDetailsModal({
 }: PropertyDetailsModalProps) {
   const router = useRouter();
   const { setProperty } = useLotContext();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleViewDetails = () => {
     setProperty({
@@ -91,19 +92,30 @@ export default function PropertyDetailsModal({
         <View style={styles.actions}>
           <TouchableOpacity
             style={styles.downloadButton}
-            onPress={() => {
-              generatePropertyPDF({
-                id,
-                name,
-                real_estate_registration_number,
-                latitude,
-                longitude,
-                extension,
-              });
+            onPress={async () => {
+              if (isLoading) return;
+              setIsLoading(true);
+              try {
+                await generatePropertyPDF({
+                  id,
+                  name,
+                  real_estate_registration_number,
+                  latitude,
+                  longitude,
+                  extension,
+                });
+              } catch (error) {
+                console.error("Error al generar PDF de propiedad:", error);
+              } finally {
+                setIsLoading(false);
+              }
             }}
+            disabled={isLoading}
           >
             <AntDesign name="download" size={17} color={colors.darkGray} />
-            <Text style={styles.downloadText}>Descargar</Text>
+            <Text style={styles.downloadText}>
+              {isLoading ? "Generando..." : "Descargar"}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -167,7 +179,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   separator: {
-    height: 0.5,
+    height: 0.8,
     backgroundColor: colors.border,
     marginVertical: 5,
   },

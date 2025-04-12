@@ -1,24 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { Tabs, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../../config/theme";
-import { typography } from "../../config/typography";
+import { colors } from "@/config/theme";
+import { typography } from "@/config/typography";
 import { getToken } from "@/services/auth";
+import { NotificationProvider } from "@/context/NotificationContext";
+import NotificationIcon from "@/components/NotificationIcon";
 
-/**
- * TabsLayout
- * Gestiona la barra de navegación inferior y verifica la autenticación
- * del usuario antes de permitir el acceso a las rutas protegidas.
- */
-const TabsLayout = () => {
-  // Estados y hooks
+const Layout = () => {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
-  /**
-   * Efecto para verificar el estado de autenticación
-   * Si el usuario no está autenticado, redirige a la pantalla de login
-   */
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -27,7 +19,7 @@ const TabsLayout = () => {
           setIsAuthenticated(true);
         } else {
           setIsAuthenticated(false);
-          router.replace("/login"); // Redirige a login si no está autenticado
+          router.replace("/login");
         }
       } catch (error) {
         console.error("Error verificando autenticación:", error);
@@ -39,64 +31,62 @@ const TabsLayout = () => {
     checkAuth();
   }, [router]);
 
-  // Previene renderizado hasta confirmar estado de autenticación
   if (isAuthenticated === null) {
-    return null; // Evita renderizar la UI hasta que se verifique la autenticación
+    return null; // evita render hasta saber si hay sesión
   }
 
-  // Configuración de la barra de navegación por pestañas
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.gray,
-        tabBarStyle: {
-          height: 68,
-          paddingBottom: 10,
-          paddingTop: 5,
-        },
-        tabBarLabelStyle: {
-          ...typography.medium.small,
-        },
-      }}
-    >
-      {/* Pestaña de Notificaciones */}
-      <Tabs.Screen
-        name="notification"
-        options={{
-          title: "Notificaciones",
-          headerShown: false,
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="notifications-outline" size={22} color={color} />
-          ),
+    <NotificationProvider>
+      <Tabs
+        screenOptions={{
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.gray,
+          tabBarStyle: {
+            height: 68,
+            paddingBottom: 10,
+            paddingTop: 5,
+          },
+          tabBarLabelStyle: {
+            ...typography.medium.small,
+          },
         }}
-      />
+      >
+        {/* Pestaña de Notificaciones */}
+        <Tabs.Screen
+          name="notification"
+          options={{
+            title: "Notificaciones",
+            headerShown: false,
+            tabBarIcon: ({ color }) => <NotificationIcon color={color} />,
+          }}
+        />
 
-      {/* Pestaña de Inicio */}
-      <Tabs.Screen
-        name="home"
-        options={{
-          title: "Inicio",
-          headerShown: false,
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="home-outline" size={22} color={color} />
-          ),
-        }}
-      />
+        {/* Pestaña de Inicio */}
+        <Tabs.Screen
+          name="home"
+          options={{
+            title: "Inicio",
+            headerShown: false,
+            tabBarIcon: ({ color }) => (
+              <Ionicons name="home-outline" size={22} color={color} />
+            ),
+          }}
+        />
 
-      {/* Pestaña de Perfil */}
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Perfil",
-          headerShown: false,
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="person-outline" size={22} color={color} />
-          ),
-        }}
-      />
-    </Tabs>
+        {/* Pestaña de Perfil */}
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: "Perfil",
+            headerShown: false,
+            tabBarIcon: ({ color }) => (
+              <Ionicons name="person-outline" size={22} color={color} />
+            ),
+          }}
+        />
+      </Tabs>
+    </NotificationProvider>
   );
 };
 
-export default TabsLayout;
+export default Layout;
