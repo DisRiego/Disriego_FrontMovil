@@ -20,8 +20,8 @@ async function sendDownloadNotification(fileUri: string) {
 }
 
 export async function generateLotPDF(lotData: {
-  propertyId: string; // 🔹 ID del predio
-  propertyName: string; // 🔹 Nombre del predio
+  propertyId: string;
+  propertyName: string;
   name: string;
   id: string;
   real_estate_registration_number: string;
@@ -30,6 +30,14 @@ export async function generateLotPDF(lotData: {
   extension: string;
   cropType: string;
   paymentInterval: string;
+  devices: {
+    data_device: any;
+    model: string;
+    installation_date: string;
+    estimated_maintenance_date: string;
+    device_type_name: string;
+    status_name: string;
+  }[];
 }) {
   const user = await getUserData();
   if (!user) {
@@ -61,7 +69,28 @@ export async function generateLotPDF(lotData: {
     extension,
     cropType,
     paymentInterval,
+    devices,
   } = lotData;
+
+  const deviceRowsHtml = devices.length
+    ? devices
+        .map(
+          (device) => `
+          <tr>
+            <td>${
+              device.device_type_name ||
+              device.data_device?.type ||
+              "Desconocido"
+            }</td>
+            <td>${device.model || "N/A"}</td>
+            <td>${device.installation_date || "N/A"}</td>
+            <td>${device.estimated_maintenance_date || "N/A"}</td>
+            <td>${device.status_name || "N/A"}</td>
+          </tr>
+        `
+        )
+        .join("")
+    : `<tr><td colspan="5" style="text-align: center; padding: 12px;">No hay dispositivos asignados a este lote.</td></tr>`;
 
   const htmlContent = `<html>
   <head> </head>
@@ -163,27 +192,7 @@ export async function generateLotPDF(lotData: {
           <th>Fecha estimada de mantenimiento</th>
           <th>Estado</th>
         </tr>
-        <tr>
-          <td>[Medidor]</td>
-          <td>[Modelo]</td>
-          <td>[dd/mm/aa]</td>
-          <td>[dd/mm/aa]</td>
-          <td>[Estado]</td>
-        </tr>
-        <tr>
-          <td>[Controlador]</td>
-          <td>[Modelo]</td>
-          <td>[dd/mm/aa]</td>
-          <td>[dd/mm/aa]</td>
-          <td>[Estado]</td>
-        </tr>
-        <tr>
-          <td>[Válvula]</td>
-          <td>[Modelo]</td>
-          <td>[dd/mm/aa]</td>
-          <td>[dd/mm/aa]</td>
-          <td>[Estado]</td>
-        </tr>
+        ${deviceRowsHtml}
       </table>
     </div>
   </body>
