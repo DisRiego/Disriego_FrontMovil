@@ -14,6 +14,7 @@ interface DeviceDetailsModalProps {
   installDate: string;
   maintenanceDate: string;
   status: string;
+  deviceTypeName: string;
 }
 
 export default function DeviceDetailsModal({
@@ -24,6 +25,7 @@ export default function DeviceDetailsModal({
   installDate,
   maintenanceDate,
   status,
+  deviceTypeName,
 }: DeviceDetailsModalProps) {
   const { getStatusBadge } = useLotContext();
   const badge = getStatusBadge(status);
@@ -58,6 +60,11 @@ export default function DeviceDetailsModal({
                 {badge.text}
               </Text>
             </View>
+          </View>
+
+          <View style={styles.row}>
+            <Text style={styles.label}>Tipo de dispositivo</Text>
+            <Text style={styles.value}>{deviceTypeName || "Desconocido"}</Text>
           </View>
 
           <View style={styles.separator} />
@@ -133,7 +140,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   separator: {
-    height: 0.5,
+    height: 0.8,
     backgroundColor: colors.border,
     marginVertical: 5,
   },
