@@ -1,11 +1,12 @@
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import Modal from "react-native-modal";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
 import { AntDesign, Feather } from "@expo/vector-icons";
-import { router, useRouter } from "expo-router";
+import { router } from "expo-router";
 import { useLotContext } from "@/context/LotContext";
+import { API_URL_IOT } from "@/services/config";
 
 interface ValveDetailsModalProps {
   isVisible: boolean;
@@ -14,7 +15,9 @@ interface ValveDetailsModalProps {
   serialNumber: string;
   installDate: string;
   maintenanceDate: string;
-  status: string;
+  status: string; // status_id en string: "11" (operativo), "12" (no operativo)
+  deviceId: number;
+  deviceTypeName: string;
 }
 
 export default function ValveDetailsModal({
@@ -25,9 +28,54 @@ export default function ValveDetailsModal({
   installDate,
   maintenanceDate,
   status,
+  deviceId,
+  deviceTypeName,
 }: ValveDetailsModalProps) {
   const { getStatusBadge } = useLotContext();
   const badge = getStatusBadge(status);
+
+  const [hasActiveRequest, setHasActiveRequest] = useState(false);
+
+  useEffect(() => {
+    const fetchActiveValveRequests = async () => {
+      try {
+        const res = await fetch(`${API_URL_IOT}/devices-request/request/`);
+        const data = await res.json();
+
+        if (data.success) {
+          const activeRequests = data.data.filter(
+            (r: any) => r.device_iot_id === deviceId && r.status === 18
+          );
+          setHasActiveRequest(activeRequests.length > 0);
+        }
+      } catch (err) {
+        console.error("Error fetching valve requests:", err);
+      }
+    };
+
+    if (isVisible) fetchActiveValveRequests();
+  }, [isVisible]);
+
+  const handleCloseValve = () => {
+    Alert.alert(
+      "Confirmar cierre",
+      "¿Estás seguro que deseas cerrar la válvula?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Cerrar válvula",
+          style: "destructive",
+          onPress: () => {
+            // Insertar lógica para enviar la solicitud al backend
+
+            Alert.alert("Éxito", "La válvula ha sido cerrada correctamente.");
+
+            onClose();
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <Modal isVisible={isVisible} style={styles.modal} onBackdropPress={onClose}>
@@ -48,7 +96,7 @@ export default function ValveDetailsModal({
           </TouchableOpacity>
         </View>
 
-        {/* Información */}
+        {/* Info */}
         <View style={styles.infoContainer}>
           <View style={styles.row}>
             <Text style={styles.label}>Estado</Text>
@@ -62,6 +110,11 @@ export default function ValveDetailsModal({
             </View>
           </View>
 
+          <View style={styles.row}>
+            <Text style={styles.label}>Tipo de dispositivo</Text>
+            <Text style={styles.value}>{deviceTypeName || "Desconocido"}</Text>
+          </View>
+
           <View style={styles.separator} />
 
           <View style={styles.row}>
@@ -73,31 +126,46 @@ export default function ValveDetailsModal({
             <Text style={styles.label}>Fecha mantenimiento</Text>
             <Text style={styles.value}>{maintenanceDate || "N/A"}</Text>
           </View>
+
           <View style={styles.separator} />
         </View>
 
-        {/* Botones */}
+        {/* Acciones */}
         <View style={styles.actions}>
           <TouchableOpacity
             style={styles.editButton}
-            onPress={() => router.replace("/devices/valveEditRequest")}
+            onPress={() => router.replace("/properties/requestHistory")}
           >
-            <Text style={styles.editText}>Editar solicitud</Text>
+            <Text style={styles.editText}>Ver historial</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.valveActionButton}
-            onPress={
-              status.toLowerCase() === "operativo"
-                ? () => router.replace("/properties/valveCloseConfirm") // Si está operativo, lleva a la confirmación de cierre
-                : () => router.replace("/properties/valveOpenForm") // Si no está operativo, lleva a la apertura
-            }
-          >
-            <Text style={styles.valveActionText}>
-              {status.toLowerCase() === "operativo"
-                ? "Cerrar válvula"
-                : "Abrir válvula"}
-            </Text>
-          </TouchableOpacity>
+
+          {status === "Operativo" ? (
+            // Solo si es "Operativo"
+            <TouchableOpacity
+              style={styles.valveActionButton}
+              onPress={handleCloseValve}
+            >
+              <Text style={styles.valveActionText}>Cerrar válvula</Text>
+            </TouchableOpacity>
+          ) : status === "No Operativo" ? (
+            hasActiveRequest ? (
+              <TouchableOpacity
+                style={[styles.valveActionButton, styles.disabledButton]}
+                disabled
+              >
+                <Text style={[styles.valveActionText, styles.disabledText]}>
+                  Pendiente
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.valveActionButton}
+                onPress={() => router.replace("/properties/valveOpenForm")}
+              >
+                <Text style={styles.valveActionText}>Abrir válvula</Text>
+              </TouchableOpacity>
+            )
+          ) : null}
         </View>
       </View>
     </Modal>
@@ -121,6 +189,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 4,
   },
+  iconContainer: {
+    width: 45,
+    height: 45,
+    borderRadius: 25,
+    backgroundColor: "#F1F2F4",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
   titleContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -130,15 +207,6 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 2,
     marginLeft: 8,
-  },
-  iconContainer: {
-    width: 45,
-    height: 45,
-    borderRadius: 25,
-    backgroundColor: "#F1F2F4",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 10,
   },
   title: {
     ...typography.semibold.medium,
@@ -167,7 +235,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   separator: {
-    height: 0.5,
+    height: 0.8,
     backgroundColor: colors.border,
     marginVertical: 5,
   },
@@ -205,21 +273,32 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   valveActionText: {
-    color: colors.darkGray,
-    fontWeight: "bold",
+    color: colors.primary,
+    ...typography.medium.medium,
+    marginLeft: 8,
   },
   editButton: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 30,
+    alignItems: "center",
+    backgroundColor: "transparent",
     borderWidth: 1,
     borderColor: colors.border,
-    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 30,
+    flex: 1,
     justifyContent: "center",
   },
   editText: {
     color: colors.gray,
-    fontWeight: "bold",
+    ...typography.medium.medium,
+    marginLeft: 8,
+  },
+  disabledButton: {
+    backgroundColor: colors.secondary,
+    opacity: 0.5,
+  },
+  disabledText: {
+    color: colors.primary,
+    ...typography.medium.medium,
   },
 });

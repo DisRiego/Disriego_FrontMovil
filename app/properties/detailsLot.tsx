@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Animated,
   Easing,
+  ActivityIndicator,
 } from "react-native";
 import CustomHeader from "@/components/CustomHeader";
 import LotCard from "@/components/LotCard";
@@ -27,17 +28,36 @@ import { Ionicons } from "@expo/vector-icons";
 
 export default function DetailsLots() {
   const router = useRouter();
-  const { currentLot, devices, fetchDevicesByLot } = useLotContext();
+  const {
+    currentLot,
+    devices,
+    fetchDevicesByLot,
+    setCurrentDeviceId,
+    setCurrentValveId,
+  } = useLotContext();
+
   const [viewType, setViewType] = useState<"crop" | "devices">("crop");
   const [selectedDevice, setSelectedDevice] = useState<any | null>(null);
   const [searchText, setSearchText] = useState("");
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const searchAnim = useRef(new Animated.Value(0)).current;
+  const [isLoadingDevices, setIsLoadingDevices] = useState(false);
 
   useEffect(() => {
-    if (currentLot?.id) {
-      fetchDevicesByLot(currentLot.id);
-    }
+    const loadDevices = async () => {
+      if (currentLot?.id) {
+        setIsLoadingDevices(true);
+        try {
+          await fetchDevicesByLot(currentLot.id);
+        } catch (error) {
+          console.error("Error cargando dispositivos:", error);
+        } finally {
+          setIsLoadingDevices(false);
+        }
+      }
+    };
+
+    loadDevices();
   }, [currentLot?.id]);
 
   const animateSearchIn = () => {
@@ -195,6 +215,19 @@ export default function DetailsLots() {
                   });
                 }}
               />
+            ) : isLoadingDevices ? (
+              <View style={{ marginTop: 20 }}>
+                <Text
+                  style={{
+                    textAlign: "center",
+                    marginBottom: 12,
+                    color: colors.gray,
+                  }}
+                >
+                  Cargando dispositivos...
+                </Text>
+                <ActivityIndicator size="large" color={colors.primary} />
+              </View>
             ) : filteredDevices.length > 0 ? (
               filteredDevices.map((device) =>
                 device.devices_id === 1 ? (
@@ -205,7 +238,10 @@ export default function DetailsLots() {
                     installDate={device.installation_date}
                     maintenanceDate={device.estimated_maintenance_date}
                     status={device.status_name}
-                    onPress={() => setSelectedDevice(device)}
+                    onPress={() => {
+                      setSelectedDevice(device);
+                      setCurrentValveId(device.id);
+                    }}
                   />
                 ) : (
                   <DeviceCard
@@ -215,7 +251,10 @@ export default function DetailsLots() {
                     installDate={device.installation_date}
                     maintenanceDate={device.estimated_maintenance_date}
                     status={device.status_name}
-                    onPress={() => setSelectedDevice(device)}
+                    onPress={() => {
+                      setSelectedDevice(device);
+                      setCurrentDeviceId(device.id);
+                    }}
                   />
                 )
               )
@@ -237,6 +276,8 @@ export default function DetailsLots() {
           installDate={selectedDevice.installation_date}
           maintenanceDate={selectedDevice.estimated_maintenance_date}
           status={selectedDevice.status_name}
+          deviceTypeName={selectedDevice.device_type_name}
+          deviceId={selectedDevice.id}
         />
       )}
 
@@ -249,6 +290,7 @@ export default function DetailsLots() {
           installDate={selectedDevice.installation_date}
           maintenanceDate={selectedDevice.estimated_maintenance_date}
           status={selectedDevice.status_name}
+          deviceTypeName={selectedDevice.device_type_name}
         />
       )}
     </SafeAreaView>
