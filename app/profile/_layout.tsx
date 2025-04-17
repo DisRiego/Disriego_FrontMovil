@@ -7,7 +7,6 @@ import { getToken } from "@/services/auth";
 SplashScreen.preventAutoHideAsync();
 
 export default function ProfileLayout() {
-  // Estado para controlar si el usuario está autenticado
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const router = useRouter();
 
@@ -28,16 +27,7 @@ export default function ProfileLayout() {
     checkAuth();
   }, []);
 
-  if (isAuthenticated === null) {
-    return null;
-  }
+  if (isAuthenticated === null) return null;
 
-  return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1 }}
-    >
-      <Stack screenOptions={{ headerShown: false }} />
-    </KeyboardAvoidingView>
-  );
+  return <Stack screenOptions={{ headerShown: false }} />;
 }
