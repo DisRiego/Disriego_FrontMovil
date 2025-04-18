@@ -382,9 +382,9 @@ const UpdateProfile = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <CustomHeader title="Actualizar perfil" backRoute="/(tabs)/profile" />
+        <CustomHeader title="Actualizar perfil" backRoute="/(tabs)/profile" />
 
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
           {/* Indicador de carga como en SeeProfile */}
           {loading ? (
             <View style={styles.loaderContainer}>
@@ -498,13 +498,13 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingBottom: 16,
-    alignItems: "center",
-    justifyContent: "flex-start",
     backgroundColor: colors.base,
   },
   scrollContainer: {
     flexGrow: 1,
+    paddingBottom: 16,
+    alignItems: "center",
+    justifyContent: "flex-start",
   },
   formContainer: {
     flex: 1,

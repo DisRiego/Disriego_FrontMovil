@@ -68,6 +68,19 @@ export default function ValveRequests() {
     );
   };
 
+  const getStatusDisplay = (statusId: number) => {
+    switch (statusId) {
+      case 17:
+        return { text: "Aprobada", color: colors.success, bg: "#E6F9F0" };
+      case 18:
+        return { text: "Pendiente", color: "#F39C12", bg: "#FFF6E0" };
+      case 19:
+        return { text: "Rechazada", color: colors.error, bg: "#FCEAEA" };
+      default:
+        return { text: "Desconocido", color: colors.gray, bg: "#F4F4F4" };
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -120,9 +133,9 @@ export default function ValveRequests() {
             requestDate={moment(selectedRequest.request_date).format(
               "DD/MM/YYYY hh:mm A"
             )}
-            statusText={`Estado #${selectedRequest.status}`}
-            statusColor={colors.primary}
-            statusBg="#E0F7FA"
+            statusText={getStatusDisplay(selectedRequest.status).text}
+            statusColor={getStatusDisplay(selectedRequest.status).color}
+            statusBg={getStatusDisplay(selectedRequest.status).bg}
             requestType={getOpeningLabelMultiline(
               selectedRequest.type_opening_id
             )}

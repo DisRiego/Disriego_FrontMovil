@@ -41,8 +41,8 @@ export default function LoginScreen() {
         const token = await AsyncStorage.getItem("token");
         const isFirstLogin = await AsyncStorage.getItem("isFirstLogin");
 
-        console.log("Token almacenado:", token);
-        console.log("Es primer login:", isFirstLogin);
+        //console.log("Token almacenado:", token);
+        //console.log("Es primer login:", isFirstLogin);
 
         // Si hay token pero no se ha establecido isFirstLogin, considerarlo primer login
         if (token && (isFirstLogin === null || isFirstLogin === undefined)) {
@@ -129,8 +129,8 @@ export default function LoginScreen() {
       const userDataString = await AsyncStorage.getItem("userData");
       const userData = userDataString ? JSON.parse(userDataString) : null;
 
-      console.log("Datos de usuario completos:", userData);
-      console.log("first_login_complete:", userData?.first_login_complete);
+      //console.log("Datos de usuario completos:", userData);
+      //console.log("first_login_complete:", userData?.first_login_complete);
 
       if (token) {
         const firstLoginComplete = await AsyncStorage.getItem(

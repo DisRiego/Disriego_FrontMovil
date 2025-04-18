@@ -84,6 +84,18 @@ export const login = async (email: string, password: string) => {
     tokenCache = response.data.access_token; // Cache en memoria
     emailCache = email;
 
+    if (decodedToken.rol && Array.isArray(decodedToken.rol)) {
+      const permisos =
+        decodedToken.rol.flatMap(
+          (r: any) => r.permisos?.map((p: any) => p.name) || []
+        ) || [];
+
+      console.log("Permisos del usuario:", permisos);
+      await AsyncStorage.setItem("permisos", JSON.stringify(permisos));
+    } else {
+      console.warn("No se encontraron roles en el token.");
+    }
+
     if (tokenCache) {
       await AsyncStorage.multiSet([
         ["token", tokenCache],
