@@ -6,7 +6,8 @@ import { Ionicons } from "@expo/vector-icons";
 
 interface ValveCardProps {
   model: string;
-  status: string;
+  statusName: string;
+  statusId?: number;
   serialNumber: string;
   installDate?: string;
   maintenanceDate?: string;
@@ -15,13 +16,20 @@ interface ValveCardProps {
 
 export default function ValveCard({
   model,
-  status,
+  statusName,
+  statusId,
   serialNumber,
   installDate,
   maintenanceDate,
   onPress,
 }: ValveCardProps) {
   const Container = onPress ? TouchableOpacity : View;
+
+  const displayStatus = [17, 18, 19, 20].includes(statusId ?? -1)
+    ? "No Operativo"
+    : [21, 22].includes(statusId ?? -1)
+    ? "Operativo"
+    : statusName || "Desconocido";
 
   return (
     <Container
@@ -39,7 +47,7 @@ export default function ValveCard({
 
       <View style={styles.infoRow}>
         <Text style={styles.label}>Estado</Text>
-        <Text style={styles.value}>{status || "N/A"}</Text>
+        <Text style={styles.value}>{displayStatus}</Text>
       </View>
 
       <View style={styles.infoRow}>
