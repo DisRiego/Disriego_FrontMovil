@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   StatusBar,
   Platform,
+  TouchableOpacity,
 } from "react-native";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
@@ -15,6 +16,7 @@ import CustomHeader from "@/components/CustomHeader";
 import SearchBar from "@/components/SearchBar";
 import ReportCard from "@/components/ReportCard";
 import { useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 
 interface Report {
   id: number;
@@ -98,6 +100,12 @@ export default function SeeReportsScreen() {
           </View>
         </View>
       </ScrollView>
+      <TouchableOpacity
+        onPress={() => router.push("/reports/formClientReport")}
+        style={styles.fab}
+      >
+        <Feather name="plus" size={28} color="#2A6041" />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -124,5 +132,17 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     alignItems: "stretch",
     justifyContent: "center",
+  },
+  fab: {
+    position: "absolute",
+    bottom: 140,
+    right: 20,
+    backgroundColor: colors.tertiary,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 5,
   },
 });
