@@ -44,6 +44,16 @@ export default function DetailsLots() {
   const [isLoadingDevices, setIsLoadingDevices] = useState(false);
 
   useEffect(() => {
+    const interval = setInterval(() => {
+      if (currentLot?.id) {
+        fetchDevicesByLot(currentLot.id);
+      }
+    }, 35000); // cada 30 segundos
+
+    return () => clearInterval(interval);
+  }, [currentLot?.id]);
+
+  useEffect(() => {
     const loadDevices = async () => {
       if (currentLot?.id) {
         setIsLoadingDevices(true);
@@ -237,7 +247,8 @@ export default function DetailsLots() {
                     serialNumber={device.serial_number.toString()}
                     installDate={device.installation_date}
                     maintenanceDate={device.estimated_maintenance_date}
-                    status={device.status_name}
+                    statusName={device.status_name}
+                    statusId={device.status}
                     onPress={() => {
                       setSelectedDevice(device);
                       setCurrentValveId(device.id);
@@ -276,6 +287,7 @@ export default function DetailsLots() {
           installDate={selectedDevice.installation_date}
           maintenanceDate={selectedDevice.estimated_maintenance_date}
           status={selectedDevice.status_name}
+          statusId={selectedDevice.status}
           deviceTypeName={selectedDevice.device_type_name}
           deviceId={selectedDevice.id}
         />

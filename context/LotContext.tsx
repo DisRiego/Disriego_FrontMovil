@@ -104,6 +104,8 @@ interface LotContextType {
   setCurrentDeviceId: (id: number | null) => void;
   currentValveId: number | null;
   setCurrentValveId: (id: number | null) => void;
+  openValve: (deviceId: number) => Promise<boolean>;
+  closeValve: (deviceId: number) => Promise<boolean>;
 }
 
 const getDeviceTypeName = (device: any): string => {
@@ -140,6 +142,9 @@ export const LotProvider = ({ children }: { children: React.ReactNode }) => {
   const [currentDeviceId, setCurrentDeviceId] = useState<number | null>(null);
   const [currentValveId, setCurrentValveId] = useState<number | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
+  const [requestStatusMap, setRequestStatusMap] = useState<
+    Record<number, number | null>
+  >({});
 
   const setProperty = (prop: Property) => setCurrentProperty(prop);
   const setLot = (lot: Lot) => setCurrentLot(lot);
@@ -304,6 +309,16 @@ export const LotProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const toLocalISOString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const seconds = String(date.getSeconds()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+  };
+
   const createValveRequest = async ({
     typeOpeningId,
     lotId,
@@ -322,15 +337,13 @@ export const LotProvider = ({ children }: { children: React.ReactNode }) => {
     volumeWater: number | null;
   }): Promise<boolean> => {
     try {
-      const formatDate = (date: string) => date.split(".")[0];
-
       const payload = {
         type_opening_id: typeOpeningId,
         lot_id: Number(lotId),
         user_id: userId,
         device_iot_id: deviceIotId,
-        open_date: formatDate(openDate),
-        close_date: formatDate(closeDate),
+        open_date: toLocalISOString(new Date(openDate)),
+        close_date: toLocalISOString(new Date(closeDate)),
         volume_water: volumeWater,
       };
 
@@ -371,7 +384,7 @@ export const LotProvider = ({ children }: { children: React.ReactNode }) => {
 
   const getRequestByDeviceId = async (deviceId: number): Promise<any[]> => {
     try {
-      const res = await axios.get(`${API_URL_IOT}/devices-request/request/`);
+      const res = await axios.get(`${API_URL_IOT}/devices-request/`);
       if (res.data.success) {
         return res.data.data.filter((r: any) => r.device_iot_id === deviceId);
       }
@@ -389,8 +402,16 @@ export const LotProvider = ({ children }: { children: React.ReactNode }) => {
 
   const getStatusBadge = (status: string): StatusBadge => {
     const map: Record<string, StatusBadge> = {
-      operativo: { text: "Operativo", color: "#27AE60", bg: "#E8F9F0" },
-      "no operativo": { text: "No Operativo", color: "#E74C3C", bg: "#FCEAEA" },
+      operativo: {
+        text: "Operativo",
+        color: "#27AE60",
+        bg: "#E8F9F0",
+      },
+      "no operativo": {
+        text: "No Operativo",
+        color: "#E74C3C",
+        bg: "#FCEAEA",
+      },
       "fallo detectado": {
         text: "Fallo detectado",
         color: "#E74C3C",
@@ -444,6 +465,8 @@ export const LotProvider = ({ children }: { children: React.ReactNode }) => {
         setCurrentDeviceId,
         currentValveId,
         setCurrentValveId,
+        openValve,
+        closeValve,
       }}
     >
       {children}
@@ -457,4 +480,51 @@ export const useLotContext = () => {
     throw new Error("useLotContext debe usarse dentro de LotProvider");
   }
   return context;
+};
+
+const openValve = async (deviceId: number): Promise<boolean> => {
+  try {
+    const res = await axios.post(`${API_URL_IOT}/devices/devices/open-valve`, {
+      device_id: deviceId,
+    });
+
+    if (res.data?.action === "open") {
+      Alert.alert("Éxito", "La válvula fue abierta exitosamente.");
+      return true;
+    }
+
+    if (res.status === 403) {
+      Alert.alert("Error", "La solicitud aún no está en el rango de apertura.");
+    }
+
+    return false;
+  } catch (error: any) {
+    console.error(
+      "Error al abrir válvula:",
+      error.response?.data || error.message
+    );
+    Alert.alert("Error", "No se pudo abrir la válvula.");
+    return false;
+  }
+};
+
+const closeValve = async (deviceId: number): Promise<boolean> => {
+  try {
+    const res = await axios.post(`${API_URL_IOT}/devices/devices/close-valve`, {
+      device_id: deviceId,
+    });
+
+    if (res.data?.action === "close") {
+      Alert.alert("Éxito", "La válvula fue cerrada exitosamente.");
+      return true;
+    }
+    return false;
+  } catch (error: any) {
+    console.error(
+      "Error al cerrar válvula:",
+      error.response?.data || error.message
+    );
+    Alert.alert("Error", "No se pudo cerrar la válvula.");
+    return false;
+  }
 };

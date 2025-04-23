@@ -4,32 +4,26 @@ import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
 import { Ionicons } from "@expo/vector-icons";
 
-interface ValveCardProps {
-  model: string;
-  statusName: string;
-  statusId?: number;
-  serialNumber: string;
-  installDate?: string;
-  maintenanceDate?: string;
+interface ReportCardProps {
+  type: "report" | "maintenance";
+  id: string;
+  lotId: string;
+  propertyId?: string;
+  date: string;
+  status: string;
   onPress?: () => void;
 }
 
-export default function ValveCard({
-  model,
-  statusName,
-  statusId,
-  serialNumber,
-  installDate,
-  maintenanceDate,
+export default function ReportCard({
+  type,
+  id,
+  lotId,
+  propertyId,
+  date,
+  status,
   onPress,
-}: ValveCardProps) {
+}: ReportCardProps) {
   const Container = onPress ? TouchableOpacity : View;
-
-  const displayStatus = [17, 18, 19, 20].includes(statusId ?? -1)
-    ? "No Operativo"
-    : [21, 22].includes(statusId ?? -1)
-    ? "Operativo"
-    : statusName || "Desconocido";
 
   return (
     <Container
@@ -37,27 +31,32 @@ export default function ValveCard({
       {...(onPress && { onPress, accessibilityRole: "button" })}
     >
       <View style={styles.header}>
-        <Text style={styles.title}>{model}</Text>
+        <Text style={styles.title}>ID Reporte</Text>
         {onPress && (
           <Ionicons name="chevron-forward" size={20} color={colors.gray} />
         )}
       </View>
 
-      <Text style={styles.idText}>Serial: {serialNumber}</Text>
+      {type === "maintenance" && (
+        <View style={styles.infoRow}>
+          <Text style={styles.label}>ID Predio</Text>
+          <Text style={styles.value}>{propertyId || "N/A"}</Text>
+        </View>
+      )}
+
+      <View style={styles.infoRow}>
+        <Text style={styles.label}>ID Lote</Text>
+        <Text style={styles.value}>{lotId}</Text>
+      </View>
+
+      <View style={styles.infoRow}>
+        <Text style={styles.label}>Fecha de Reporte</Text>
+        <Text style={styles.value}>{date}</Text>
+      </View>
 
       <View style={styles.infoRow}>
         <Text style={styles.label}>Estado</Text>
-        <Text style={styles.value}>{displayStatus}</Text>
-      </View>
-
-      <View style={styles.infoRow}>
-        <Text style={styles.label}>Fecha instalación</Text>
-        <Text style={styles.value}>{installDate || "N/A"}</Text>
-      </View>
-
-      <View style={styles.infoRow}>
-        <Text style={styles.label}>Fecha mantenimiento</Text>
-        <Text style={styles.value}>{maintenanceDate || "N/A"}</Text>
+        <Text style={styles.value}>{status}</Text>
       </View>
     </Container>
   );
@@ -81,23 +80,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 5,
+    marginBottom: 10,
   },
   title: {
     ...typography.medium.medium,
-    fontWeight: "bold",
     color: colors.darkGray,
-  },
-  idText: {
-    ...typography.regular.large,
-    color: colors.gray,
-    marginBottom: 10,
   },
   infoRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 5,
+    marginTop: 6,
   },
   label: {
     ...typography.regular.medium,
@@ -105,7 +98,6 @@ const styles = StyleSheet.create({
   },
   value: {
     ...typography.medium.regular,
-    fontWeight: "600",
     color: colors.darkGray,
   },
 });

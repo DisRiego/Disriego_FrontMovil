@@ -72,7 +72,7 @@ const Notification = () => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F8F8" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.base }}>
       {/* Título */}
       <View style={{ alignItems: "center", paddingVertical: 16 }}>
         <Text style={{ ...typography.bold.large, color: colors.darkGray }}>
