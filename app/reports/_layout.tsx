@@ -6,28 +6,35 @@ import { getToken } from "@/services/auth";
 
 SplashScreen.preventAutoHideAsync();
 
-export default function ProfileLayout() {
+export default function ReportsLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAccess = async () => {
       const token = await getToken();
 
-      if (token) {
-        setIsAuthenticated(true);
-      } else {
+      if (!token) {
         setIsAuthenticated(false);
         router.replace("/login");
+        return;
       }
 
+      setIsAuthenticated(true);
       await SplashScreen.hideAsync();
     };
 
-    checkAuth();
+    checkAccess();
   }, []);
 
   if (isAuthenticated === null) return null;
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1 }}
+    >
+      <Stack screenOptions={{ headerShown: false }} />
+    </KeyboardAvoidingView>
+  );
 }

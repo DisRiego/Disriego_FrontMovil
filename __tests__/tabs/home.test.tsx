@@ -1,5 +1,5 @@
 import React from "react";
-import { render, fireEvent, waitFor } from "@testing-library/react-native";
+import { render, fireEvent, waitFor, screen } from "@testing-library/react-native";
 import HomeScreen from "@/app/(tabs)/home";
 import { useRouter } from "expo-router";
 import { Alert } from "react-native";
@@ -32,11 +32,18 @@ jest.mock("@expo/vector-icons", () => ({
   Feather: jest.fn(() => null),
 }));
 
-// Mock para imágenes (solución alternativa)
-jest.mock("../../assets/images/properties.png", () => ({}));
-jest.mock("../../assets/images/bills.png", () => ({}));
-jest.mock("../../assets/images/consumption.png", () => ({}));
-jest.mock("../../assets/images/reports.png", () => ({}));
+jest.mock("@/context/PermissionContext", () => ({
+  usePermission: () => ({
+    hasPermission: (perm: string) => false,
+    isLoaded: true,
+  }),
+}));
+
+// Mock para imágenes que renderiza texto alternativo
+jest.mock("../../assets/images/properties.png", () => "properties-image");
+jest.mock("../../assets/images/bills.png", () => "bills-image");
+jest.mock("../../assets/images/consumption.png", () => "consumption-image");
+jest.mock("../../assets/images/reports.png", () => "reports-image");
 
 describe("HomeScreen", () => {
   let router: any;
@@ -46,6 +53,7 @@ describe("HomeScreen", () => {
     router = { push: jest.fn() };
     (useRouter as jest.Mock).mockReturnValue(router);
     mockGetUserData.mockReset();
+    mockGetUserData.mockResolvedValue({ name: "Test", first_last_name: "User" });
   });
 
   it("renderiza correctamente con estado de carga", async () => {
@@ -86,25 +94,24 @@ describe("HomeScreen", () => {
   });
 
   it("renderiza todas las categorías del menú", async () => {
-    mockGetUserData.mockResolvedValue({ name: "Test" });
+    render(<HomeScreen />);
 
-    const { findByText } = render(<HomeScreen />);
-
-    expect(await findByText("Mis predios y lotes")).toBeTruthy();
-    expect(await findByText("Mis facturas y pagos")).toBeTruthy();
-    expect(await findByText("Mi consumo")).toBeTruthy();
-    expect(await findByText("Reportar fallos")).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText("Mis predios y lotes")).toBeTruthy();
+      expect(screen.getByText("Mis facturas y pagos")).toBeTruthy();
+      expect(screen.getByText("Mi consumo")).toBeTruthy();
+      expect(screen.getByText("Reportar fallos")).toBeTruthy();
+    });
   });
 
   it("navega correctamente al hacer clic en una categoría", async () => {
-    mockGetUserData.mockResolvedValue({ name: "Test" });
+    render(<HomeScreen />);
 
-    const { findByText } = render(<HomeScreen />);
-    const menuItem = await findByText("Mis predios y lotes");
-
-    fireEvent.press(menuItem);
-
-    expect(router.push).toHaveBeenCalledWith("/properties/myProperties");
+    await waitFor(async () => {
+      const menuItem = await screen.findByText("Mis predios y lotes");
+      fireEvent.press(menuItem);
+      expect(router.push).toHaveBeenCalledWith("/properties/myProperties");
+    });
   });
 
   it("muestra avatar con iniciales cuando no hay imagen", async () => {

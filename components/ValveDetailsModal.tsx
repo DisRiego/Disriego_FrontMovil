@@ -15,9 +15,144 @@ interface ValveDetailsModalProps {
   serialNumber: string;
   installDate: string;
   maintenanceDate: string;
-  status: string; // status_id en string: "11" (operativo), "12" (no operativo)
+  status: string;
+  statusId: number;
   deviceId: number;
   deviceTypeName: string;
+}
+
+function getValveActionButton({
+  statusId,
+  requestStatusId,
+  openDate,
+  closeDate,
+  deviceId,
+  lotId,
+  onClose,
+  openValve,
+  closeValve,
+  fetchDevicesByLot,
+  styles,
+}: {
+  statusId: number;
+  requestStatusId: number | null;
+  openDate?: string;
+  closeDate?: string;
+  deviceId: number;
+  lotId?: string;
+  onClose: () => void;
+  openValve: (deviceId: number) => Promise<boolean>;
+  closeValve: (deviceId: number) => Promise<boolean>;
+  fetchDevicesByLot: (lotId: string) => Promise<void>;
+  styles: any;
+}) {
+  const handleOpen = async () => {
+    Alert.alert("Confirmar apertura", "¿Deseas abrir la válvula?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Abrir válvula",
+        onPress: async () => {
+          const ok = await openValve(deviceId);
+          if (ok && lotId) await fetchDevicesByLot(lotId);
+          onClose();
+        },
+      },
+    ]);
+  };
+
+  const handleClose = async () => {
+    Alert.alert("Confirmar cierre", "¿Deseas cerrar la válvula?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Cerrar válvula",
+        style: "destructive",
+        onPress: async () => {
+          const ok = await closeValve(deviceId);
+          if (ok && lotId) await fetchDevicesByLot(lotId);
+          onClose();
+        },
+      },
+    ]);
+  };
+
+  const now = new Date();
+  const isWithinWindow =
+    openDate && closeDate
+      ? now >= new Date(openDate) && now <= new Date(closeDate)
+      : false;
+
+  // Mostrar "Crear solicitud" si el dispositivo está No Operativo (12) y la solicitud es Aprobada o Pendiente
+  if (
+    statusId === 12 &&
+    (requestStatusId === null ||
+      requestStatusId === 17 ||
+      requestStatusId === 18)
+  ) {
+    return (
+      <TouchableOpacity
+        style={styles.valveActionButton}
+        onPress={() => {
+          onClose();
+          router.push({
+            pathname: "/properties/valveOpenForm",
+            params: { lotId, deviceId },
+          });
+        }}
+      >
+        <Text style={styles.valveActionText}>Crear solicitud</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  // Mostrar "Pendiente"
+  else if (requestStatusId === 18) {
+    return (
+      <TouchableOpacity
+        style={[styles.valveActionButton, styles.disabledButton]}
+        disabled
+      >
+        <Text style={[styles.valveActionText, styles.disabledText]}>
+          Pendiente
+        </Text>
+      </TouchableOpacity>
+    );
+  }
+
+  // Mostrar "Abrir" o "Cerrar" válvula si está en rango
+  else if (requestStatusId === 17 && isWithinWindow) {
+    if (statusId === 21) {
+      return (
+        <TouchableOpacity style={styles.valveActionButton} onPress={handleOpen}>
+          <Text style={styles.valveActionText}>Abrir válvula</Text>
+        </TouchableOpacity>
+      );
+    } else if (statusId === 22) {
+      return (
+        <TouchableOpacity
+          style={styles.valveActionButton}
+          onPress={handleClose}
+        >
+          <Text style={styles.valveActionText}>Cerrar válvula</Text>
+        </TouchableOpacity>
+      );
+    }
+  }
+
+  // 💤 Si está aprobada pero fuera de rango → "En espera"
+  else if (requestStatusId === 17 && !isWithinWindow) {
+    return (
+      <TouchableOpacity
+        style={[styles.valveActionButton, styles.disabledButton]}
+        disabled
+      >
+        <Text style={[styles.valveActionText, styles.disabledText]}>
+          En espera
+        </Text>
+      </TouchableOpacity>
+    );
+  }
+
+  return null;
 }
 
 export default function ValveDetailsModal({
@@ -28,59 +163,65 @@ export default function ValveDetailsModal({
   installDate,
   maintenanceDate,
   status,
+  statusId,
   deviceId,
   deviceTypeName,
 }: ValveDetailsModalProps) {
-  const { getStatusBadge } = useLotContext();
-  const badge = getStatusBadge(status);
+  const {
+    getStatusBadge,
+    openValve,
+    closeValve,
+    fetchDevicesByLot,
+    currentLot,
+  } = useLotContext();
 
-  const [hasActiveRequest, setHasActiveRequest] = useState(false);
+  const [requestStatusId, setRequestStatusId] = useState<number | null>(null);
+  const [openDate, setOpenDate] = useState<string | undefined>();
+  const [closeDate, setCloseDate] = useState<string | undefined>();
+
+  const displayStatus = [17, 18, 19, 20].includes(statusId)
+    ? "No Operativo"
+    : [21, 22].includes(statusId)
+    ? "Operativo"
+    : status || "Desconocido";
+
+  const badge = getStatusBadge(displayStatus);
 
   useEffect(() => {
+    let interval: NodeJS.Timeout;
+
     const fetchActiveValveRequests = async () => {
       try {
-        const res = await fetch(`${API_URL_IOT}/devices-request/request/`);
+        const res = await fetch(`${API_URL_IOT}/devices-request/`);
         const data = await res.json();
 
         if (data.success) {
-          const activeRequests = data.data.filter(
-            (r: any) => r.device_iot_id === deviceId && r.status === 18
+          const request = data.data.find(
+            (r: any) =>
+              r.device_iot_id === deviceId &&
+              [18, 20, 21, 17, 19].includes(r.status)
           );
-          setHasActiveRequest(activeRequests.length > 0);
+
+          setRequestStatusId(request ? request.status : null);
+          setOpenDate(request?.open_date);
+          setCloseDate(request?.close_date);
         }
       } catch (err) {
         console.error("Error fetching valve requests:", err);
       }
     };
 
-    if (isVisible) fetchActiveValveRequests();
+    if (isVisible) {
+      fetchActiveValveRequests();
+      interval = setInterval(fetchActiveValveRequests, 30000);
+    }
+
+    return () => clearInterval(interval);
   }, [isVisible]);
-
-  const handleCloseValve = () => {
-    Alert.alert(
-      "Confirmar cierre",
-      "¿Estás seguro que deseas cerrar la válvula?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Cerrar válvula",
-          style: "destructive",
-          onPress: () => {
-            // Insertar lógica para enviar la solicitud al backend
-
-            Alert.alert("Éxito", "La válvula ha sido cerrada correctamente.");
-
-            onClose();
-          },
-        },
-      ]
-    );
-  };
 
   return (
     <Modal isVisible={isVisible} style={styles.modal} onBackdropPress={onClose}>
       <View style={styles.container}>
-        {/* Header */}
         <View style={styles.header}>
           <View style={styles.titleContainer}>
             <View style={styles.iconContainer}>
@@ -96,7 +237,6 @@ export default function ValveDetailsModal({
           </TouchableOpacity>
         </View>
 
-        {/* Info */}
         <View style={styles.infoContainer}>
           <View style={styles.row}>
             <Text style={styles.label}>Estado</Text>
@@ -130,7 +270,6 @@ export default function ValveDetailsModal({
           <View style={styles.separator} />
         </View>
 
-        {/* Acciones */}
         <View style={styles.actions}>
           <TouchableOpacity
             style={styles.editButton}
@@ -139,33 +278,19 @@ export default function ValveDetailsModal({
             <Text style={styles.editText}>Ver historial</Text>
           </TouchableOpacity>
 
-          {status === "Operativo" ? (
-            // Solo si es "Operativo"
-            <TouchableOpacity
-              style={styles.valveActionButton}
-              onPress={handleCloseValve}
-            >
-              <Text style={styles.valveActionText}>Cerrar válvula</Text>
-            </TouchableOpacity>
-          ) : status === "No Operativo" ? (
-            hasActiveRequest ? (
-              <TouchableOpacity
-                style={[styles.valveActionButton, styles.disabledButton]}
-                disabled
-              >
-                <Text style={[styles.valveActionText, styles.disabledText]}>
-                  Pendiente
-                </Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={styles.valveActionButton}
-                onPress={() => router.replace("/properties/valveOpenForm")}
-              >
-                <Text style={styles.valveActionText}>Abrir válvula</Text>
-              </TouchableOpacity>
-            )
-          ) : null}
+          {getValveActionButton({
+            statusId,
+            requestStatusId,
+            openDate,
+            closeDate,
+            deviceId,
+            lotId: currentLot?.id,
+            onClose,
+            openValve,
+            closeValve,
+            fetchDevicesByLot,
+            styles,
+          })}
         </View>
       </View>
     </Modal>
