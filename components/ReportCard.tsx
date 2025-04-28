@@ -7,8 +7,8 @@ import { Ionicons } from "@expo/vector-icons";
 interface ReportCardProps {
   type: "report" | "maintenance";
   id: string;
-  lotId: string;
-  propertyId?: string;
+  lotName: string;
+  propertyName?: string;
   date: string;
   status: string;
   onPress?: () => void;
@@ -17,8 +17,8 @@ interface ReportCardProps {
 export default function ReportCard({
   type,
   id,
-  lotId,
-  propertyId,
+  lotName,
+  propertyName,
   date,
   status,
   onPress,
@@ -31,22 +31,23 @@ export default function ReportCard({
       {...(onPress && { onPress, accessibilityRole: "button" })}
     >
       <View style={styles.header}>
-        <Text style={styles.title}>ID Reporte</Text>
+        <Text style={styles.title}>Reporte {id}</Text>
         {onPress && (
           <Ionicons name="chevron-forward" size={20} color={colors.gray} />
         )}
       </View>
 
-      {type === "maintenance" && (
+      {/* Mostrar predio SIEMPRE si viene el propertyName */}
+      {propertyName && (
         <View style={styles.infoRow}>
-          <Text style={styles.label}>ID Predio</Text>
-          <Text style={styles.value}>{propertyId || "N/A"}</Text>
+          <Text style={styles.label}>Predio</Text>
+          <Text style={styles.value}>{propertyName}</Text>
         </View>
       )}
 
       <View style={styles.infoRow}>
-        <Text style={styles.label}>ID Lote</Text>
-        <Text style={styles.value}>{lotId}</Text>
+        <Text style={styles.label}>Lote</Text>
+        <Text style={styles.value}>{lotName}</Text>
       </View>
 
       <View style={styles.infoRow}>
@@ -68,7 +69,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 15,
     marginVertical: 6,
-    marginBottom: 12,
+    marginBottom: 6,
     borderWidth: 1,
     borderColor: colors.border,
     shadowColor: colors.border,
