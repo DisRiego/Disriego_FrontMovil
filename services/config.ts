@@ -1,12 +1,15 @@
-// Dirección del backend principal
-// Durante desarrollo, puedes usar tu IP local seguida del puerto correspondiente.
+// Configuración de endpoints de la API
 
-export const API_URL = "http://ip:port";
+// --- DESARROLLO LOCAL ---
+// Si trabajas en local, reemplaza "ip" por tu IP local y asegúrate de que el backend esté corriendo.
+// export const API_URL = "http://ip:port";           // API general
+// export const API_URL_IOT = "http://ip:port";       // API de IoT
+// export const API_URL_MAINT = "http://ip:port";     // API de mantenimiento
 
-// Dirección del backend de dispositivos IoT
-export const API_URL_IOT = "http://ip:port";
+// --- PRODUCCIÓN ---
+// Si trabajas conectado a la nube (onrender), utiliza las siguientes URLs:
+//export const API_URL = "https://disriego-backend.onrender.com";        // API general
+//export const API_URL_IOT = "https://backend-iot-2377.onrender.com";    // API de IoT
+//export const API_URL_MAINT = "";                                     // API de mantenimiento
 
-// Producción: https://disriego-backend.onrender.com
-
-// Dirección del frontend
-export const API_FRONT = "https://disriegos.vercel.app";
+export const API_FRONT = "https://disriegos.vercel.app"; // Frontend de producción
