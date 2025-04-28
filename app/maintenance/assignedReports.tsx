@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   StatusBar,
   Platform,
+  TouchableOpacity,
 } from "react-native";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
@@ -15,61 +16,50 @@ import CustomHeader from "@/components/CustomHeader";
 import SearchBar from "@/components/SearchBar";
 import ReportCard from "@/components/ReportCard";
 import { useRouter } from "expo-router";
-
-interface Report {
-  id: number;
-  lot_id: string;
-  property_id: string;
-  date: string;
-  status: string;
-}
+import ReportDetailsModal from "@/components/ReportDetailsModal";
+import { useReports } from "@/context/ReportContext";
 
 export default function AssignedReportsScreen() {
-  const [reports, setReports] = useState<Report[]>([]);
+  const { reports, loading, fetchAssignedReports } = useReports();
   const [searchText, setSearchText] = useState("");
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchAssignedReports = async () => {
-      try {
-        setLoading(true);
-        // Simulación de datos mientras no hay endpoint real
-        const mockReports: Report[] = [
-          {
-            id: 201,
-            lot_id: "L-010",
-            property_id: "P-001",
-            date: "2025-04-12",
-            status: "Asignado",
-          },
-          {
-            id: 202,
-            lot_id: "L-015",
-            property_id: "P-002",
-            date: "2025-04-10",
-            status: "En progreso",
-          },
-        ];
-        setReports(mockReports);
-      } catch (error) {
-        console.error("Error al cargar reportes asignados:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<any>(null);
 
+  useEffect(() => {
     fetchAssignedReports();
   }, []);
 
-  const filteredReports = reports.filter((report) =>
-    String(report.id).toLowerCase().includes(searchText.toLowerCase())
-  );
+  const filteredReports = reports
+    .filter((r) => r.status !== "Finalizado")
+    .filter((report) => {
+      const query = searchText.toLowerCase();
+      return (
+        String(report.id).toLowerCase().includes(query) ||
+        report.property_name.toLowerCase().includes(query) ||
+        report.lot_name.toLowerCase().includes(query) ||
+        report.failure_type.toLowerCase().includes(query)
+      );
+    });
+
+  const openModal = (report: any) => {
+    setSelectedReport(report);
+    setModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setModalVisible(false);
+    setSelectedReport(null);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <CustomHeader title="Reportes asignados" backRoute="/(tabs)/home" />
+        <CustomHeader
+          title="Reportes asignados"
+          backRoute={() => router.push("/(tabs)/home")}
+        />
 
         <View style={styles.textContainer}>
           <Text style={[typography.regular.big, { color: colors.gray }]}>
@@ -87,11 +77,13 @@ export default function AssignedReportsScreen() {
                   key={report.id}
                   type="maintenance"
                   id={`#${report.id}`}
-                  lotId={report.lot_id}
-                  propertyId={report.property_id}
-                  date={report.date}
+                  lotName={report.lot_name}
+                  propertyName={report.property_name}
+                  date={
+                    new Date(report.report_date).toISOString().split("T")[0]
+                  }
                   status={report.status}
-                  onPress={() => router.push(`/reports/details/${report.id}`)}
+                  onPress={() => openModal(report)}
                 />
               ))
             ) : (
@@ -102,6 +94,49 @@ export default function AssignedReportsScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {selectedReport && (
+        <ReportDetailsModal
+          isVisible={modalVisible}
+          onClose={closeModal}
+          reportId={selectedReport.id}
+          reportDate={
+            new Date(selectedReport.report_date).toISOString().split("T")[0]
+          }
+          propertyName={selectedReport.property_name}
+          lotName={selectedReport.lot_name}
+          failureType={selectedReport.failure_type}
+          onViewDetails={() => {
+            closeModal();
+            router.push({
+              pathname: "/maintenance/reportDetails",
+              params: {
+                reportId: selectedReport.id,
+                technicianAssignmentId: selectedReport.technician_assignment_id,
+                propertyName: selectedReport.property_name,
+                lotName: selectedReport.lot_name,
+                fallo: selectedReport.failure_type,
+                observacion: selectedReport.description_failure,
+              },
+            });
+          }}
+          onFinalize={() => {
+            closeModal();
+            router.push({
+              pathname: "/maintenance/formFinishReport",
+              params: {
+                reportId: selectedReport.id,
+                technicianAssignmentId: selectedReport.technician_assignment_id,
+                propertyName: selectedReport.property_name,
+                lotName: selectedReport.lot_name,
+                fallo: selectedReport.failure_type,
+                observacion: selectedReport.description_failure,
+              },
+            });
+          }}
+          mode="assigned"
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -114,6 +149,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
+    paddingBottom: 40,
   },
   textContainer: {
     gap: 14,
