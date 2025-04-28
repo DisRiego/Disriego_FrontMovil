@@ -3,6 +3,8 @@ import { Stack, useRouter } from "expo-router";
 import { KeyboardAvoidingView, Platform } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import { getToken } from "@/services/auth";
+import { LotProvider } from "@/context/LotContext";
+import { ReportsProvider } from "@/context/ReportContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -30,11 +32,10 @@ export default function ReportsLayout() {
   if (isAuthenticated === null) return null;
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1 }}
-    >
-      <Stack screenOptions={{ headerShown: false }} />
-    </KeyboardAvoidingView>
+    <LotProvider>
+      <ReportsProvider>
+        <Stack screenOptions={{ headerShown: false }} />
+      </ReportsProvider>
+    </LotProvider>
   );
 }

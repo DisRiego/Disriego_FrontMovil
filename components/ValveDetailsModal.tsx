@@ -76,10 +76,32 @@ function getValveActionButton({
   };
 
   const now = new Date();
+
+  const cleanDateString = (str: string) =>
+    str?.replace(/Z|([+-]\d{2}:\d{2})$/, "");
+
+  const parseLocalDate = (str: string) => {
+    const [datePart, timePart] = str.split("T");
+    const [year, month, day] = datePart.split("-").map(Number);
+    const [hour, minute, second] = timePart.split(":").map(Number);
+    return new Date(year, month - 1, day, hour, minute, second || 0);
+  };
+
   const isWithinWindow =
     openDate && closeDate
-      ? now >= new Date(openDate) && now <= new Date(closeDate)
+      ? now.getTime() >= parseLocalDate(openDate).getTime() &&
+        now.getTime() <= parseLocalDate(closeDate).getTime()
       : false;
+
+  console.log("DEBUG VALVE BUTTON", {
+    statusId,
+    requestStatusId,
+    openDate,
+    closeDate,
+    now,
+    nowLocale: now.toLocaleString(),
+    isWithinWindow,
+  });
 
   // Mostrar "Crear solicitud" si el dispositivo está No Operativo (12) y la solicitud es Aprobada o Pendiente
   if (
@@ -120,13 +142,8 @@ function getValveActionButton({
 
   // Mostrar "Abrir" o "Cerrar" válvula si está en rango
   else if (requestStatusId === 17 && isWithinWindow) {
-    if (statusId === 21) {
-      return (
-        <TouchableOpacity style={styles.valveActionButton} onPress={handleOpen}>
-          <Text style={styles.valveActionText}>Abrir válvula</Text>
-        </TouchableOpacity>
-      );
-    } else if (statusId === 22) {
+    //si nunca se le ha dado abrir o cerrar la válvula, el estado el 11 (operativo/abierto)
+    if (statusId === 11 || statusId === 22) {
       return (
         <TouchableOpacity
           style={styles.valveActionButton}
@@ -135,10 +152,16 @@ function getValveActionButton({
           <Text style={styles.valveActionText}>Cerrar válvula</Text>
         </TouchableOpacity>
       );
+    } else if (statusId === 21) {
+      return (
+        <TouchableOpacity style={styles.valveActionButton} onPress={handleOpen}>
+          <Text style={styles.valveActionText}>Abrir válvula</Text>
+        </TouchableOpacity>
+      );
     }
   }
 
-  // 💤 Si está aprobada pero fuera de rango → "En espera"
+  // Si está aprobada pero fuera de rango → "En espera"
   else if (requestStatusId === 17 && !isWithinWindow) {
     return (
       <TouchableOpacity
@@ -196,11 +219,19 @@ export default function ValveDetailsModal({
         const data = await res.json();
 
         if (data.success) {
-          const request = data.data.find(
-            (r: any) =>
-              r.device_iot_id === deviceId &&
-              [18, 20, 21, 17, 19].includes(r.status)
-          );
+          const filteredRequests = data.data
+            .filter(
+              (r: any) =>
+                r.device_iot_id === deviceId &&
+                [17, 18, 19, 20, 21].includes(r.status)
+            )
+            .sort(
+              (a: any, b: any) =>
+                new Date(b.open_date).getTime() -
+                new Date(a.open_date).getTime()
+            );
+
+          const request = filteredRequests[0]; // la más reciente
 
           setRequestStatusId(request ? request.status : null);
           setOpenDate(request?.open_date);
