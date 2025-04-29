@@ -21,6 +21,35 @@ import { useRouter } from "expo-router";
 import { useReports } from "@/context/ReportContext";
 import { Ionicons } from "@expo/vector-icons";
 
+/** Botón flotante para crear nuevo reporte */
+function FloatingButton() {
+  const router = useRouter();
+
+  return (
+    <TouchableOpacity
+      style={floatingButtonStyles.fab}
+      onPress={() => router.push("/reports/formClientReport")}
+    >
+      <Ionicons name="add" size={30} color="white" />
+    </TouchableOpacity>
+  );
+}
+
+const floatingButtonStyles = StyleSheet.create({
+  fab: {
+    position: "absolute",
+    bottom: 30,
+    right: 30,
+    backgroundColor: colors.primary,
+    width: 50,
+    height: 50,
+    borderRadius: 30,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 1,
+  },
+});
+
 export default function SeeReportsScreen() {
   const { reports, loading, fetchUserReports } = useReports();
   const [searchText, setSearchText] = useState("");
@@ -38,7 +67,6 @@ export default function SeeReportsScreen() {
   const filteredReports = useMemo(() => {
     const query = searchText.toLowerCase();
 
-    // Filtrado por estado (pendiente o completado)
     let filteredByStatus: any[] = [];
     if (viewType === "pending") {
       filteredByStatus = reports.filter(
@@ -52,7 +80,6 @@ export default function SeeReportsScreen() {
       );
     }
 
-    // Filtrado por texto de búsqueda
     return filteredByStatus.filter((report) => {
       return (
         String(report.id).includes(query) ||
@@ -89,10 +116,6 @@ export default function SeeReportsScreen() {
       duration: 150,
       useNativeDriver: true,
     }).start();
-  };
-
-  const handleDownloadReports = () => {
-    console.log("Descargando listado de reportes...");
   };
 
   return (
@@ -165,7 +188,7 @@ export default function SeeReportsScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Barra de búsqueda con animación */}
+            {/* Barra de búsqueda animada */}
             {isSearchVisible && (
               <Animated.View
                 style={{
@@ -179,7 +202,7 @@ export default function SeeReportsScreen() {
                     },
                   ],
                   marginTop: 10,
-                  width: "100%", // Asegura que el ancho sea controlado
+                  width: "100%",
                 }}
               >
                 <View style={styles.searchBarContainer}>
@@ -193,7 +216,7 @@ export default function SeeReportsScreen() {
             )}
           </View>
 
-          {/* Mostrar los reportes filtrados según el tab */}
+          {/* Lista de reportes */}
           <View style={styles.formContainer}>
             {loading ? (
               <ActivityIndicator size="large" color={colors.primary} />
@@ -253,6 +276,9 @@ export default function SeeReportsScreen() {
           mode="see"
         />
       )}
+
+      {/* Botón flotante */}
+      <FloatingButton />
     </SafeAreaView>
   );
 }
