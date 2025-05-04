@@ -8,7 +8,6 @@ import {
   SafeAreaView,
   StatusBar,
   Platform,
-  TouchableOpacity,
 } from "react-native";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
@@ -16,23 +15,19 @@ import CustomHeader from "@/components/CustomHeader";
 import SearchBar from "@/components/SearchBar";
 import ReportCard from "@/components/ReportCard";
 import { useRouter } from "expo-router";
-import ReportDetailsModal from "@/components/ReportDetailsModal";
 import { useReports } from "@/context/ReportContext";
 
-export default function AssignedReportsScreen() {
+export default function CompletedReportsScreen() {
   const { reports, loading, fetchAssignedReports } = useReports();
   const [searchText, setSearchText] = useState("");
   const router = useRouter();
-
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedReport, setSelectedReport] = useState<any>(null);
 
   useEffect(() => {
     fetchAssignedReports();
   }, []);
 
   const filteredReports = reports
-    .filter((r) => r.status !== "Finalizado")
+    .filter((r) => r.status === "Finalizado")
     .filter((report) => {
       const query = searchText.toLowerCase();
       return (
@@ -43,27 +38,17 @@ export default function AssignedReportsScreen() {
       );
     });
 
-  const openModal = (report: any) => {
-    setSelectedReport(report);
-    setModalVisible(true);
-  };
-
-  const closeModal = () => {
-    setModalVisible(false);
-    setSelectedReport(null);
-  };
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <CustomHeader
-          title="Reportes asignados"
+          title="Historial de reportes"
           backRoute={() => router.push("/(tabs)/home")}
         />
 
         <View style={styles.textContainer}>
           <Text style={[typography.regular.big, { color: colors.gray }]}>
-            Aquí puedes gestionar los reportes que te han sido asignados.
+            Aquí puedes consultar los reportes que has finalizado.
           </Text>
 
           <SearchBar searchText={searchText} onSearchChange={setSearchText} />
@@ -83,60 +68,29 @@ export default function AssignedReportsScreen() {
                     new Date(report.report_date).toISOString().split("T")[0]
                   }
                   status={report.status}
-                  onPress={() => openModal(report)}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/maintenance/completedReportDetails",
+                      params: {
+                        reportId: report.id,
+                        technicianAssignmentId: report.technician_assignment_id,
+                        propertyName: report.property_name,
+                        lotName: report.lot_name,
+                        fallo: report.failure_type,
+                        observacion: report.description_failure,
+                      },
+                    })
+                  }
                 />
               ))
             ) : (
               <Text style={typography.regular.medium}>
-                No tienes reportes asignados.
+                No tienes reportes finalizados.
               </Text>
             )}
           </View>
         </View>
       </ScrollView>
-
-      {selectedReport && (
-        <ReportDetailsModal
-          isVisible={modalVisible}
-          onClose={closeModal}
-          reportId={selectedReport.id}
-          reportDate={
-            new Date(selectedReport.report_date).toISOString().split("T")[0]
-          }
-          propertyName={selectedReport.property_name}
-          lotName={selectedReport.lot_name}
-          failureType={selectedReport.failure_type}
-          onViewDetails={() => {
-            closeModal();
-            router.push({
-              pathname: "/maintenance/reportDetails",
-              params: {
-                reportId: selectedReport.id,
-                technicianAssignmentId: selectedReport.technician_assignment_id,
-                propertyName: selectedReport.property_name,
-                lotName: selectedReport.lot_name,
-                fallo: selectedReport.failure_type,
-                observacion: selectedReport.description_failure,
-              },
-            });
-          }}
-          onFinalize={() => {
-            closeModal();
-            router.push({
-              pathname: "/maintenance/formFinishReport",
-              params: {
-                reportId: selectedReport.id,
-                technicianAssignmentId: selectedReport.technician_assignment_id,
-                propertyName: selectedReport.property_name,
-                lotName: selectedReport.lot_name,
-                fallo: selectedReport.failure_type,
-                observacion: selectedReport.description_failure,
-              },
-            });
-          }}
-          mode="assigned"
-        />
-      )}
     </SafeAreaView>
   );
 }
@@ -149,7 +103,6 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 40,
   },
   textContainer: {
     gap: 14,

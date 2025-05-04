@@ -144,20 +144,36 @@ export default function HomeScreen() {
         <Text style={styles.categoryTitle}>Explora las categorías</Text>
 
         {isLoaded ? (
-          hasPermission("Ver reportes asignados") ? (
-            <TouchableOpacity
-              style={styles.card}
-              onPress={() => router.push("/maintenance/assignedReports")}
-            >
-              <Image
-                source={require("../../assets/images/reports.png")}
-                style={styles.cardImage}
-              />
-              <View style={styles.cardContent}>
-                <Text style={styles.cardText}>Reportes asignados</Text>
-                <Feather name="chevron-right" size={24} color="#595959" />
-              </View>
-            </TouchableOpacity>
+          hasPermission("Finalizar mantenimiento") ? (
+            <View style={styles.twoCardsContainer}>
+              <TouchableOpacity
+                style={styles.card}
+                onPress={() => router.push("/maintenance/assignedReports")}
+              >
+                <Image
+                  source={require("../../assets/images/reports.png")}
+                  style={styles.cardImage}
+                />
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardText}>Reportes asignados</Text>
+                  <Feather name="chevron-right" size={24} color="#595959" />
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.card}
+                onPress={() => router.push("/maintenance/completedReports")}
+              >
+                <Image
+                  source={require("../../assets/images/completed.png")}
+                  style={styles.cardImage}
+                />
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardText}>Historial de reportes</Text>
+                  <Feather name="chevron-right" size={24} color="#595959" />
+                </View>
+              </TouchableOpacity>
+            </View>
           ) : (
             <View style={styles.categoriesContainer}>
               {menuItems.map((item) => (
@@ -253,5 +269,10 @@ const styles = StyleSheet.create({
     color: colors.darkGray,
     ...typography.bold.regular,
     flex: 1,
+  },
+  twoCardsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
   },
 });

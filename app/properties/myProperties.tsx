@@ -1,10 +1,3 @@
-/**
- * Pantalla MyProperties
- *
- * Muestra una lista de propiedades del usuario actual, permitiendo buscarlas
- * y visualizar sus detalles en un modal.
- */
-
 import React, { useEffect, useState } from "react";
 import {
   Platform,
@@ -16,66 +9,29 @@ import {
   View,
   ActivityIndicator,
 } from "react-native";
-import axios from "axios";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
-import { API_URL } from "@/services/config";
-import { getUserData } from "@/services/auth";
 import CustomHeader from "@/components/CustomHeader";
 import SearchBar from "@/components/SearchBar";
 import PropertyCard from "@/components/PropertyCard";
 import PropertyDetailsModal from "@/components/PropertyDetailsModal";
 import { useLotContext } from "@/context/LotContext";
+import type { Property } from "@/context/LotContext";
 
-/**
- * Representa una propiedad registrada por un usuario.
- */
-interface Property {
-  /** ID único de la propiedad */
-  id: string;
-  /** Nombre del predio */
-  name: string;
-  /** Número de folio de matrícula inmobiliaria */
-  real_estate_registration_number: string;
-  /** Coordenada de latitud */
-  latitude: string;
-  /** Coordenada de longitud */
-  longitude: string;
-  /** Extensión del predio en hectáreas o unidad definida */
-  extension: string;
-  /** ID del usuario al que pertenece la propiedad */
-  user_id: number;
-}
-
-/**
- * Componente principal de la pantalla "Mis propiedades".
- *
- * Permite consultar, buscar y visualizar propiedades del usuario autenticado.
- *
- * @returns {JSX.Element} El componente renderizado de la pantalla.
- */
 export default function MyProperties(): JSX.Element {
   const [properties, setProperties] = useState<Property[]>([]);
   const [searchText, setSearchText] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
-  const [userId, setUserId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const { currentProperty, setProperty } = useLotContext();
+  const { currentProperty, setProperty, fetchPropertiesByUser } =
+    useLotContext();
 
-  /**
-   * Obtiene las propiedades asociadas al usuario actual desde la API.
-   */
   useEffect(() => {
-    const fetchProperties = async () => {
+    const loadProperties = async () => {
       try {
         setLoading(true);
-        const user = await getUserData();
-        if (!user) throw new Error("No se pudo obtener el usuario");
-        setUserId(user.id);
-        const response = await axios.get(
-          `${API_URL}/properties/user/${user.id}`
-        );
-        setProperties(response.data.data);
+        const data = await fetchPropertiesByUser();
+        setProperties(data);
       } catch (error) {
         console.error("Error cargando propiedades:", error);
       } finally {
@@ -83,12 +39,9 @@ export default function MyProperties(): JSX.Element {
       }
     };
 
-    fetchProperties();
+    loadProperties();
   }, []);
 
-  /**
-   * Filtro de propiedades basado en el texto de búsqueda ingresado.
-   */
   const filteredProperties = properties.filter((property) =>
     [property.name, property.real_estate_registration_number, property.id].some(
       (value) =>
@@ -96,19 +49,11 @@ export default function MyProperties(): JSX.Element {
     )
   );
 
-  /**
-   * Abre el modal con los detalles de la propiedad seleccionada.
-   *
-   * @param property La propiedad seleccionada para mostrar en detalle.
-   */
   const openModal = (property: Property): void => {
     setProperty(property);
     setModalVisible(true);
   };
 
-  /**
-   * Cierra el modal de detalles de propiedad.
-   */
   const closeModal = (): void => {
     setModalVisible(false);
   };
@@ -169,7 +114,6 @@ export default function MyProperties(): JSX.Element {
   );
 }
 
-// Estilos de la pantalla
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
   View,
@@ -16,6 +16,8 @@ import Button from "@/components/Button";
 import CustomHeader from "@/components/CustomHeader";
 import { router } from "expo-router";
 import { typography } from "@/config/typography";
+import { useLotContext } from "@/context/LotContext";
+import { API_URL, API_URL_MAINT } from "@/services/config";
 
 export default function ReportFailureForm() {
   const [predio, setPredio] = useState("");
@@ -23,63 +25,128 @@ export default function ReportFailureForm() {
   const [fallo, setFallo] = useState("");
   const [observacion, setObservacion] = useState("");
   const [loading, setLoading] = useState(false);
+  const [prediosOptions, setPrediosOptions] = useState<
+    { label: string; value: string }[]
+  >([]);
+  const [tiposFallo, setTiposFallo] = useState<
+    { label: string; value: string }[]
+  >([]);
 
-  const predios = [
-    { label: "Seleccione el predio", value: "" },
-    { label: "Predio 1", value: "predio1" },
-    { label: "Predio 2", value: "predio2" },
-  ];
+  const { fetchPropertiesByUser, refreshLotsByProperty, lots } =
+    useLotContext();
 
-  const lotes = [
+  // Cargar predios
+  useEffect(() => {
+    const loadPredios = async () => {
+      const data = await fetchPropertiesByUser();
+      const options = data.map((item) => ({
+        label: item.name,
+        value: item.id,
+      }));
+      setPrediosOptions([
+        { label: "Seleccione el predio", value: "" },
+        ...options,
+      ]);
+    };
+    loadPredios();
+  }, []);
+
+  // Cargar lotes al cambiar predio
+  useEffect(() => {
+    if (predio) {
+      refreshLotsByProperty(predio);
+    }
+  }, [predio]);
+
+  // Cargar tipos de fallo desde backend
+  useEffect(() => {
+    const fetchFailureTypes = async () => {
+      try {
+        const res = await fetch(`${API_URL_MAINT}/maintenance/failure-types`);
+        const data = await res.json();
+
+        if (data.success) {
+          const mapped = data.data.map((item: any) => ({
+            label: item.name,
+            value: item.id.toString(),
+          }));
+          setTiposFallo([
+            { label: "Seleccione el posible fallo", value: "" },
+            ...mapped,
+          ]);
+        } else {
+          Alert.alert("Error", "No se pudieron obtener los tipos de fallo.");
+        }
+      } catch (error) {
+        console.error("Error al cargar tipos de fallo:", error);
+        Alert.alert("Error", "Hubo un problema al cargar los tipos de fallo.");
+      }
+    };
+
+    fetchFailureTypes();
+  }, []);
+
+  const lotesOptions = [
     { label: "Seleccione el lote", value: "" },
-    { label: "Lote A", value: "loteA" },
-    { label: "Lote B", value: "loteB" },
+    ...lots.map((l) => ({ label: l.name, value: l.id })),
   ];
 
-  const posiblesFallos = [
-    { label: "Seleccione el posible fallo", value: "" },
-    { label: "Fallo en la tubería", value: "tuberia" },
-    { label: "Fallo en la válvula", value: "valvula" },
-    { label: "Fallo en el medidor", value: "medidor" },
-    { label: "Fallo en el controlador", value: "controlador" },
-    { label: "Fallo en la antena", value: "antena" },
-    { label: "Fallo en el software", value: "software" },
-    {
-      label: "Fallo en el suministro de energía a los dispositivos",
-      value: "energia",
-    },
-  ];
-
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!predio || !lote || !fallo || !observacion) {
       Alert.alert(
         "Formulario incompleto",
-        "Por favor, completa todos los campos antes de continuar."
+        "Por favor, completa todos los campos."
       );
       return;
     }
 
-    Alert.alert(
-      "¿Está seguro de realizar la siguiente acción?",
-      "¿Estás seguro que deseas reportar el fallo?",
-      [
-        {
-          text: "Cancelar",
-          onPress: () => console.log("Reporte no enviado"),
-          style: "cancel",
-        },
-        {
-          text: "Confirmar",
-          onPress: () => {
+    Alert.alert("¿Está seguro?", "¿Deseas reportar el fallo?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Confirmar",
+        onPress: async () => {
+          try {
             setLoading(true);
-            setTimeout(() => {
-              console.log({ predio, lote, fallo, observacion });
-              setLoading(false);
-            }, 1000);
-          },
+
+            const payload = {
+              lot_id: Number(lote),
+              type_failure_id: Number(fallo),
+              description_failure: observacion.trim(),
+            };
+
+            console.log("Payload a enviar:", payload);
+
+            const response = await fetch(
+              `${API_URL_MAINT}/maintenance/reports`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+              }
+            );
+
+            const result = await response.json();
+
+            if (result.success) {
+              Alert.alert("Éxito", "El reporte fue enviado correctamente.");
+              router.push("/reports/seeReports");
+            } else {
+              Alert.alert(
+                "Error",
+                result.message || "No se pudo enviar el reporte."
+              );
+            }
+          } catch (error) {
+            console.error("Error al enviar el reporte:", error);
+            Alert.alert("Error", "Hubo un problema al enviar el reporte.");
+          } finally {
+            setLoading(false);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   return (
@@ -92,32 +159,35 @@ export default function ReportFailureForm() {
       <ScrollView contentContainerStyle={styles.form}>
         <View style={styles.innerForm}>
           <Text style={styles.subtitle}>
-            Por favor, complete el siguiente formularios y luego de a confirmar
-            para enviar su reporte.
+            Por favor, complete el siguiente formulario y confirme para enviar
+            su reporte.
           </Text>
 
           <Text style={styles.label}>Predio afectado</Text>
           <DropdownPicker
             selectedValue={predio}
-            onValueChange={(value) => setPredio(value)}
-            options={predios}
+            onValueChange={(value) => {
+              setPredio(value);
+              setLote(""); // reinicia el lote si cambia de predio
+            }}
+            options={prediosOptions}
           />
 
           <Text style={styles.label}>Lote afectado</Text>
           <DropdownPicker
             selectedValue={lote}
-            onValueChange={(value) => setLote(value)}
-            options={lotes}
+            onValueChange={setLote}
+            options={lotesOptions}
           />
 
           <Text style={styles.label}>Posible fallo</Text>
           <DropdownPicker
             selectedValue={fallo}
-            onValueChange={(value) => setFallo(value)}
-            options={posiblesFallos}
+            onValueChange={setFallo}
+            options={tiposFallo}
           />
 
-          <Text style={styles.label}>Observaciones *</Text>
+          <Text style={styles.label}>Observaciones (opcional)</Text>
           <TextInput
             style={styles.textArea}
             multiline
@@ -152,12 +222,6 @@ const styles = StyleSheet.create({
   buttonContainer: {
     marginTop: 110,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 2,
-    textAlign: "center",
-  },
   subtitle: {
     ...typography.regular.large,
     marginBottom: 1,
@@ -176,6 +240,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 10,
     backgroundColor: colors.white,
+    ...typography.regular.large,
     textAlignVertical: "top",
   },
 });
