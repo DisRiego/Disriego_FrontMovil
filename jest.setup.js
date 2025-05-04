@@ -18,8 +18,11 @@ jest.mock("expo-font", () => ({
 jest.mock("@expo/vector-icons", () => ({
   AntDesign: jest.fn(),
 }));
+jest.mock("@react-native-async-storage/async-storage", () => {
+  const mockAsyncStorage = require("@react-native-async-storage/async-storage/jest/async-storage-mock");
+  return mockAsyncStorage;
+});
 
-jest.mock("@react-native-async-storage/async-storage", () => mockAsyncStorage);
 jest.mock("expo-router", () => ({
   useRouter: jest.fn(),
 }));

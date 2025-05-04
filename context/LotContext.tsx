@@ -2,10 +2,11 @@ import React, { createContext, useContext, useState } from "react";
 import { Alert } from "react-native";
 import axios from "axios";
 import { API_URL, API_URL_IOT } from "@/services/config";
+import { getUserData } from "@/services/auth";
 import { colors } from "@/config/theme";
 import moment from "moment";
 
-interface Property {
+export interface Property {
   id: string;
   name: string;
   latitude: string;
@@ -68,6 +69,7 @@ interface LotContextType {
   cropTypes: CropType[];
   paymentIntervals: PaymentInterval[];
   devices: Device[];
+  fetchPropertiesByUser: () => Promise<Property[]>;
   setProperty: (prop: Property) => void;
   setLot: (lot: Lot) => void;
   updateLotField: (key: keyof Lot, value: any) => void;
@@ -163,6 +165,33 @@ export const LotProvider = ({ children }: { children: React.ReactNode }) => {
 
   const clearLot = () => setCurrentLot(null);
 
+  const fetchPropertiesByUser = async (): Promise<Property[]> => {
+    try {
+      const user = await getUserData(); // asume que tienes getUserData()
+      if (!user) throw new Error("Usuario no autenticado");
+
+      const res = await axios.get(`${API_URL}/properties/user/${user.id}`);
+      if (res.data.success) {
+        return res.data.data.map((item: any) => ({
+          id: item.id.toString(),
+          name: item.name,
+          real_estate_registration_number: item.real_estate_registration_number,
+          latitude: item.latitude,
+          longitude: item.longitude,
+          extension: item.extension,
+          user_id: item.user_id,
+        }));
+      } else {
+        Alert.alert("Error", "No se pudieron obtener los predios.");
+        return [];
+      }
+    } catch (error) {
+      console.error("Error al obtener predios:", error);
+      Alert.alert("Error", "Hubo un problema al cargar los predios.");
+      return [];
+    }
+  };
+
   const refreshLotsByProperty = async (propertyId: string) => {
     try {
       const res = await fetch(`${API_URL}/properties/${propertyId}/lots`);
@@ -198,10 +227,6 @@ export const LotProvider = ({ children }: { children: React.ReactNode }) => {
       const data = await res.json();
 
       if (data.success) {
-        console.log(
-          "Raw response completa del backend:",
-          JSON.stringify(data, null, 2)
-        );
         const formattedDevices = data.data.devices.map((device: any) => {
           console.log("Dispositivo recibido desde backend:", device);
           return {
@@ -451,6 +476,7 @@ export const LotProvider = ({ children }: { children: React.ReactNode }) => {
         setLot,
         updateLotField,
         updateLotInList,
+        fetchPropertiesByUser,
         clearLot,
         refreshLotsByProperty,
         fetchCropOptions,
