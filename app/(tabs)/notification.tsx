@@ -3,84 +3,105 @@ import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { typography } from "@/config/typography";
 import { colors } from "@/config/theme";
-import { useRouter } from "expo-router";
 import {
   fetchNotifications,
   markAllAsRead,
   markAsRead,
   Notificacion,
 } from "@/services/notifications";
-import { getToken } from "@/services/auth";
 import { useNotification } from "@/context/NotificationContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const NOTIF_CACHE_KEY = "notificaciones_cache";
 
 const Notification = () => {
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
-  const [token, setToken] = useState<string | null>(null);
-  const router = useRouter();
-
   const { unreadCount, refreshUnreadCount } = useNotification();
 
   useEffect(() => {
     const fetchData = async () => {
-      const tk = await getToken();
-      setToken(tk);
-      if (tk) obtenerNotificaciones(tk);
+      try {
+        await obtenerNotificaciones();
+      } catch {
+        console.warn(
+          "No se pudo cargar notificaciones (posible sesión expirada)"
+        );
+      }
     };
+
     fetchData();
   }, []);
 
-  const obtenerNotificaciones = async (tk: string) => {
+  const obtenerNotificaciones = async () => {
     try {
-      const { notifications } = await fetchNotifications(tk);
+      const { notifications } = await fetchNotifications();
       setNotificaciones(notifications);
+
+      // Guardar en caché local
+      await AsyncStorage.setItem(
+        NOTIF_CACHE_KEY,
+        JSON.stringify(notifications)
+      );
     } catch (error: any) {
       if (error.response?.status === 401) {
-        console.warn("Token expirado. No se actualizarán las notificaciones.");
-        return;
+        console.warn(
+          "Token expirado. Intentando usar notificaciones cacheadas."
+        );
+      } else {
+        console.warn("Error obteniendo notificaciones:", error.message);
       }
 
-      console.error("Error obteniendo notificaciones", error);
+      // Recuperar desde caché
+      try {
+        const cached = await AsyncStorage.getItem(NOTIF_CACHE_KEY);
+        if (cached) {
+          setNotificaciones(JSON.parse(cached));
+          console.warn("Mostrando notificaciones desde caché local.");
+        } else {
+          console.warn("No hay datos en caché para mostrar.");
+        }
+      } catch (cacheError) {
+        console.warn("Error leyendo caché local:", cacheError);
+      }
     }
   };
 
   const marcarTodoComoLeido = async () => {
     try {
-      if (!token) return;
-
-      await markAllAsRead(token);
-      await obtenerNotificaciones(token);
+      await markAllAsRead();
+      await obtenerNotificaciones();
       await refreshUnreadCount();
     } catch (error: any) {
       if (error.response?.status === 401) {
         console.warn("Token expirado. No se puede marcar como leído.");
         return;
       }
-
-      console.error("Error al marcar como leídas", error);
+      console.warn("Error al marcar todo como leído:", error.message);
     }
   };
 
   const marcarComoLeida = async (id: number) => {
     try {
-      if (!token) return;
-      await markAsRead(token, [id]);
-      await obtenerNotificaciones(token);
+      await markAsRead([id]);
+      await obtenerNotificaciones();
       await refreshUnreadCount();
-    } catch (error) {
-      console.error("Error marcando notificación como leída:", error);
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        console.warn("Token expirado. No se puede marcar individualmente.");
+        return;
+      }
+      console.warn("Error al marcar notificación como leída:", error.message);
     }
   };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.base }}>
-      {/* Título */}
       <View style={{ alignItems: "center", paddingVertical: 16 }}>
         <Text style={{ ...typography.bold.large, color: colors.darkGray }}>
           Notificaciones
         </Text>
       </View>
 
-      {/* Lista de Notificaciones */}
       <FlatList
         data={notificaciones}
         keyExtractor={(item) => item.id.toString()}
@@ -153,7 +174,6 @@ const Notification = () => {
         )}
       />
 
-      {/* Botón flotante */}
       {unreadCount > 0 && (
         <TouchableOpacity
           onPress={marcarTodoComoLeido}
