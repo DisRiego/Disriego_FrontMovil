@@ -26,21 +26,9 @@ import Button from "@/components/Button";
 
 // Servicios
 import { getUserData } from "@/services/auth";
+import type { User } from "@/services/auth";
 import { getCountries, getStates, getCities } from "@/services/location";
 import { API_URL } from "@/services/config";
-
-// Tipos
-type User = {
-  id: string;
-  name: string;
-  first_last_name: string;
-  address?: string;
-  phone?: string;
-  country?: string;
-  department?: string;
-  city?: string;
-  profile_picture?: string;
-};
 
 /**
  * Obtiene las iniciales del nombre del usuario para mostrar en el avatar
@@ -245,6 +233,7 @@ const UpdateProfile = () => {
       );
 
       Alert.alert("Éxito", "Perfil actualizado correctamente.");
+      router.replace("/(tabs)/profile");
     } catch (error) {
       console.error("Error al actualizar perfil:", error);
       Alert.alert(
@@ -315,6 +304,7 @@ const UpdateProfile = () => {
 
       if (response.status === 200) {
         Alert.alert("Éxito", "Imagen de perfil actualizada correctamente.");
+        router.replace("/(tabs)/profile");
       } else {
         throw new Error("Error en la actualización de la imagen.");
       }
@@ -470,7 +460,7 @@ const UpdateProfile = () => {
                 <Button
                   text={
                     savingChanges ? (
-                      <ActivityIndicator size={28} color="white" />
+                      <ActivityIndicator size={28} color={colors.primary} />
                     ) : (
                       "Guardar cambios"
                     )
@@ -491,7 +481,6 @@ const UpdateProfile = () => {
  * Estilos para el componente
  */
 const styles = StyleSheet.create({
-  // Contenedores principales
   safeArea: {
     flex: 1,
     backgroundColor: colors.base,
@@ -528,7 +517,7 @@ const styles = StyleSheet.create({
   },
   pictureContainer: {
     alignItems: "center",
-    marginVertical: 20,
+    marginVertical: 10,
   },
   username: {
     color: colors.darkGray,
