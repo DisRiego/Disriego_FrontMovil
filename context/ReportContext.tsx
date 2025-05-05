@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState } from "react";
 import { API_URL_MAINT } from "@/services/config";
 import { getUserData } from "@/services/auth";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface Report {
   id: number;
@@ -13,6 +14,7 @@ interface Report {
   failure_type: string;
   description_failure?: string;
   technician_assignment_id?: number;
+  pendingSync?: boolean;
 }
 
 interface ReportsContextProps {
@@ -21,6 +23,8 @@ interface ReportsContextProps {
   fetchUserReports: () => Promise<void>;
   fetchAssignedReports: () => Promise<void>;
   getReportById: (id: number) => Report | undefined;
+  markReportAsPendingSync: (reportId: number) => void;
+  clearReportsCache: () => Promise<void>;
 }
 
 const ReportsContext = createContext<ReportsContextProps | undefined>(
@@ -57,9 +61,15 @@ export const ReportsProvider: React.FC<{ children: React.ReactNode }> = ({
           description_failure: r.description_failure,
         }));
         setReports(mapped);
+        await AsyncStorage.setItem("userReports", JSON.stringify(mapped));
       }
     } catch (error) {
       console.error("Error cargando reportes de usuario:", error);
+      const cached = await AsyncStorage.getItem("userReports");
+      if (cached) {
+        setReports(JSON.parse(cached));
+        console.log("Cargado reportes de usuario desde cache local.");
+      }
     } finally {
       setLoading(false);
     }
@@ -90,9 +100,15 @@ export const ReportsProvider: React.FC<{ children: React.ReactNode }> = ({
           technician_assignment_id: r.technician_assignment_id,
         }));
         setReports(mapped);
+        await AsyncStorage.setItem("assignedReports", JSON.stringify(mapped));
       }
     } catch (error) {
       console.error("Error cargando reportes asignados:", error);
+      const cached = await AsyncStorage.getItem("assignedReports");
+      if (cached) {
+        setReports(JSON.parse(cached));
+        console.log("Cargado reportes asignados desde cache local.");
+      }
     } finally {
       setLoading(false);
     }
@@ -100,6 +116,24 @@ export const ReportsProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const getReportById = (id: number) => {
     return reports.find((r) => r.id === id);
+  };
+
+  const markReportAsPendingSync = (reportId: number) => {
+    setReports((prevReports) =>
+      prevReports.map((r) =>
+        r.id === reportId ? { ...r, pendingSync: true } : r
+      )
+    );
+  };
+
+  const clearReportsCache = async () => {
+    try {
+      await AsyncStorage.removeItem("assignedReports");
+      await AsyncStorage.removeItem("userReports");
+      console.log("Cache de reportes limpiado.");
+    } catch (error) {
+      console.error("Error limpiando cache de reportes:", error);
+    }
   };
 
   return (
@@ -110,6 +144,8 @@ export const ReportsProvider: React.FC<{ children: React.ReactNode }> = ({
         fetchUserReports,
         fetchAssignedReports,
         getReportById,
+        markReportAsPendingSync,
+        clearReportsCache,
       }}
     >
       {children}
