@@ -30,6 +30,10 @@ export default function ReportsLayout() {
     checkAccess();
   }, []);
 
+  useEffect(() => {
+    setupDatabase();
+  }, []);
+
   if (isAuthenticated === null) return null;
 
   return (
