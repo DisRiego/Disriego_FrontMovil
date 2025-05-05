@@ -84,7 +84,8 @@ const Profile = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      router.replace("/login");
+      router.dismissAll();
+      router.replace("/(auth)/login");
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
     }
@@ -167,12 +168,10 @@ const Profile = () => {
               <ActivityIndicator size="small" color={colors.gray} />
             ) : (
               <>
-                <Text style={styles.name}>{`${user?.name || "Usuario"} ${
+                <Text style={styles.name}>{`${user?.name || ""} ${
                   user?.first_last_name || ""
                 }`}</Text>
-                <Text style={styles.email}>
-                  {user?.email || "email@ejemplo.com"}
-                </Text>
+                <Text style={styles.email}>{user?.email || ""}</Text>
               </>
             )}
           </View>
