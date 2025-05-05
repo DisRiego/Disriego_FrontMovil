@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,8 +16,14 @@ import { typography } from "@/config/typography";
 import { getUserData } from "@/services/auth";
 import { Svg, Circle, Text as SvgText } from "react-native-svg";
 import { usePermission } from "@/context/PermissionContext";
+import {
+  countPendingFinalizations,
+  syncPendingFinalizations,
+  resetPendingFinalizationsTable,
+} from "@/storage/db";
+import NetInfo from "@react-native-community/netinfo";
+import { API_URL_MAINT } from "@/services/config";
 
-// Opciones del menú para usuarios normales
 const menuItems = [
   {
     id: 1,
@@ -58,7 +65,6 @@ export default function HomeScreen() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
-
   const { hasPermission, isLoaded } = usePermission();
 
   useEffect(() => {
@@ -78,9 +84,25 @@ export default function HomeScreen() {
         setLoading(false);
       }
     };
-
     fetchUserData();
   }, []);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      if (state.isConnected && hasPermission("Finalizar mantenimiento")) {
+        console.log(
+          "Conexión detectada y permiso presente. Iniciando sincronización..."
+        );
+        syncPendingFinalizations(API_URL_MAINT);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [isLoaded, hasPermission]);
 
   const renderUserAvatar = () => {
     if (loading) {
@@ -130,6 +152,14 @@ export default function HomeScreen() {
     );
   };
 
+  const handleViewPendingReports = async () => {
+    const count = await countPendingFinalizations();
+    Alert.alert(
+      "Reportes offline",
+      `Tienes ${count} reportes pendientes por sincronizar.`
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -173,6 +203,65 @@ export default function HomeScreen() {
                   <Feather name="chevron-right" size={24} color="#595959" />
                 </View>
               </TouchableOpacity>
+
+              {/* Botón temporal solo en modo desarrollo */}
+              {__DEV__ && (
+                <TouchableOpacity
+                  style={[styles.card, { backgroundColor: "#DCF8C6" }]}
+                  onPress={handleViewPendingReports}
+                >
+                  <Feather name="database" size={24} color="#333" />
+                  <Text
+                    style={{
+                      marginTop: 8,
+                      color: "#333",
+                      ...typography.medium.regular,
+                      textAlign: "center",
+                    }}
+                  >
+                    Ver reportes offline
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {__DEV__ && (
+                <TouchableOpacity
+                  style={[styles.card, { backgroundColor: "#FDEDEC" }]}
+                  onPress={() => {
+                    Alert.alert(
+                      "Confirmar limpieza",
+                      "¿Seguro que deseas borrar todos los reportes offline y reiniciar el ID?",
+                      [
+                        { text: "Cancelar", style: "cancel" },
+                        {
+                          text: "Sí, borrar",
+                          style: "destructive",
+                          onPress: async () => {
+                            resetPendingFinalizationsTable();
+                            const count = await countPendingFinalizations();
+                            Alert.alert(
+                              "Limpieza completada",
+                              `Reportes restantes: ${count}`
+                            );
+                          },
+                        },
+                      ]
+                    );
+                  }}
+                >
+                  <Feather name="trash-2" size={24} color="#C0392B" />
+                  <Text
+                    style={{
+                      marginTop: 8,
+                      color: "#C0392B",
+                      ...typography.medium.regular,
+                      textAlign: "center",
+                    }}
+                  >
+                    Limpiar DB (dev)
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
             <View style={styles.categoriesContainer}>
