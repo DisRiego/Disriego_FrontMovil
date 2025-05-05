@@ -81,10 +81,10 @@ export default function ReportFailureForm() {
 
     if (result.assets) {
       const validFile = result.assets.find(
-        (f) => (f?.size ?? 0) <= 1 * 1024 * 1024
+        (f) => (f?.size ?? 0) <= 3 * 1024 * 1024
       );
       if (!validFile) {
-        Alert.alert("Archivo inválido", "El archivo debe ser menor a 1MB.");
+        Alert.alert("Archivo inválido", "El archivo debe ser menor a 3MB.");
         return;
       }
       setFiles([validFile]);
@@ -202,8 +202,13 @@ export default function ReportFailureForm() {
         evidence_failure_uri: archivo1List[0]?.uri || "",
         evidence_solution_uri: archivo2List[0]?.uri || "",
       });
-      if (params.reportId) markReportAsPendingSync(Number(params.reportId));
-      router.replace("/maintenance/assignedReports");
+      if (params.reportId) {
+        markReportAsPendingSync(Number(params.reportId));
+        // Espera brevemente para asegurar que el estado esté actualizado
+        setTimeout(() => {
+          router.replace("/maintenance/assignedReports");
+        }, 100); // 100 ms es suficiente
+      }
     }
   };
 
