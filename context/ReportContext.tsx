@@ -98,6 +98,7 @@ export const ReportsProvider: React.FC<{ children: React.ReactNode }> = ({
           failure_type: r.failure_type,
           description_failure: r.description_failure,
           technician_assignment_id: r.technician_assignment_id,
+          pendingSync: false,
         }));
         setReports(mapped);
         await AsyncStorage.setItem("assignedReports", JSON.stringify(mapped));
@@ -118,12 +119,17 @@ export const ReportsProvider: React.FC<{ children: React.ReactNode }> = ({
     return reports.find((r) => r.id === id);
   };
 
-  const markReportAsPendingSync = (reportId: number) => {
-    setReports((prevReports) =>
-      prevReports.map((r) =>
+  const markReportAsPendingSync = async (reportId: number) => {
+    setReports((prevReports) => {
+      const updated = prevReports.map((r) =>
         r.id === reportId ? { ...r, pendingSync: true } : r
-      )
-    );
+      );
+      // Actualizar también en AsyncStorage
+      AsyncStorage.setItem("assignedReports", JSON.stringify(updated)).catch(
+        (err) => console.error("Error guardando assignedReports:", err)
+      );
+      return updated;
+    });
   };
 
   const clearReportsCache = async () => {
