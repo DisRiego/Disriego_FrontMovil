@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL_MAINT } from "@/services/config";
 
@@ -48,26 +48,6 @@ export const MaintenanceOptionsProvider: React.FC<{
         );
       }
 
-      // --- Soluciones generales ---
-      const resSolutions = await fetch(
-        `${API_URL_MAINT}/maintenance/failure-solutions`
-      );
-      const dataSolutions = await resSolutions.json();
-      if (dataSolutions.success) {
-        const formattedSolutions = dataSolutions.data.map((item: any) => ({
-          label: item.name,
-          value: item.id.toString(),
-        }));
-        setSolutions([
-          { label: "Selecciona una opción", value: "" },
-          ...formattedSolutions,
-        ]);
-        await AsyncStorage.setItem(
-          "failureSolutions",
-          JSON.stringify(formattedSolutions)
-        );
-      }
-
       // --- Tipos de mantenimiento ---
       const resMaintenanceTypes = await fetch(
         `${API_URL_MAINT}/maintenance/maintenance-types`
@@ -87,28 +67,59 @@ export const MaintenanceOptionsProvider: React.FC<{
           "maintenanceTypes",
           JSON.stringify(formattedMaintenance)
         );
+
+        // Precargar soluciones por tipo
+        for (const tipo of formattedMaintenance) {
+          const id = tipo.value;
+          const cacheKey = `failureSolutionsByType_${id}`;
+
+          try {
+            const res = await fetch(
+              `${API_URL_MAINT}/maintenance/failure-solutions/by-maintenance-type/${id}`
+            );
+            const data = await res.json();
+            if (data.success) {
+              const formatted = data.data.map((item: any) => ({
+                label: item.name,
+                value: item.id.toString(),
+              }));
+              await AsyncStorage.setItem(cacheKey, JSON.stringify(formatted));
+              console.log(`Soluciones cacheadas para tipo ${id}`);
+            }
+          } catch (err) {
+            console.log(`No se pudo cachear soluciones para tipo ${id}`);
+          }
+        }
       }
     } catch (error) {
-      console.error("Error cargando opciones de mantenimiento:", error);
-
+      // --- Recuperar desde cache local ---
       const cachedFailures = await AsyncStorage.getItem("failureTypes");
-      const cachedSolutions = await AsyncStorage.getItem("failureSolutions");
       const cachedMaintenance = await AsyncStorage.getItem("maintenanceTypes");
 
-      if (cachedFailures) setFailureTypes(JSON.parse(cachedFailures));
-      if (cachedSolutions) {
-        const parsed = JSON.parse(cachedSolutions);
-        setSolutions([
-          { label: "Selecciona una opción", value: "" },
-          ...parsed,
-        ]);
+      if (cachedFailures) {
+        try {
+          setFailureTypes(JSON.parse(cachedFailures));
+        } catch (e) {
+          console.log("Error parseando fallos desde cache:", e);
+        }
       }
+
       if (cachedMaintenance) {
-        const parsed = JSON.parse(cachedMaintenance);
-        setMaintenanceTypes([
-          { label: "Selecciona una opción", value: "" },
-          ...parsed,
-        ]);
+        try {
+          const parsed = JSON.parse(cachedMaintenance);
+          setMaintenanceTypes([
+            { label: "Selecciona una opción", value: "" },
+            ...parsed,
+          ]);
+        } catch (e) {
+          console.log("Error parseando tipos mantenimiento desde cache:", e);
+        }
+      }
+
+      if (!cachedFailures && !cachedMaintenance) {
+        console.error("Error cargando opciones de mantenimiento:", error);
+      } else {
+        console.log("Opciones cargadas desde caché tras error de red.");
       }
     } finally {
       setLoading(false);
@@ -151,6 +162,20 @@ export const MaintenanceOptionsProvider: React.FC<{
       setSolutions([]);
     }
   };
+
+  useEffect(() => {
+    if (failureTypes.length === 0 || maintenanceTypes.length === 0) {
+      const cargarOpciones = async () => {
+        try {
+          await fetchMaintenanceOptions();
+        } catch (e) {
+          console.log("Error ignorado al cargar opciones automáticamente:", e);
+        }
+      };
+
+      cargarOpciones();
+    }
+  }, []);
 
   return (
     <MaintenanceOptionsContext.Provider
