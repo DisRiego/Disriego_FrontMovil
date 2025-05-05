@@ -21,6 +21,10 @@ import { typography } from "@/config/typography";
 import * as DocumentPicker from "expo-document-picker";
 import { Feather, AntDesign } from "@expo/vector-icons";
 import { API_URL_MAINT } from "@/services/config";
+import { saveFinalizationOffline } from "@/storage/db";
+import { getToken } from "@/services/auth";
+import { useReports } from "@/context/ReportContext";
+import { useMaintenanceOptions } from "@/context/MaintenanceOptionsContext";
 
 interface Option {
   label: string;
@@ -29,8 +33,19 @@ interface Option {
 
 export default function ReportFailureForm() {
   const params = useLocalSearchParams();
+  const { markReportAsPendingSync } = useReports();
+  const {
+    solutions,
+    failureTypes,
+    maintenanceTypes,
+    fetchMaintenanceOptions,
+    fetchSolutionsByMaintenanceType,
+    loading,
+  } = useMaintenanceOptions();
 
   const [step, setStep] = useState<number>(1);
+  const [tipoFallo, setTipoFallo] = useState<string>("");
+  const [observacionFallo, setObservacionFallo] = useState<string>("");
   const [tipoMantenimiento, setTipoMantenimiento] = useState<string>("");
   const [solucion, setSolucion] = useState<string>("");
   const [observacionSolucion, setObservacionSolucion] = useState<string>("");
@@ -41,59 +56,18 @@ export default function ReportFailureForm() {
     DocumentPicker.DocumentPickerAsset[]
   >([]);
   const [finalizado, setFinalizado] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [tiposFallo, setTiposFallo] = useState<Option[]>([]); // 🔥 CORREGIDO
-  const [solucionesDisponibles, setSolucionesDisponibles] = useState<Option[]>(
-    []
-  ); // 🔥 CORREGIDO
-
-  const tiposMantenimiento: Option[] = [
-    { label: "Selecciona una opción", value: "" },
-    { label: "Correctivo", value: "Correctivo" },
-    { label: "Preventivo", value: "Preventivo" },
-  ];
 
   useEffect(() => {
-    const fetchTiposFallo = async () => {
-      try {
-        const res = await fetch(`${API_URL_MAINT}/maintenance/failure-types`);
-        const data = await res.json();
-        if (data.success) {
-          const formatted = data.data.map((item: any) => ({
-            label: item.name,
-            value: item.id.toString(),
-          }));
-          setTiposFallo(formatted);
-        }
-      } catch (err) {
-        console.error("Error al cargar tipos de fallo:", err);
-      }
-    };
-
-    const fetchSoluciones = async () => {
-      try {
-        const res = await fetch(
-          `${API_URL_MAINT}/maintenance/failure-solutions`
-        );
-        const data = await res.json();
-        if (data.success) {
-          const formatted = [
-            { label: "Selecciona una opción", value: "" },
-            ...data.data.map((item: any) => ({
-              label: item.name,
-              value: item.id.toString(),
-            })),
-          ];
-          setSolucionesDisponibles(formatted);
-        }
-      } catch (err) {
-        console.error("Error al cargar soluciones:", err);
-      }
-    };
-
-    fetchTiposFallo();
-    fetchSoluciones();
+    fetchMaintenanceOptions();
   }, []);
+
+  const handleTipoMantenimientoChange = async (value: string) => {
+    setTipoMantenimiento(value);
+    setSolucion("");
+    if (value) {
+      await fetchSolutionsByMaintenanceType(value);
+    }
+  };
 
   const handleFilePick = async (
     setFiles: React.Dispatch<
@@ -128,6 +102,8 @@ export default function ReportFailureForm() {
 
   const handleSubmit = async () => {
     if (
+      !tipoFallo ||
+      !observacionFallo ||
       !tipoMantenimiento ||
       !solucion ||
       !observacionSolucion ||
@@ -140,8 +116,8 @@ export default function ReportFailureForm() {
       return;
     }
 
-    if (tiposFallo.length === 0 || solucionesDisponibles.length === 0) {
-      Alert.alert("Espere", "Aún se están cargando los datos requeridos.");
+    if (solutions.length === 0) {
+      Alert.alert("Espere", "Aún se están cargando las soluciones.");
       return;
     }
 
@@ -153,20 +129,26 @@ export default function ReportFailureForm() {
       return;
     }
 
-    const tipoFalloId =
-      tiposFallo.find((item) => item.label === params.fallo)?.value || "1";
     const solucionId =
-      solucionesDisponibles.find((item) => item.label === solucion)?.value ||
-      "1";
+      solutions.find((item) => item.label === solucion)?.value || "1";
+
+    console.log("Enviando al backend:", {
+      technician_assignment_id: String(params.technicianAssignmentId),
+      fault_remarks: observacionFallo,
+      type_failure_id: tipoFallo,
+      type_maintenance_id: tipoMantenimiento,
+      failure_solution_id: solucionId,
+      solution_remarks: observacionSolucion,
+    });
 
     const formData = new FormData();
     formData.append(
       "technician_assignment_id",
       String(params.technicianAssignmentId)
     );
-    formData.append("fault_remarks", params.observacion as string);
-    formData.append("type_failure_id", tipoFalloId);
-    formData.append("type_maintenance", tipoMantenimiento);
+    formData.append("fault_remarks", observacionFallo);
+    formData.append("type_failure_id", tipoFallo);
+    formData.append("type_maintenance_id", tipoMantenimiento);
     formData.append("failure_solution_id", solucionId);
     formData.append("solution_remarks", observacionSolucion);
 
@@ -187,28 +169,41 @@ export default function ReportFailureForm() {
     }
 
     try {
-      setLoading(true);
+      const token = await getToken();
       const response = await fetch(`${API_URL_MAINT}/maintenance/finalize`, {
         method: "POST",
         body: formData,
         headers: {
           "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
         },
       });
 
       const result = await response.json();
-      setLoading(false);
-
       if (response.ok && result.success) {
         Alert.alert("Éxito", "Mantenimiento finalizado correctamente.");
-        router.push("/maintenance/assignedReports");
+        router.replace("/maintenance/assignedReports");
       } else {
-        Alert.alert("Error", result.message || "No se pudo finalizar.");
+        throw new Error(result.message || "No se pudo finalizar el reporte.");
       }
     } catch (error) {
-      setLoading(false);
       console.error("Error al enviar reporte:", error);
-      Alert.alert("Error", "Hubo un problema al enviar el reporte.");
+      Alert.alert(
+        "Modo offline",
+        "No se pudo enviar el reporte. Se guardó para sincronizar más tarde."
+      );
+      saveFinalizationOffline({
+        technician_assignment_id: Number(params.technicianAssignmentId),
+        fault_remarks: observacionFallo,
+        type_failure_id: Number(tipoFallo),
+        type_maintenance_id: Number(tipoMantenimiento),
+        failure_solution_id: Number(solucionId),
+        solution_remarks: observacionSolucion,
+        evidence_failure_uri: archivo1List[0]?.uri || "",
+        evidence_solution_uri: archivo2List[0]?.uri || "",
+      });
+      if (params.reportId) markReportAsPendingSync(Number(params.reportId));
+      router.replace("/maintenance/assignedReports");
     }
   };
 
@@ -216,7 +211,7 @@ export default function ReportFailureForm() {
     <SafeAreaView style={styles.container}>
       <CustomHeader
         title="Reporte de mantenimiento finalizado"
-        backRoute={() => router.push("/maintenance/assignedReports")}
+        backRoute={() => router.replace("/maintenance/assignedReports")}
       />
       <ScrollView contentContainerStyle={styles.form}>
         <View style={styles.innerForm}>
@@ -279,15 +274,25 @@ export default function ReportFailureForm() {
                 <Text style={styles.value}>{params.lotName}</Text>
               </View>
 
-              <View>
-                <Text style={styles.label}>Fallo detectado</Text>
-                <Text style={styles.value}>{params.fallo}</Text>
-              </View>
+              <Text style={styles.label}>Fallo detectado</Text>
+              <DropdownPicker
+                selectedValue={tipoFallo}
+                onValueChange={setTipoFallo}
+                options={[
+                  { label: "Selecciona una opción", value: "" },
+                  ...failureTypes,
+                ]}
+              />
 
-              <View>
-                <Text style={styles.label}>Observaciones</Text>
-                <Text style={styles.value}>{params.observacion}</Text>
-              </View>
+              <Text style={styles.label}>Observaciones del fallo</Text>
+              <TextInput
+                style={styles.textArea}
+                multiline
+                placeholder="Describe el fallo observado"
+                value={observacionFallo}
+                onChangeText={setObservacionFallo}
+                maxLength={256}
+              />
 
               <Text style={styles.label}>Evidencia del fallo</Text>
               <TouchableOpacity
@@ -361,22 +366,22 @@ export default function ReportFailureForm() {
               <Text style={styles.label}>Tipo de mantenimiento</Text>
               <DropdownPicker
                 selectedValue={tipoMantenimiento}
-                onValueChange={setTipoMantenimiento}
-                options={tiposMantenimiento}
+                onValueChange={handleTipoMantenimientoChange}
+                options={maintenanceTypes}
               />
 
               <Text style={styles.label}>Solución</Text>
               <DropdownPicker
                 selectedValue={solucion}
                 onValueChange={setSolucion}
-                options={solucionesDisponibles}
+                options={solutions}
               />
 
-              <Text style={styles.label}>Observaciones</Text>
+              <Text style={styles.label}>Observación de la solución</Text>
               <TextInput
                 style={styles.textArea}
                 multiline
-                placeholder="Observación"
+                placeholder="Describe la solución aplicada"
                 value={observacionSolucion}
                 onChangeText={setObservacionSolucion}
                 maxLength={256}
