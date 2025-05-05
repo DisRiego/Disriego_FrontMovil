@@ -103,6 +103,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
+    paddingBottom: 40,
   },
   textContainer: {
     gap: 14,
@@ -112,7 +113,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   formContainer: {
-    gap: 14,
+    gap: 8,
     width: "100%",
     paddingTop: 8,
     alignItems: "stretch",
