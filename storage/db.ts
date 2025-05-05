@@ -76,7 +76,7 @@ export function syncPendingFinalizations(apiUrl: string) {
     );
 
     if (!result || result.length === 0) {
-      console.log("No hay finalizaciones pendientes.");
+      console.log("No hay sincronizaciones pendientes.");
       clearRetry();
       return;
     }
