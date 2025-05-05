@@ -84,8 +84,7 @@ const Profile = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      router.dismissAll();
-      router.replace("/(auth)/login");
+      router.replace("/(auth)/login"); // Navega directamente sin intentar cerrar pantallas
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
     }
