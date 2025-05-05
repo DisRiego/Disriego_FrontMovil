@@ -80,7 +80,8 @@ export default function SeeReportsScreen() {
       );
     }
 
-    return filteredByStatus.filter((report) => {
+    // Filtro por texto de búsqueda
+    const filtered = filteredByStatus.filter((report) => {
       return (
         String(report.id).includes(query) ||
         String(report.lot_id).includes(query) ||
@@ -89,6 +90,13 @@ export default function SeeReportsScreen() {
         report.property_name.toLowerCase().includes(query) ||
         report.status.toLowerCase().includes(query)
       );
+    });
+
+    // Ordenar del más reciente al más antiguo (por fecha)
+    return filtered.sort((a, b) => {
+      const dateA = new Date(a.report_date).getTime();
+      const dateB = new Date(b.report_date).getTime();
+      return dateB - dateA; // más reciente primero
     });
   }, [reports, viewType, searchText]);
 
