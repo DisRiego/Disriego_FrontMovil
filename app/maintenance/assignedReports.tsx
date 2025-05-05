@@ -32,7 +32,7 @@ export default function AssignedReportsScreen() {
   }, []);
 
   const filteredReports = reports
-    .filter((r) => r.status !== "Finalizado")
+    .filter((r) => r.status !== "Finalizado" && !r.pendingSync)
     .filter((report) => {
       const query = searchText.toLowerCase();
       return (
