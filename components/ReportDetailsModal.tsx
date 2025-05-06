@@ -17,6 +17,7 @@ interface ReportDetailsModalProps {
   onFinalize?: () => void;
   onDownload?: () => void;
   mode: "assigned" | "see";
+  source: "report" | "maintenance";
 }
 
 export default function ReportDetailsModal({
@@ -31,6 +32,7 @@ export default function ReportDetailsModal({
   onFinalize,
   onDownload,
   mode,
+  source,
 }: ReportDetailsModalProps) {
   return (
     <Modal isVisible={isVisible} style={styles.modal} onBackdropPress={onClose}>
@@ -41,7 +43,10 @@ export default function ReportDetailsModal({
             <View style={styles.iconContainer}>
               <Feather name="clipboard" size={22} color={colors.primary} />
             </View>
-            <Text style={styles.title}>Reporte #{reportId}</Text>
+            <Text style={styles.title}>
+              {source === "maintenance" ? "Fallo Sistema" : "Reporte"} #
+              {reportId}
+            </Text>
           </View>
           <TouchableOpacity onPress={onClose}>
             <AntDesign name="close" size={22} color={colors.gray} />
@@ -96,9 +101,10 @@ export default function ReportDetailsModal({
               </TouchableOpacity>
             </>
           )}
-
           {mode === "see" && (
             <>
+              {/* Botón de descarga deshabilitado temporalmente */}
+              {/*
               <TouchableOpacity
                 style={styles.viewDetailsButton}
                 onPress={onDownload}
@@ -106,6 +112,7 @@ export default function ReportDetailsModal({
                 <Feather name="download" size={17} color={colors.primary} />
                 <Text style={styles.viewDetailsText}>Descargar</Text>
               </TouchableOpacity>
+              */}
 
               <TouchableOpacity
                 style={styles.finalizeButton}
