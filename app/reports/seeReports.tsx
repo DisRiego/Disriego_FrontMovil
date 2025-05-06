@@ -75,7 +75,7 @@ export default function SeeReportsScreen() {
         (report) => report.status === "Finalizado"
       );
     }
-
+    
     const filtered = filteredByStatus.filter((report) => {
       return (
         String(report.id).includes(query) ||
@@ -253,7 +253,6 @@ export default function SeeReportsScreen() {
           </View>
         </View>
       </ScrollView>
-
       <FloatingButton />
     </SafeAreaView>
   );
@@ -330,7 +329,7 @@ const styles = StyleSheet.create({
   formContainer: {
     gap: 8,
     width: "100%",
-    paddingTop: 8,
+    paddingTop: 10,
     alignItems: "stretch",
     justifyContent: "center",
   },
