@@ -203,65 +203,6 @@ export default function HomeScreen() {
                   <Feather name="chevron-right" size={24} color="#595959" />
                 </View>
               </TouchableOpacity>
-
-              {/* Botón temporal solo en modo desarrollo */}
-              {__DEV__ && (
-                <TouchableOpacity
-                  style={[styles.card, { backgroundColor: "#DCF8C6" }]}
-                  onPress={handleViewPendingReports}
-                >
-                  <Feather name="database" size={24} color="#333" />
-                  <Text
-                    style={{
-                      marginTop: 8,
-                      color: "#333",
-                      ...typography.medium.regular,
-                      textAlign: "center",
-                    }}
-                  >
-                    Ver reportes offline
-                  </Text>
-                </TouchableOpacity>
-              )}
-
-              {__DEV__ && (
-                <TouchableOpacity
-                  style={[styles.card, { backgroundColor: "#FDEDEC" }]}
-                  onPress={() => {
-                    Alert.alert(
-                      "Confirmar limpieza",
-                      "¿Seguro que deseas borrar todos los reportes offline y reiniciar el ID?",
-                      [
-                        { text: "Cancelar", style: "cancel" },
-                        {
-                          text: "Sí, borrar",
-                          style: "destructive",
-                          onPress: async () => {
-                            resetPendingFinalizationsTable();
-                            const count = await countPendingFinalizations();
-                            Alert.alert(
-                              "Limpieza completada",
-                              `Reportes restantes: ${count}`
-                            );
-                          },
-                        },
-                      ]
-                    );
-                  }}
-                >
-                  <Feather name="trash-2" size={24} color="#C0392B" />
-                  <Text
-                    style={{
-                      marginTop: 8,
-                      color: "#C0392B",
-                      ...typography.medium.regular,
-                      textAlign: "center",
-                    }}
-                  >
-                    Limpiar DB (dev)
-                  </Text>
-                </TouchableOpacity>
-              )}
             </View>
           ) : (
             <View style={styles.categoriesContainer}>
