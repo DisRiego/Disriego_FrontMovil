@@ -34,7 +34,10 @@ export default function CompletedReportsScreen() {
         String(report.id).toLowerCase().includes(query) ||
         report.property_name.toLowerCase().includes(query) ||
         report.lot_name.toLowerCase().includes(query) ||
-        report.failure_type.toLowerCase().includes(query)
+        report.failure_type.toLowerCase().includes(query) ||
+        report.status.toLowerCase().includes(query) ||
+        (report.source === "report" && "reporte".includes(query)) ||
+        (report.source === "maintenance" && "fallo sistema".includes(query))
       );
     });
 
@@ -59,8 +62,8 @@ export default function CompletedReportsScreen() {
             ) : filteredReports.length > 0 ? (
               filteredReports.map((report) => (
                 <ReportCard
-                  key={report.id}
-                  type="maintenance"
+                  key={`${report.source}-${report.id}`}
+                  type={report.source ?? "report"}
                   id={`#${report.id}`}
                   lotName={report.lot_name}
                   propertyName={report.property_name}
@@ -78,6 +81,7 @@ export default function CompletedReportsScreen() {
                         lotName: report.lot_name,
                         fallo: report.failure_type,
                         observacion: report.description_failure,
+                        source: report.source,
                       },
                     })
                   }
