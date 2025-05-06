@@ -5,7 +5,14 @@ import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
 import { getToken } from "../services/auth";
 
-// Evita que el splash desaparezca automáticamente
+// Íconos para precargar
+import {
+  AntDesign,
+  Ionicons,
+  Feather,
+  MaterialIcons,
+} from "@expo/vector-icons";
+
 SplashScreen.preventAutoHideAsync();
 
 export default function PublicLayout() {
@@ -19,6 +26,10 @@ export default function PublicLayout() {
     RobotoMedium: require("../assets/fonts/Roboto-Medium.ttf"),
     RobotoRegular: require("../assets/fonts/Roboto-Regular.ttf"),
     RobotoLight: require("../assets/fonts/Roboto-Light.ttf"),
+    ...AntDesign.font,
+    ...Ionicons.font,
+    ...Feather.font,
+    ...MaterialIcons.font,
   });
 
   useEffect(() => {
@@ -48,7 +59,6 @@ export default function PublicLayout() {
     }
   }, [loaded, isAuthenticated, segments, router]);
 
-  // Mientras se cargan fuentes o se verifica autenticación, no se muestra nada
   if (!loaded || isAuthenticated === null) return null;
 
   return (

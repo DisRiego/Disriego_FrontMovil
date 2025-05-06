@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { getToken } from "@/services/auth";
 import { getUnreadCount } from "@/services/notifications";
 
 interface NotificationContextProps {
@@ -21,35 +20,29 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const refreshUnreadCount = async () => {
     try {
-      const token = await getToken();
-      if (!token) return;
-
-      const count = await getUnreadCount(token);
+      const count = await getUnreadCount(); // Ya no se pasa token
       setUnreadCount(count);
     } catch (error: any) {
-      // Verifica si el error es de tipo Axios y es un 401
       if (error.response?.status === 401) {
         console.warn("Token expirado, omitiendo refreshUnreadCount");
         return;
       }
 
-      console.error("Error actualizando contador de notificaciones", error);
+      console.warn("Error actualizando contador de notificaciones", error);
       setUnreadCount(0);
     }
   };
 
-  // Refresco automático cada 30 segundos
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
     const setup = async () => {
-      const token = await getToken();
-      if (!token) return; // Si no hay sesión, no se configura el intervalo
-
-      await refreshUnreadCount(); // carga inicial
-      interval = setInterval(() => {
-        refreshUnreadCount();
-      }, 30000);
+      try {
+        await refreshUnreadCount(); // carga inicial
+        interval = setInterval(refreshUnreadCount, 30000);
+      } catch {
+        console.warn("No se pudo iniciar el refresco de notificaciones.");
+      }
     };
 
     setup();

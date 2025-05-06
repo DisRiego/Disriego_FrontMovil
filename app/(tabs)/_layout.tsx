@@ -20,12 +20,14 @@ const Layout = () => {
           setIsAuthenticated(true);
         } else {
           setIsAuthenticated(false);
-          router.replace("/login");
+          router.dismissAll();
+          router.replace("/(auth)/login");
         }
       } catch (error) {
         console.error("Error verificando autenticación:", error);
         setIsAuthenticated(false);
-        router.replace("/login");
+        router.dismissAll();
+        router.replace("/(auth)/login");
       }
     };
 

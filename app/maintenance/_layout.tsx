@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Stack, useRouter } from "expo-router";
-import { KeyboardAvoidingView, Platform } from "react-native";
-import * as SplashScreen from "expo-splash-screen";
 import { getToken } from "@/services/auth";
+import * as SplashScreen from "expo-splash-screen";
+import { setupDatabase } from "@/storage/db";
 import { ReportsProvider } from "@/context/ReportContext";
+import { MaintenanceOptionsProvider } from "@/context/MaintenanceOptionsContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -17,7 +18,8 @@ export default function ReportsLayout() {
 
       if (!token) {
         setIsAuthenticated(false);
-        router.replace("/login");
+        router.dismissAll();
+        router.replace("/(auth)/login");
         return;
       }
 
@@ -28,11 +30,17 @@ export default function ReportsLayout() {
     checkAccess();
   }, []);
 
+  useEffect(() => {
+    setupDatabase();
+  }, []);
+
   if (isAuthenticated === null) return null;
 
   return (
     <ReportsProvider>
-      <Stack screenOptions={{ headerShown: false }} />
+      <MaintenanceOptionsProvider>
+        <Stack screenOptions={{ headerShown: false }} />
+      </MaintenanceOptionsProvider>
     </ReportsProvider>
   );
 }

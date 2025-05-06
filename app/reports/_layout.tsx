@@ -18,7 +18,8 @@ export default function ReportsLayout() {
 
       if (!token) {
         setIsAuthenticated(false);
-        router.replace("/login");
+        router.dismissAll();
+        router.replace("/(auth)/login");
         return;
       }
 

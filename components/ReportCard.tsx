@@ -31,7 +31,10 @@ export default function ReportCard({
       {...(onPress && { onPress, accessibilityRole: "button" })}
     >
       <View style={styles.header}>
-        <Text style={styles.title}>Reporte {id}</Text>
+        <Text style={styles.title}>
+          {type === "maintenance" ? "Fallo Sistema" : "Reporte"} {id}
+        </Text>
+
         {onPress && (
           <Ionicons name="chevron-forward" size={20} color={colors.gray} />
         )}
