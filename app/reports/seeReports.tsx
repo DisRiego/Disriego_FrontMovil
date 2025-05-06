@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
   formContainer: {
     gap: 8,
     width: "100%",
-    paddingTop: 10,
+    paddingTop: 8,
     alignItems: "stretch",
     justifyContent: "center",
   },
