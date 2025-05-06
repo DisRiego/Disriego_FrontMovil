@@ -31,6 +31,13 @@ export default function AssignedReportsScreen() {
     fetchAssignedReports();
   }, []);
 
+  const formatDate = (dateStr: string | null | undefined) => {
+    const date = new Date(dateStr ?? "");
+    return !isNaN(date.getTime())
+      ? date.toISOString().split("T")[0]
+      : "Fecha inválida";
+  };
+
   const filteredReports = reports
     .filter((r) => r.status !== "Finalizado" && !r.pendingSync)
     .filter((report) => {
@@ -39,7 +46,10 @@ export default function AssignedReportsScreen() {
         String(report.id).toLowerCase().includes(query) ||
         report.property_name.toLowerCase().includes(query) ||
         report.lot_name.toLowerCase().includes(query) ||
-        report.failure_type.toLowerCase().includes(query)
+        report.failure_type.toLowerCase().includes(query) ||
+        report.status.toLowerCase().includes(query) ||
+        (report.source === "report" && "reporte".includes(query)) ||
+        (report.source === "maintenance" && "fallo sistema".includes(query))
       );
     });
 
@@ -74,14 +84,12 @@ export default function AssignedReportsScreen() {
             ) : filteredReports.length > 0 ? (
               filteredReports.map((report) => (
                 <ReportCard
-                  key={report.id}
-                  type="maintenance"
+                  key={`${report.source}-${report.id}`}
+                  type={report.source ?? "report"}
                   id={`#${report.id}`}
                   lotName={report.lot_name}
                   propertyName={report.property_name}
-                  date={
-                    new Date(report.report_date).toISOString().split("T")[0]
-                  }
+                  date={formatDate(report.report_date)}
                   status={report.status}
                   onPress={() => openModal(report)}
                 />
@@ -100,12 +108,11 @@ export default function AssignedReportsScreen() {
           isVisible={modalVisible}
           onClose={closeModal}
           reportId={selectedReport.id}
-          reportDate={
-            new Date(selectedReport.report_date).toISOString().split("T")[0]
-          }
+          reportDate={formatDate(selectedReport.report_date)}
           propertyName={selectedReport.property_name}
           lotName={selectedReport.lot_name}
           failureType={selectedReport.failure_type}
+          source={selectedReport.source}
           onViewDetails={() => {
             closeModal();
             router.push({
@@ -117,6 +124,7 @@ export default function AssignedReportsScreen() {
                 lotName: selectedReport.lot_name,
                 fallo: selectedReport.failure_type,
                 observacion: selectedReport.description_failure,
+                source: selectedReport.source,
               },
             });
           }}
