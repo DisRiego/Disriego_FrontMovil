@@ -16,7 +16,6 @@ import { typography } from "@/config/typography";
 import CustomHeader from "@/components/CustomHeader";
 import SearchBar from "@/components/SearchBar";
 import ReportCard from "@/components/ReportCard";
-import ReportDetailsModal from "@/components/ReportDetailsModal";
 import { useRouter } from "expo-router";
 import { useReports } from "@/context/ReportContext";
 import { Ionicons } from "@expo/vector-icons";
@@ -54,8 +53,6 @@ export default function SeeReportsScreen() {
   const { reports, loading, fetchUserReports } = useReports();
   const [searchText, setSearchText] = useState("");
   const [viewType, setViewType] = useState<"pending" | "completed">("pending");
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedReport, setSelectedReport] = useState<any>(null);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const searchAnim = useState(new Animated.Value(0))[0];
   const router = useRouter();
@@ -71,16 +68,14 @@ export default function SeeReportsScreen() {
     if (viewType === "pending") {
       filteredByStatus = reports.filter(
         (report) =>
-          report.status === "En Mantenimiento" ||
-          report.status === "Sin asignar"
+          report.status === "Pendiente" || report.status === "Sin asignar"
       );
     } else if (viewType === "completed") {
       filteredByStatus = reports.filter(
         (report) => report.status === "Finalizado"
       );
     }
-
-    // Filtro por texto de búsqueda
+    
     const filtered = filteredByStatus.filter((report) => {
       return (
         String(report.id).includes(query) ||
@@ -88,27 +83,18 @@ export default function SeeReportsScreen() {
         String(report.property_id).includes(query) ||
         report.lot_name.toLowerCase().includes(query) ||
         report.property_name.toLowerCase().includes(query) ||
-        report.status.toLowerCase().includes(query)
+        report.status.toLowerCase().includes(query) ||
+        (report.source === "report" && "reporte".includes(query)) ||
+        (report.source === "maintenance" && "fallo sistema".includes(query))
       );
     });
 
-    // Ordenar del más reciente al más antiguo (por fecha)
     return filtered.sort((a, b) => {
       const dateA = new Date(a.report_date).getTime();
       const dateB = new Date(b.report_date).getTime();
-      return dateB - dateA; // más reciente primero
+      return dateB - dateA;
     });
   }, [reports, viewType, searchText]);
-
-  const openModal = (report: any) => {
-    setSelectedReport(report);
-    setModalVisible(true);
-  };
-
-  const closeModal = () => {
-    setModalVisible(false);
-    setSelectedReport(null);
-  };
 
   const animateSearchIn = () => {
     Animated.timing(searchAnim, {
@@ -136,7 +122,6 @@ export default function SeeReportsScreen() {
             En esta sección puedes visualizar y generar reportes de fallos.
           </Text>
 
-          {/* Fila de los tabs */}
           <View style={styles.tabAndSearch}>
             <View style={styles.tabRow}>
               <View style={styles.tabGroup}>
@@ -175,7 +160,6 @@ export default function SeeReportsScreen() {
                 </TouchableOpacity>
               </View>
 
-              {/* Botón de búsqueda */}
               <TouchableOpacity
                 onPress={() => {
                   setIsSearchVisible(!isSearchVisible);
@@ -196,7 +180,6 @@ export default function SeeReportsScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Barra de búsqueda animada */}
             {isSearchVisible && (
               <Animated.View
                 style={{
@@ -224,25 +207,44 @@ export default function SeeReportsScreen() {
             )}
           </View>
 
-          {/* Lista de reportes */}
           <View style={styles.formContainer}>
             {loading ? (
               <ActivityIndicator size="large" color={colors.primary} />
             ) : filteredReports.length > 0 ? (
-              filteredReports.map((report) => (
-                <ReportCard
-                  key={report.id}
-                  type="report"
-                  id={`#${report.id}`}
-                  lotName={report.lot_name}
-                  propertyName={report.property_name}
-                  date={
-                    new Date(report.report_date).toISOString().split("T")[0]
-                  }
-                  status={report.status}
-                  onPress={() => openModal(report)}
-                />
-              ))
+              filteredReports.map((report) => {
+                const isFinalizado =
+                  report?.status?.toLowerCase() === "finalizado";
+                return (
+                  <ReportCard
+                    key={`${report.source}-${report.id}`}
+                    type={report.source}
+                    id={`#${report.id}`}
+                    lotName={report.lot_name}
+                    propertyName={report.property_name}
+                    date={
+                      new Date(report.report_date).toISOString().split("T")[0]
+                    }
+                    status={report.status}
+                    onPress={() => {
+                      router.push({
+                        pathname: isFinalizado
+                          ? "/reports/completedReportDetails"
+                          : "/reports/reportDetails",
+                        params: {
+                          reportId: report.id,
+                          technicianAssignmentId:
+                            report.technician_assignment_id,
+                          propertyName: report.property_name,
+                          lotName: report.lot_name,
+                          fallo: report.failure_type,
+                          observacion: report.description_failure,
+                          source: report.source,
+                        },
+                      });
+                    }}
+                  />
+                );
+              })
             ) : (
               <Text style={typography.regular.medium}>
                 No hay reportes registrados.
@@ -251,41 +253,6 @@ export default function SeeReportsScreen() {
           </View>
         </View>
       </ScrollView>
-
-      {/* Modal de detalles */}
-      {selectedReport && (
-        <ReportDetailsModal
-          isVisible={modalVisible}
-          onClose={closeModal}
-          reportId={selectedReport.id}
-          reportDate={
-            new Date(selectedReport.report_date).toISOString().split("T")[0]
-          }
-          propertyName={selectedReport.property_name}
-          lotName={selectedReport.lot_name}
-          failureType={selectedReport.failure_type || "No disponible"}
-          onViewDetails={() => {
-            closeModal();
-            if (selectedReport?.status?.toLowerCase() === "finalizado") {
-              router.push({
-                pathname: "/reports/completedReportDetails",
-                params: { reportId: selectedReport.id },
-              });
-            } else {
-              router.push({
-                pathname: "/reports/reportDetails",
-                params: { reportId: selectedReport.id },
-              });
-            }
-          }}
-          onDownload={() => {
-            console.log(`Descargar reporte individual #${selectedReport.id}`);
-          }}
-          mode="see"
-        />
-      )}
-
-      {/* Botón flotante */}
       <FloatingButton />
     </SafeAreaView>
   );
@@ -362,7 +329,7 @@ const styles = StyleSheet.create({
   formContainer: {
     gap: 8,
     width: "100%",
-    paddingTop: 8,
+    paddingTop: 10,
     alignItems: "stretch",
     justifyContent: "center",
   },

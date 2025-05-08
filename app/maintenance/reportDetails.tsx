@@ -8,23 +8,32 @@ import {
   SafeAreaView,
   StatusBar,
   Platform,
+  TouchableOpacity,
 } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
 import CustomHeader from "@/components/CustomHeader";
 import { API_URL_MAINT } from "@/services/config";
+import { AntDesign } from "@expo/vector-icons";
+import { generateReportPDF } from "@/utils/generateReportPDF";
 
 interface ReportDetail {
   property_id: number;
   property_name: string;
+  property_latitude: number;
+  property_longitude: number;
   lot_id: number;
   lot_name: string;
+  lot_latitude: number;
+  lot_longitude: number;
   status: string;
-  owner_document: number;
+  owner_document: string;
   owner_name: string;
+  owner_email: string;
+  owner_phone: string;
   report_date: string;
-  failure_type: string;
+  failure_type_report: string;
   description_failure: string;
   assignment_date: string;
   finalized: boolean;
@@ -32,31 +41,33 @@ interface ReportDetail {
 }
 
 export default function ReportDetailsScreen() {
-  const { reportId } = useLocalSearchParams();
+  const { reportId, source = "report" } = useLocalSearchParams<{
+    reportId: string;
+    source?: "report" | "maintenance";
+  }>();
+
   const [report, setReport] = useState<ReportDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     const fetchReportDetail = async () => {
       try {
         setLoading(true);
-        const res = await fetch(
-          `${API_URL_MAINT}/maintenance/reports/${reportId}/detail`
-        );
+        const endpoint =
+          source === "maintenance"
+            ? `${API_URL_MAINT}/maintenance/${reportId}/detail`
+            : `${API_URL_MAINT}/maintenance/reports/${reportId}/detail`;
+        const res = await fetch(endpoint);
         const json = await res.json();
-        if (json.success) {
-          setReport(json.data);
-        }
+        if (json.success) setReport(json.data);
       } catch (error) {
         console.error("Error al cargar detalle del reporte:", error);
       } finally {
         setLoading(false);
       }
     };
-
-    if (reportId) {
-      fetchReportDetail();
-    }
+    if (reportId) fetchReportDetail();
   }, [reportId]);
 
   const formatDate = (dateString: string) => {
@@ -69,11 +80,24 @@ export default function ReportDetailsScreen() {
     }).format(date);
   };
 
+  const handleDownload = async () => {
+    if (!report || isDownloading) return;
+
+    setIsDownloading(true);
+    try {
+      await generateReportPDF({ ...report, detail_id: reportId }, source);
+    } catch (error) {
+      console.error("Error al generar el PDF del reporte:", error);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <CustomHeader
         title="Detalle del reporte"
-        backRoute={() => router.push("/maintenance/assignedReports")}
+        backRoute="/reports/seeReports"
       />
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {loading ? (
@@ -84,89 +108,163 @@ export default function ReportDetailsScreen() {
               Consulta aquí los detalles del reporte.
             </Text>
 
-            {/* Primera Card: Reporte General */}
+            {/* Información general */}
             <View style={styles.card}>
               <Text style={[typography.bold.medium, { marginBottom: 10 }]}>
                 Reporte #{reportId}
               </Text>
-
               <View style={styles.row}>
                 <Text style={styles.label}>Estado</Text>
-                <View style={styles.badge}>
-                  <View style={styles.statusDot} />
-                  <Text style={[typography.bold.regular, { color: "#F39C12" }]}>
-                    {report ? report.status : "No disponible"}
+                <View
+                  style={[
+                    styles.badge,
+                    (report?.status === "Pendiente" ||
+                      report?.status === "Sin asignar") && {
+                      backgroundColor: "#FFF6E0", // Fondo amarillo claro
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.statusDot,
+                      (report?.status === "Pendiente" ||
+                        report?.status === "Sin asignar") && {
+                        backgroundColor: "#F39C12", // Punto amarillo
+                      },
+                    ]}
+                  />
+                  <Text
+                    style={[
+                      typography.bold.regular,
+                      {
+                        color:
+                          report?.status === "Pendiente" ||
+                          report?.status === "Sin asignar"
+                            ? "#F39C12"
+                            : colors.success,
+                      },
+                    ]}
+                  >
+                    {report?.status || "No disponible"}
                   </Text>
                 </View>
               </View>
-
               <View style={styles.row}>
                 <Text style={styles.label}>Fecha de revisión</Text>
                 <Text style={styles.value}>
-                  {report
+                  {report?.assignment_date
                     ? formatDate(report.assignment_date)
                     : "No disponible"}
                 </Text>
               </View>
-
               <View style={styles.row}>
                 <Text style={styles.label}>Fecha de finalización</Text>
                 <Text style={styles.value}>
                   {report?.finalization_date
                     ? formatDate(report.finalization_date)
-                    : "No aplica"}
+                    : "No disponible"}
                 </Text>
               </View>
             </View>
 
-            {/* Segunda Card: Datos del Usuario */}
+            {/* Predio y lote */}
+            <View style={styles.card}>
+              <Text style={[typography.bold.medium, { marginBottom: 10 }]}>
+                Predio y lote
+              </Text>
+              <View style={styles.row}>
+                <Text style={styles.label}>Predio #{report?.property_id}</Text>
+                <Text style={styles.value}>
+                  {report?.property_name || "No disponible"}
+                </Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Ubicación del predio</Text>
+                <Text style={styles.value}>
+                  {report?.property_latitude}, {report?.property_longitude}
+                </Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Lote #{report?.lot_id}</Text>
+                <Text style={styles.value}>
+                  {report?.lot_name || "No disponible"}
+                </Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Ubicación del lote</Text>
+                <Text style={styles.value}>
+                  {report?.lot_latitude}, {report?.lot_longitude}
+                </Text>
+              </View>
+            </View>
+
+            {/* Información del usuario */}
+            <View style={styles.card}>
+              <Text style={[typography.bold.medium, { marginBottom: 10 }]}>
+                Información del usuario
+              </Text>
+
+              <Text style={styles.label}>Nombres</Text>
+              <Text style={styles.valueLeft}>
+                {report?.owner_name || "No disponible"}
+              </Text>
+
+              <Text style={[styles.label, { marginTop: 10 }]}>
+                Correo electrónico
+              </Text>
+              <Text style={styles.valueLeft}>
+                {report?.owner_email || "No disponible"}
+              </Text>
+
+              <Text style={[styles.label, { marginTop: 10 }]}>
+                No. de documento
+              </Text>
+              <Text style={styles.valueLeft}>
+                {report?.owner_document || "No disponible"}
+              </Text>
+
+              <Text style={[styles.label, { marginTop: 10 }]}>
+                No. de celular
+              </Text>
+              <Text style={styles.valueLeft}>
+                {report?.owner_phone || "No disponible"}
+              </Text>
+            </View>
+
+            {/* Reporte del usuario */}
             <View style={styles.card}>
               <Text style={[typography.bold.medium, { marginBottom: 10 }]}>
                 Reporte realizado por el usuario
               </Text>
-
-              <View style={styles.row}>
-                <Text style={styles.label}>Fecha del reporte</Text>
-                <Text style={styles.value}>
-                  {report ? formatDate(report.report_date) : "No disponible"}
-                </Text>
-              </View>
-
-              <View style={styles.row}>
-                <Text style={styles.label}>Documento del propietario</Text>
-                <Text style={styles.value}>
-                  {report ? report.owner_document : "No disponible"}
-                </Text>
-              </View>
-
-              <View style={styles.row}>
-                <Text style={styles.label}>Predio</Text>
-                <Text style={styles.value}>
-                  {report ? report.property_name : "No disponible"}
-                </Text>
-              </View>
-
-              <View style={styles.row}>
-                <Text style={styles.label}>Lote</Text>
-                <Text style={styles.value}>
-                  {report ? report.lot_name : "No disponible"}
-                </Text>
-              </View>
-
+              <Text style={styles.label}>Fecha del reporte</Text>
+              <Text style={styles.valueLeft}>
+                {report?.report_date
+                  ? formatDate(report.report_date)
+                  : "No disponible"}
+              </Text>
               <Text style={[styles.label, { marginTop: 10 }]}>
                 Posible fallo
               </Text>
               <Text style={styles.valueLeft}>
-                {report ? report.failure_type : "No disponible"}
+                {report?.failure_type_report || "No disponible"}
               </Text>
-
               <Text style={[styles.label, { marginTop: 10 }]}>
                 Observaciones
               </Text>
               <Text style={styles.valueLeft}>
-                {report ? report.description_failure : "No disponible"}
+                {report?.description_failure || "No disponible"}
               </Text>
             </View>
+            <TouchableOpacity
+              style={styles.downloadButton}
+              onPress={handleDownload}
+              disabled={isDownloading}
+            >
+              <AntDesign name="download" size={18} color={colors.white} />
+              <Text style={styles.downloadText}>
+                {isDownloading ? "Generando..." : "Descargar PDF"}
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -226,13 +324,28 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderRadius: 20,
-    backgroundColor: "#FFF6E0",
+    backgroundColor: "#E6F9F0",
     gap: 6,
   },
   statusDot: {
     width: 5,
     height: 5,
-    backgroundColor: "#F39C12",
+    backgroundColor: colors.success,
     borderRadius: 3,
+  },
+  downloadButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.primary,
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginTop: 10,
+  },
+  downloadText: {
+    color: "white",
+    fontSize: 16,
+    marginLeft: 8,
+    fontWeight: "600",
   },
 });

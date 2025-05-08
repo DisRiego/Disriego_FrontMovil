@@ -18,7 +18,8 @@ export default function ProfileLayout() {
         setIsAuthenticated(true);
       } else {
         setIsAuthenticated(false);
-        router.replace("/login");
+        router.dismissAll();
+        router.replace("/(auth)/login");
       }
 
       await SplashScreen.hideAsync();

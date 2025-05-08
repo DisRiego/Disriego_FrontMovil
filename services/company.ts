@@ -10,25 +10,32 @@ interface Company {
   address: string;
   country: string;
   city: string;
+  email: string;
 }
 
 export const getCompanyData = async (): Promise<Company | null> => {
   try {
-    // Revisar si los datos ya están en AsyncStorage
+    // Verificar si ya hay datos guardados
     const storedData = await AsyncStorage.getItem("companyData");
+
     if (storedData) {
-      return JSON.parse(storedData) as Company;
+      const parsed = JSON.parse(storedData) as Company;
+
+      // Verifica que tenga email antes de usarlo
+      if (parsed.email && parsed.email.trim() !== "") {
+        return parsed;
+      }
     }
 
-    // Llamar a la API sin token
+    // Si no hay datos válidos, hacer la llamada a la API
     const response = await axios.get(`${API_URL}/my-company/company`);
 
     if (!response.data?.data)
       throw new Error("Datos de la empresa no encontrados");
 
-    // Filtrar solo los campos necesarios
-    const { name, nit, phone, state, address, country, city } =
+    const { name, nit, phone, state, address, country, city, email } =
       response.data.data;
+
     const companyData: Company = {
       name,
       nit,
@@ -37,10 +44,13 @@ export const getCompanyData = async (): Promise<Company | null> => {
       address,
       country,
       city,
+      email,
     };
 
-    // Guardar en AsyncStorage
-    await AsyncStorage.setItem("companyData", JSON.stringify(companyData));
+    // Solo guardar si tiene email válido
+    if (email && email.trim() !== "") {
+      await AsyncStorage.setItem("companyData", JSON.stringify(companyData));
+    }
 
     return companyData;
   } catch (error: any) {

@@ -1,5 +1,6 @@
 import axios from "axios";
 import { API_URL } from "@/services/config";
+import { getToken } from "@/services/auth";
 
 const NOTIF_ENDPOINT = `${API_URL}/users/notifications/`;
 
@@ -12,17 +13,23 @@ export interface Notificacion {
 }
 
 // Obtener notificaciones y cantidad no leídas
-export const fetchNotifications = async (
-  token: string
-): Promise<{ notifications: Notificacion[]; unreadCount: number }> => {
-  if (!token) throw new Error("Token no proporcionado");
+export const fetchNotifications = async (): Promise<{
+  notifications: Notificacion[];
+  unreadCount: number;
+}> => {
+  const token = await getToken();
+  if (!token) {
+    console.warn("Token ausente o expirado en fetchNotifications");
+    return { notifications: [], unreadCount: 0 };
+  }
 
   const res = await axios.get(NOTIF_ENDPOINT, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
   if (!res.data?.success) {
-    throw new Error("Respuesta inesperada del backend");
+    console.warn("Respuesta inesperada en fetchNotifications");
+    return { notifications: [], unreadCount: 0 };
   }
 
   const notifications: Notificacion[] = res.data.data.map((n: any) => ({
@@ -44,8 +51,14 @@ export const fetchNotifications = async (
 };
 
 // Marcar TODAS las notificaciones como leídas
-export const markAllAsRead = async (token: string) => {
-  return axios.post(
+export const markAllAsRead = async (): Promise<void> => {
+  const token = await getToken();
+  if (!token) {
+    console.warn("Token ausente o expirado en markAllAsRead");
+    return;
+  }
+
+  await axios.post(
     `${NOTIF_ENDPOINT}mark-read`,
     { mark_all: true },
     {
@@ -55,10 +68,13 @@ export const markAllAsRead = async (token: string) => {
 };
 
 // Marcar una o varias notificaciones como leídas
-export const markAsRead = async (
-  token: string,
-  notificationIds: number[]
-): Promise<void> => {
+export const markAsRead = async (notificationIds: number[]): Promise<void> => {
+  const token = await getToken();
+  if (!token) {
+    console.warn("Token ausente o expirado en markAsRead");
+    return;
+  }
+
   await axios.post(
     `${NOTIF_ENDPOINT}mark-read`,
     {
@@ -72,10 +88,16 @@ export const markAsRead = async (
 };
 
 // Obtener solo el contador
-export const getUnreadCount = async (token: string): Promise<number> => {
+export const getUnreadCount = async (): Promise<number> => {
+  const token = await getToken();
+  if (!token) {
+    console.warn("Token ausente o expirado en getUnreadCount");
+    return 0;
+  }
+
   const res = await axios.get(`${NOTIF_ENDPOINT}unread-count`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  console.log("Respuesta /unread-count:", res.data);
+
   return res.data.count;
 };

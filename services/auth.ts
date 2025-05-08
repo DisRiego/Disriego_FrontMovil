@@ -16,7 +16,8 @@ interface NotActivatedError {
   token: string;
 }
 
-interface User {
+export interface User {
+  gender_name: string;
   gender: string;
   id: number;
   email: string;
@@ -28,6 +29,13 @@ interface User {
   phone?: string;
   status_name: string;
   roles: { id: number; name: string }[];
+  type_document_name?: string;
+  document_number?: string | number;
+  birthday?: string;
+  date_issuance_document?: string;
+  country: string;
+  department: string;
+  city: string;
 }
 
 // Cache en memoria para evitar llamadas innecesarias a AsyncStorage
@@ -42,14 +50,42 @@ const getAuthHeaders = async () => {
 
 // Obtener el token desde memoria o AsyncStorage (si es necesario)
 export const getToken = async (): Promise<string | null> => {
-  if (tokenCache) return tokenCache;
+  if (tokenCache) {
+    const isValid = validateToken(tokenCache);
+    if (!isValid) {
+      await logout(); // Limpia token y datos
+      return null;
+    }
+    return tokenCache;
+  }
 
   try {
-    tokenCache = await AsyncStorage.getItem("token");
+    const storedToken = await AsyncStorage.getItem("token");
+    if (!storedToken) return null;
+
+    const isValid = validateToken(storedToken);
+    if (!isValid) {
+      await logout(); // Limpia token y datos
+      return null;
+    }
+
+    tokenCache = storedToken;
     return tokenCache;
   } catch (error) {
     console.error("Error al obtener el token:", error);
     return null;
+  }
+};
+
+// Función auxiliar para validar si el token está expirado
+const validateToken = (token: string): boolean => {
+  try {
+    const decoded = jwtDecode(token) as DecodedToken;
+    const now = Date.now() / 1000;
+    return decoded.exp > now;
+  } catch (e) {
+    console.error("Error al decodificar token:", e);
+    return false;
   }
 };
 
@@ -90,7 +126,7 @@ export const login = async (email: string, password: string) => {
           (r: any) => r.permisos?.map((p: any) => p.name) || []
         ) || [];
 
-      console.log("Permisos del usuario:", permisos);
+      //console.log("Permisos del usuario:", permisos);
       await AsyncStorage.setItem("permisos", JSON.stringify(permisos));
     } else {
       console.warn("No se encontraron roles en el token.");
@@ -182,7 +218,8 @@ export const checkAuth = async () => {
   const router = useRouter();
 
   if (!token) {
-    router.replace("/login"); // Redirige a la página de login si no hay token
+    router.dismissAll();
+    router.replace("/(auth)/login");
   } else {
     const decoded: DecodedToken = jwtDecode(token);
     const now = Date.now() / 1000;
@@ -194,29 +231,40 @@ export const checkAuth = async () => {
   }
 };
 
-export const getUserData = async () => {
+export const getUserData = async (): Promise<User | null> => {
+  let user: User | null = null;
+
   try {
     const token = await getToken();
-    if (!token) throw new Error("No hay token disponible");
 
-    const decoded: DecodedToken = jwtDecode(token);
-    const userId = decoded.id;
-    if (!userId) throw new Error("El token no contiene un ID válido");
+    if (token) {
+      try {
+        const decoded: DecodedToken = jwtDecode(token);
+        const userId = decoded.id;
 
-    const response = await axios.get(`${API_URL}/users/${userId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+        const response = await axios.get(`${API_URL}/users/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-    console.log("Datos del usuario recibidos:", response.data);
+        user = response.data?.data?.[0] || null;
 
-    // Acceder al primer elemento del array dentro de "data"
-    const user = response.data?.data?.[0] || null;
-    return user;
-  } catch (error: any) {
-    console.error(
-      "Error obteniendo datos del usuario:",
-      error.response?.data || error.message
-    );
-    return null;
+        if (user) {
+          await AsyncStorage.setItem("userData", JSON.stringify(user));
+          return user;
+        }
+      } catch (apiError) {
+        console.warn("Error usando token, intentando caché...");
+      }
+    }
+
+    // Si no hay token o falla la API, intenta obtener desde AsyncStorage
+    const cached = await AsyncStorage.getItem("userData");
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch (cacheError) {
+    console.error("Error leyendo 'userData' desde caché:", cacheError);
   }
+
+  return null;
 };
