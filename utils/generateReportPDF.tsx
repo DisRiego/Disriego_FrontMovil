@@ -38,138 +38,308 @@ export async function generateReportPDF(
       body {
         font-family: Arial, sans-serif;
         margin: 0;
-        padding: 20px 40px;
+        padding: 0px 40px;
         color: #333;
       }
 
+      /* Header */
       .header {
+        position: relative;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 30px;
-        border-bottom: 2px solid #e0e0e0;
-        padding-bottom: 10px;
+        padding: 40px 0px 30px;
+        margin-bottom: 20px;
+      }
+      .header::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100vw;
+        height: 100%;
+        background-color: #f5f7fa;
+        z-index: -1;
       }
 
+      .header-left,
+      .header-right {
+        width: 50%;
+        box-sizing: border-box;
+        z-index: 1;
+      }
       .header-left {
-        max-width: 60%;
+        text-align: left;
       }
-
       .header-left h2 {
-        margin: 0;
-        color: #1a1a1a;
+        margin: 0 0 10px;
+        font-size: 24px;
+        color: #111;
       }
-
-      .header-left p {
-        margin: 5px 0;
+      .meta {
         font-size: 14px;
+        color: #333;
+        margin: 4px 0;
+      }
+      .meta strong {
+        display: block;
+        color: #555;
+        font-weight: 600;
       }
 
       .header-right {
         text-align: right;
-        font-size: 13px;
+      }
+      .company-logo img {
+        width: 150px;
+        height: auto;
+        margin-bottom: 10px;
+      }
+      .company-info {
+        font-size: 14px;
+        color: #333;
+      }
+      .company-info div {
+        margin: 4px 0;
+      }
+      .company-info strong {
+        display: block;
         color: #555;
+        font-weight: 600;
+        font-size: 13px;
       }
 
-      .header-right img {
-        width: 90px;
-        margin-bottom: 8px;
-      }
-
-      .section {
+      /* Two columns for first two sections */
+      .sections-row {
+        display: flex;
+        gap: 20px;
         margin-bottom: 30px;
       }
-
-      .section h3 {
-        background-color: #f0f0f0;
-        padding: 8px 12px;
-        font-size: 16px;
+      .section {
+        flex: 1;
+      }
+      .section h2 {
+        margin: 0 0 10px;
+        padding: 8px 0px;
+        background-color: #fff;
+        font-size: 20px;
         color: #222;
-        margin: 0 0 10px 0;
       }
 
+      /* Base table styles */
       table {
         width: 100%;
         border-collapse: collapse;
       }
-
-      th, td {
+      th,
+      td {
         text-align: left;
         padding: 8px 12px;
         border: 1px solid #ddd;
         font-size: 14px;
       }
-
       th {
-        background-color: #f9f9f9;
+        background-color: #ffffffe7;
         font-weight: 600;
-        width: 35%;
+      }
+
+      /* Predio and lote tables: no vertical borders, zebra striping */
+      .sections-row table th,
+      .sections-row table td {
+        border: none;
+      }
+      .sections-row table tbody tr:nth-child(odd) {
+        background-color: #f9f9f9;
+      }
+      .sections-row table tbody tr:nth-child(even) td {
+        background-color: #fff;
+      }
+
+      /* Owner and failure tables: remove separators from header cells only */
+      .owner-info thead th,
+      .failure-info thead th {
+        border: none;
+      }
+
+      /* Footer */
+      .footer {
+        position: fixed;
+        bottom: 40px;
+        left: 40px;
+        right: 40px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .footer-logo {
+        width: 150px;
+        height: auto;
+      }
+      .page-number {
+        font-size: 14px;
+        color: #000;
       }
     </style>
   </head>
   <body>
     <div class="header">
       <div class="header-left">
-        <h2>${
-          source === "report" ? "REPORTE DE FALLO" : "FALLO AUTOGENERADO"
-        } #${report.detail_id} (${report.status})</h2>
-        <p><strong>Fecha de generación:</strong><br> ${new Date().toLocaleString()}</p>
-        <p><strong>Generado por:</strong><br> ${user.name} ${
-    user.first_last_name
-  }</p>
+        <h2>
+          ${source === "report" ? "REPORTE DE FALLO" : "FALLO AUTOGENERADO"}
+          #${report.detail_id} (${report.status})
+        </h2>
+        <div class="meta">
+          <strong>Fecha de generación:</strong>
+          ${new Date().toLocaleString()}
+        </div>
+        <div class="meta">
+          <strong>Generado por:</strong>
+          ${user.name} ${user.first_last_name}
+        </div>
       </div>
       <div class="header-right">
-        <img src="https://firebasestorage.googleapis.com/v0/b/disriego-442ff.firebasestorage.app/o/uploads%2Flogos%2Flogo.png?alt=media&token=92730c47-e5a0-4cfb-a1d4-711ee69e27cf" width="170"/>
-        <div>${company.address}<br>${locationNames.city}, ${
-    locationNames.department
-  }<br>${company.email}</div>
+        <div class="company-logo">
+          <img
+            src="https://firebasestorage.googleapis.com/v0/b/disriego-442ff.firebasestorage.app/o/uploads%2Flogos%2Flogo.png?alt=media&token=92730c47-e5a0-4cfb-a1d4-711ee69e27cf"
+            alt="Logo"
+          />
+        </div>
+        <div class="company-info">
+          <div>
+            <strong>Dirección de la empresa:</strong>
+            ${company.address}, ${locationNames.city},
+            ${locationNames.department}
+          </div>
+          <div>
+            <strong>Correo electrónico de la empresa:</strong>
+            ${company.email}
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="section">
-      <h3>Información del predio</h3>
+    <div class="sections-row">
+      <div class="section">
+        <h2>Información del predio</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Campo</th>
+              <th>Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>ID predio</td>
+              <td>${report.property_id}</td>
+            </tr>
+            <tr>
+              <td>Nombre del predio</td>
+              <td>${report.property_name}</td>
+            </tr>
+            <tr>
+              <td>Ubicación (latitud, longitud)</td>
+              <td>${report.property_latitude}, ${report.property_longitude}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="section">
+        <h2>Información del lote</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Campo</th>
+              <th>Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>ID del lote</td>
+              <td>${report.lot_id}</td>
+            </tr>
+            <tr>
+              <td>Nombre del lote</td>
+              <td>${report.lot_name}</td>
+            </tr>
+            <tr>
+              <td>Ubicación (latitud, longitud)</td>
+              <td>${report.lot_latitude}, ${report.lot_longitude}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section owner-info">
+      <h2>Información del dueño</h2>
       <table>
-        <tr><th>ID predio</th><td>${report.property_id}</td></tr>
-        <tr><th>Nombre del predio</th><td>${report.property_name}</td></tr>
-        <tr><th>Ubicación</th><td>${report.property_latitude}, ${
-    report.property_longitude
-  }</td></tr>
+        <thead>
+          <tr>
+            <th>Campo</th>
+            <th>Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Nombre</td>
+            <td>${report.owner_name}</td>
+          </tr>
+          <tr>
+            <td>Documento</td>
+            <td>${report.owner_document}</td>
+          </tr>
+          <tr>
+            <td>Correo</td>
+            <td>${report.owner_email}</td>
+          </tr>
+          <tr>
+            <td>Teléfono</td>
+            <td>${report.owner_phone}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <br />
+    <div class="section failure-info">
+      <h2>Información del fallo reportado</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Campo</th>
+            <th>Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Posible fallo</td>
+            <td>${report.failure_type_report}</td>
+          </tr>
+          <tr>
+            <td>Observaciones</td>
+            <td>${report.description_failure}</td>
+          </tr>
+          <tr>
+            <td>Fecha de generación del reporte</td>
+            <td>${report.report_date}</td>
+          </tr>
+        </tbody>
       </table>
     </div>
 
-    <div class="section">
-      <h3>Información del lote</h3>
-      <table>
-        <tr><th>ID del lote</th><td>${report.lot_id}</td></tr>
-        <tr><th>Nombre del lote</th><td>${report.lot_name}</td></tr>
-        <tr><th>Ubicación</th><td>${report.lot_latitude}, ${
-    report.lot_longitude
-  }</td></tr>
-      </table>
-    </div>
-
-    <div class="section">
-      <h3>Información del dueño</h3>
-      <table>
-        <tr><th>Nombre</th><td>${report.owner_name}</td></tr>
-        <tr><th>Documento</th><td>${report.owner_document}</td></tr>
-        <tr><th>Correo</th><td>${report.owner_email}</td></tr>
-        <tr><th>Teléfono</th><td>${report.owner_phone}</td></tr>
-      </table>
-    </div>
-
-    <div class="section">
-      <h3>Información del fallo reportado</h3>
-      <table>
-        <tr><th>Posible fallo</th><td>${report.failure_type_report}</td></tr>
-        <tr><th>Observaciones</th><td>${report.description_failure}</td></tr>
-        <tr><th>Fecha de generación del reporte</th><td>${
-          report.report_date
-        }</td></tr>
-      </table>
+    <!-- Footer -->
+    <div class="footer">
+      <img
+        src="https://firebasestorage.googleapis.com/v0/b/disriego-442ff.firebasestorage.app/o/uploads%2Flogos%2Flogo.png?alt=media&token=92730c47-e5a0-4cfb-a1d4-711ee69e27cf"
+        alt="Logo"
+        class="footer-logo"
+      />
+      <div class="page-number">Página 1/1</div>
     </div>
   </body>
 </html>
+
 `;
 
   try {
