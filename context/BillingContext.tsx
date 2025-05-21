@@ -86,6 +86,31 @@ const BillingContext = createContext<BillingContextType | undefined>(undefined);
 const formatStatus = (raw: string | undefined): "Pendiente" | "Pagada" =>
   raw?.toLowerCase() === "pendiente" ? "Pendiente" : "Pagada";
 
+//  Convierte InvoiceDetailResponse a Invoice
+export const mapDetailToInvoice = (detail: InvoiceDetailResponse): Invoice => {
+  const i = detail.invoice;
+
+  return {
+    invoice_id: i.invoice_id,
+    reference_code: i.reference_code,
+    dueDate: i.expiration_date,
+    amount: `$${i.total_amount.toLocaleString("es-CO")}`,
+    status:
+      i.invoice_status_name.toLowerCase() === "pendiente"
+        ? "Pendiente"
+        : "Pagada",
+    lotId: i.lot_id.toString(),
+    propertyId: i.property_id.toString(),
+    lotName: i.lot_name ?? "-",
+    propertyName: i.property_name ?? "-",
+    paymentInterval: i.invoiced_period + " días",
+    emissionDate: i.issuance_date.split("T")[0],
+    pdfUrl: i.pdf_url,
+    clientName: i.client_name,
+    clientEmail: i.client_email,
+  };
+};
+
 export const BillingProvider = ({
   children,
 }: {
