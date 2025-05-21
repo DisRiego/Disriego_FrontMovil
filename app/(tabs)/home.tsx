@@ -34,13 +34,13 @@ const menuItems = [
   {
     id: 2,
     label: "Mis facturas y pagos",
-    route: "/home/payments",
+    route: "/billing/myBilling",
     image: require("../../assets/images/bills.png"),
   },
   {
     id: 3,
     label: "Mi consumo",
-    route: "/home/consumption",
+    route: "/consumption/myConsumption",
     image: require("../../assets/images/consumption.png"),
   },
   {
