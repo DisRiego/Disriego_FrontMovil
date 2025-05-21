@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
 import { getToken } from "../services/auth";
+import { LogBox } from "react-native";
 
 // Íconos para precargar
 import {
@@ -13,6 +14,7 @@ import {
   MaterialIcons,
 } from "@expo/vector-icons";
 
+// Evita que se oculte automáticamente el splash
 SplashScreen.preventAutoHideAsync();
 
 export default function PublicLayout() {
@@ -31,6 +33,13 @@ export default function PublicLayout() {
     ...Feather.font,
     ...MaterialIcons.font,
   });
+
+  // 👇 Aquí colocamos LogBox
+  useEffect(() => {
+    LogBox.ignoreLogs([
+      "Support for defaultProps will be removed from function components in a future major release",
+    ]);
+  }, []);
 
   useEffect(() => {
     const checkAuth = async () => {
