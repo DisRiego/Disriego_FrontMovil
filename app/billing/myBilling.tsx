@@ -23,7 +23,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLotContext } from "@/context/LotContext";
 import { useBillingContext } from "@/context/BillingContext";
 import { useRouter } from "expo-router";
-import BillingChart from "@/components/BillingChart";
+import BillingChartCompact from "@/components/BillingChart";
+import { parseISO, format, subMonths, parse } from "date-fns";
+import { es } from "date-fns/locale";
+import { Invoice } from "@/context/BillingContext";
 
 export default function BillingScreen() {
   const [viewType, setViewType] = useState<"pending" | "history">("pending");
@@ -33,14 +36,8 @@ export default function BillingScreen() {
   const router = useRouter();
 
   const { fetchPropertiesByUser } = useLotContext();
-  const {
-    invoices,
-    selectedInvoice,
-    setSelectedInvoice,
-    fetchInvoiceDetails,
-    invoiceDetail,
-    setInvoiceDetail,
-  } = useBillingContext();
+  const { invoices, selectedInvoice, setSelectedInvoice, fetchInvoiceDetails } =
+    useBillingContext();
 
   const pendingCount = invoices.filter((i) => i.status === "Pendiente").length;
   const paidCount = invoices.filter((i) => i.status === "Pagada").length;
@@ -91,6 +88,40 @@ export default function BillingScreen() {
     return Object.values(grouped);
   }, [filteredInvoices]);
 
+  function generateMonthlyData(invoices: Invoice[]) {
+    const grouped: Record<string, number> = {};
+
+    invoices.forEach((invoice) => {
+      if (!invoice.issuanceDate || !invoice.amount) return;
+      const date = parseISO(invoice.issuanceDate);
+      const key = format(date, "yyyy-MM");
+      const numericAmount = Number(invoice.amount.replace(/[$.,]/g, ""));
+      grouped[key] = (grouped[key] || 0) + numericAmount;
+    });
+
+    const today = new Date();
+    const lastFourMonthsKeys = Array.from({ length: 4 }, (_, i) =>
+      format(subMonths(today, 3 - i), "yyyy-MM")
+    );
+
+    const labels = lastFourMonthsKeys.map((key) => {
+      const date = parse(key, "yyyy-MM", new Date());
+
+      const month = format(date, "MMM", { locale: es });
+      return month.charAt(0).toUpperCase() + month.slice(1);
+    });
+
+    const values = lastFourMonthsKeys.map((key) => grouped[key] || 0);
+
+    //console.log("lastFourMonthsKeys:", lastFourMonthsKeys);
+    //console.log("labels que se pasan:", labels);
+    //console.log("values:", values);
+
+    return { labels, values };
+  }
+
+  const monthlyData = generateMonthlyData(invoices);
+
   const animateSearchIn = () => {
     Animated.timing(searchAnim, {
       toValue: 1,
@@ -115,6 +146,8 @@ export default function BillingScreen() {
         invoice_id: i.invoice_id,
         reference_code: i.reference_code,
         dueDate: i.expiration_date,
+        expirationDate: i.expiration_date,
+        issuanceDate: i.issuance_date,
         amount: `$${i.total_amount.toLocaleString("es-CO")}`,
         status:
           i.invoice_status_name.toLowerCase() === "pendiente"
@@ -156,11 +189,11 @@ export default function BillingScreen() {
             </Text>
           </View>
 
-          <View style={{ width: "100%", paddingHorizontal: 20, marginTop: 16 }}>
-            <BillingChart
+          <View style={{ width: "100%", paddingHorizontal: 20, marginTop: 8 }}>
+            <BillingChartCompact
               title="Facturación últimos 4 meses"
-              values={[50, 100, 80, 120]}
-              labels={["Ene", "Feb", "Mar", "Abr"]}
+              labels={monthlyData.labels}
+              values={monthlyData.values}
             />
           </View>
 
@@ -256,7 +289,7 @@ export default function BillingScreen() {
           <View style={styles.facturasContainer}>
             {filteredInvoices.length > 0 ? (
               viewType === "pending" ? (
-                filteredInvoices.map((invoice) => (
+                filteredInvoices.map((invoice: Invoice) => (
                   <InvoiceCard
                     key={invoice.invoice_id}
                     invoiceId={invoice.invoice_id}
@@ -326,22 +359,20 @@ const styles = StyleSheet.create({
   bannerContainer: {
     width: "100%",
     paddingHorizontal: 20,
-    marginTop: 10,
+    marginTop: 8,
   },
   textContainer: {
-    gap: 14,
+    gap: 8,
     width: "100%",
-    paddingTop: 10,
     paddingHorizontal: 20,
     alignItems: "flex-start",
   },
   summaryContainer: {
     width: "100%",
     paddingHorizontal: 20,
-    marginTop: 10,
   },
   tabAndSearch: {
-    marginTop: 20,
+    marginTop: 12,
     width: "100%",
     paddingHorizontal: 20,
   },
