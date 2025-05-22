@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Platform,
   SafeAreaView,
@@ -9,6 +9,7 @@ import {
   View,
   TouchableOpacity,
   Animated,
+  ActivityIndicator,
 } from "react-native";
 import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
@@ -33,6 +34,7 @@ export default function BillingScreen() {
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchText, setSearchText] = useState("");
   const searchAnim = useState(new Animated.Value(0))[0];
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   const { fetchPropertiesByUser } = useLotContext();
@@ -166,171 +168,204 @@ export default function BillingScreen() {
     }
   };
 
+  useEffect(() => {
+    const fetchAll = async () => {
+      setLoading(true);
+      try {
+        await fetchPropertiesByUser();
+      } catch (err) {
+        console.warn("Error al cargar datos:", err);
+      }
+    };
+
+    fetchAll();
+  }, []);
+
+  useEffect(() => {
+    if (invoices.length > 0 || viewType === "history") {
+      setLoading(false);
+    }
+  }, [invoices]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <CustomHeader title="Mis facturas y pagos" backRoute="/(tabs)/home" />
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <View style={styles.bannerContainer}>
-            <StatusBanner
-              type={hasPending ? "warning" : "success"}
-              title={hasPending ? "Tienes facturas pendientes" : "Estás al día"}
-              subtitle={
-                hasPending
-                  ? `Tienes ${pendingCount} facturas pendientes`
-                  : "No tienes pagos pendientes"
-              }
-            />
+        {loading ? (
+          <View style={styles.loaderContainer}>
+            <Animated.View>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={styles.loaderText}>Cargando facturación...</Text>
+            </Animated.View>
           </View>
-
-          <View style={styles.textContainer}>
-            <Text style={[typography.regular.big, { color: colors.gray }]}>
-              Conoce los últimos cuatro meses de facturación.
-            </Text>
-          </View>
-
-          <View style={{ width: "100%", paddingHorizontal: 20, marginTop: 8 }}>
-            <BillingChartCompact
-              title="Facturación últimos 4 meses"
-              labels={monthlyData.labels}
-              values={monthlyData.values}
-            />
-          </View>
-
-          <View style={styles.summaryContainer}>
-            <BillingSummary
-              paid={paidCount}
-              pending={pendingCount}
-              expired={0}
-            />
-          </View>
-
-          <View style={styles.tabAndSearch}>
-            <View style={styles.tabRow}>
-              <View style={styles.tabGroup}>
-                <TouchableOpacity
-                  style={[
-                    styles.tab,
-                    viewType === "pending" && styles.tabActive,
-                  ]}
-                  onPress={() => setViewType("pending")}
-                >
-                  <Text
-                    style={[
-                      styles.tabText,
-                      viewType === "pending" && styles.tabTextActive,
-                    ]}
-                  >
-                    Pendientes
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.tab,
-                    viewType === "history" && styles.tabActive,
-                  ]}
-                  onPress={() => setViewType("history")}
-                >
-                  <Text
-                    style={[
-                      styles.tabText,
-                      viewType === "history" && styles.tabTextActive,
-                    ]}
-                  >
-                    Historial
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              <TouchableOpacity
-                onPress={() => {
-                  setIsSearchVisible(!isSearchVisible);
-                  if (isSearchVisible) {
-                    setSearchText("");
-                    animateSearchOut();
-                  } else {
-                    animateSearchIn();
+        ) : (
+          <>
+            <ScrollView contentContainerStyle={styles.scrollContainer}>
+              <View style={styles.bannerContainer}>
+                <StatusBanner
+                  type={hasPending ? "warning" : "success"}
+                  title={
+                    hasPending ? "Tienes facturas pendientes" : "Estás al día"
                   }
-                }}
-                style={styles.searchButton}
-              >
-                <Ionicons
-                  name={isSearchVisible ? "close" : "search"}
-                  size={18}
-                  color={colors.primary}
+                  subtitle={
+                    hasPending
+                      ? `Tienes ${pendingCount} facturas pendientes`
+                      : "No tienes pagos pendientes"
+                  }
                 />
-              </TouchableOpacity>
-            </View>
+              </View>
 
-            {isSearchVisible && (
-              <Animated.View
-                style={{
-                  opacity: searchAnim,
-                  transform: [
-                    {
-                      translateY: searchAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [-10, 0],
-                      }),
-                    },
-                  ],
-                  marginTop: 10,
-                  width: "100%",
-                }}
+              <View style={styles.textContainer}>
+                <Text style={[typography.regular.big, { color: colors.gray }]}>
+                  Conoce los últimos cuatro meses de facturación.
+                </Text>
+              </View>
+
+              <View
+                style={{ width: "100%", paddingHorizontal: 20, marginTop: 8 }}
               >
-                <SearchBar
-                  searchText={searchText}
-                  onSearchChange={setSearchText}
-                  placeholder="Buscar facturas"
+                <BillingChartCompact
+                  title="Facturación últimos 4 meses"
+                  labels={monthlyData.labels}
+                  values={monthlyData.values}
                 />
-              </Animated.View>
-            )}
-          </View>
+              </View>
 
-          <View style={styles.facturasContainer}>
-            {filteredInvoices.length > 0 ? (
-              viewType === "pending" ? (
-                filteredInvoices.map((invoice: Invoice) => (
-                  <InvoiceCard
-                    key={invoice.invoice_id}
-                    invoiceId={invoice.invoice_id}
-                    dueDate={invoice.dueDate}
-                    propertyName={invoice.propertyName}
-                    lotName={invoice.lotName}
-                    amount={invoice.amount}
-                    onPress={() =>
-                      handlePendingInvoicePress(invoice.invoice_id)
-                    }
-                  />
-                ))
-              ) : (
-                groupedInvoices.map((group, idx) => (
-                  <ExpandablePropertyCard
-                    key={idx}
-                    name={group.propertyName}
-                    id={group.propertyId}
-                    lots={[{ id: group.lotId, name: group.lotName }]}
-                    onLotPress={(lotId) => {
-                      router.push({
-                        pathname: "/billing/billingHistory",
-                        params: {
-                          lotId: group.lotId,
-                          lotName: group.lotName,
-                          propertyId: group.propertyId,
-                          propertyName: group.propertyName,
-                        },
-                      });
+              <View style={styles.summaryContainer}>
+                <BillingSummary
+                  paid={paidCount}
+                  pending={pendingCount}
+                  expired={0}
+                />
+              </View>
+
+              <View style={styles.tabAndSearch}>
+                <View style={styles.tabRow}>
+                  <View style={styles.tabGroup}>
+                    <TouchableOpacity
+                      style={[
+                        styles.tab,
+                        viewType === "pending" && styles.tabActive,
+                      ]}
+                      onPress={() => setViewType("pending")}
+                    >
+                      <Text
+                        style={[
+                          styles.tabText,
+                          viewType === "pending" && styles.tabTextActive,
+                        ]}
+                      >
+                        Pendientes
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.tab,
+                        viewType === "history" && styles.tabActive,
+                      ]}
+                      onPress={() => setViewType("history")}
+                    >
+                      <Text
+                        style={[
+                          styles.tabText,
+                          viewType === "history" && styles.tabTextActive,
+                        ]}
+                      >
+                        Historial
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setIsSearchVisible(!isSearchVisible);
+                      if (isSearchVisible) {
+                        setSearchText("");
+                        animateSearchOut();
+                      } else {
+                        animateSearchIn();
+                      }
                     }}
-                  />
-                ))
-              )
-            ) : (
-              <Text style={typography.regular.medium}>
-                No hay facturas registradas.
-              </Text>
-            )}
-          </View>
-        </ScrollView>
+                    style={styles.searchButton}
+                  >
+                    <Ionicons
+                      name={isSearchVisible ? "close" : "search"}
+                      size={18}
+                      color={colors.primary}
+                    />
+                  </TouchableOpacity>
+                </View>
 
+                {isSearchVisible && (
+                  <Animated.View
+                    style={{
+                      opacity: searchAnim,
+                      transform: [
+                        {
+                          translateY: searchAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [-10, 0],
+                          }),
+                        },
+                      ],
+                      marginTop: 10,
+                      width: "100%",
+                    }}
+                  >
+                    <SearchBar
+                      searchText={searchText}
+                      onSearchChange={setSearchText}
+                      placeholder="Buscar facturas"
+                    />
+                  </Animated.View>
+                )}
+              </View>
+
+              <View style={styles.facturasContainer}>
+                {filteredInvoices.length > 0 ? (
+                  viewType === "pending" ? (
+                    filteredInvoices.map((invoice: Invoice) => (
+                      <InvoiceCard
+                        key={invoice.invoice_id}
+                        invoiceId={invoice.invoice_id}
+                        dueDate={invoice.dueDate}
+                        propertyName={invoice.propertyName}
+                        lotName={invoice.lotName}
+                        amount={invoice.amount}
+                        onPress={() =>
+                          handlePendingInvoicePress(invoice.invoice_id)
+                        }
+                      />
+                    ))
+                  ) : (
+                    groupedInvoices.map((group, idx) => (
+                      <ExpandablePropertyCard
+                        key={idx}
+                        name={group.propertyName}
+                        id={group.propertyId}
+                        lots={[{ id: group.lotId, name: group.lotName }]}
+                        onLotPress={(lotId) => {
+                          router.push({
+                            pathname: "/billing/billingHistory",
+                            params: {
+                              lotId: group.lotId,
+                              lotName: group.lotName,
+                              propertyId: group.propertyId,
+                              propertyName: group.propertyName,
+                            },
+                          });
+                        }}
+                      />
+                    ))
+                  )
+                ) : (
+                  <Text style={typography.regular.medium}>
+                    No hay facturas registradas.
+                  </Text>
+                )}
+              </View>
+            </ScrollView>
+          </>
+        )}
         <InvoiceDetailsModal
           isVisible={!!selectedInvoice}
           onClose={() => setSelectedInvoice(null)}
@@ -424,5 +459,17 @@ const styles = StyleSheet.create({
     width: "100%",
     paddingHorizontal: 20,
     marginTop: 20,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 40,
+    minHeight: 300,
+  },
+  loaderText: {
+    marginTop: 12,
+    ...typography.regular.medium,
+    color: colors.darkGray,
   },
 });
