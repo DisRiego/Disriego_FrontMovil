@@ -7,6 +7,8 @@ export interface Invoice {
   invoice_id: number;
   reference_code: string;
   dueDate: string;
+  expirationDate: string;
+  issuanceDate: string;
   amount: string;
   status: "Pendiente" | "Pagada";
   lotId: string;
@@ -94,6 +96,8 @@ export const mapDetailToInvoice = (detail: InvoiceDetailResponse): Invoice => {
     invoice_id: i.invoice_id,
     reference_code: i.reference_code,
     dueDate: i.expiration_date,
+    expirationDate: i.expiration_date,
+    issuanceDate: i.issuance_date,
     amount: `$${i.total_amount.toLocaleString("es-CO")}`,
     status:
       i.invoice_status_name.toLowerCase() === "pendiente"
@@ -138,6 +142,8 @@ export const BillingProvider = ({
             invoice_id: invoice.invoice_id,
             reference_code: invoice.reference_code,
             dueDate: invoice.expiration_date,
+            expirationDate: invoice.expiration_date,
+            issuanceDate: invoice.issuance_date,
             amount: `$${invoice.total_amount.toLocaleString("es-CO")}`,
             status: formatStatus(invoice.status),
             lotId: invoice.lot_id.toString(),
