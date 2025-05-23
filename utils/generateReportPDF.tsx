@@ -140,7 +140,7 @@ export async function generateReportPDF(
         font-size: 14px;
       }
       th {
-        background-color: #ffffffe7;
+        background-color: #f5f7fa;
         font-weight: 600;
       }
 
@@ -150,7 +150,7 @@ export async function generateReportPDF(
         border: none;
       }
       .sections-row table tbody tr:nth-child(odd) {
-        background-color: #f9f9f9;
+        background-color: #f5f7fa;
       }
       .sections-row table tbody tr:nth-child(even) td {
         background-color: #fff;

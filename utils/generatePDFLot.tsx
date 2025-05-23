@@ -93,37 +93,170 @@ export async function generateLotPDF(lotData: {
     : `<tr><td colspan="5" style="text-align: center; padding: 12px;">No hay dispositivos asignados a este lote.</td></tr>`;
 
   const htmlContent = `<html>
-  <head> </head>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0px 40px;
+        color: #333;
+      }
+
+      /* Header */
+      .header {
+        position: relative;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 40px 0px 30px;
+        margin-bottom: 20px;
+      }
+      .header::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100vw;
+        height: 100%;
+        background-color: #f5f7fa;
+        z-index: -1;
+      }
+
+      .header-left,
+      .header-right {
+        width: 50%;
+        box-sizing: border-box;
+        z-index: 1;
+      }
+      .header-left {
+        text-align: left;
+      }
+      .header-left h2 {
+        margin: 0 0 10px;
+        font-size: 24px;
+        color: #111;
+      }
+      .meta {
+        font-size: 14px;
+        color: #333;
+        margin: 4px 0;
+      }
+      .meta strong {
+        display: block;
+        color: #555;
+        font-weight: 600;
+      }
+
+      .header-right {
+        text-align: right;
+      }
+      .company-logo img {
+        width: 150px;
+        height: auto;
+        margin-bottom: 10px;
+      }
+      .company-info {
+        font-size: 14px;
+        color: #333;
+      }
+      .company-info div {
+        margin: 4px 0;
+      }
+      .company-info strong {
+        display: block;
+        color: #555;
+        font-weight: 600;
+        font-size: 13px;
+      }
+
+      .section-title {
+        font-weight: bold;
+        margin-top: 20px;
+        color: #292929;
+        font-size: 20px;
+      }
+      .name-complete {
+        color: #595959;
+      }
+      .owner-info {
+        display: flex;
+        justify-content: space-between;
+        color: #5e6470;
+        font-size: 17px;
+      }
+      .column {
+        width: 48%;
+      }
+      .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid rgb(234, 236, 240);
+      }
+
+      th,
+      td {
+        padding: 10px;
+        text-align: left;
+        background-color: #ffffff;
+        color: #595959;
+        border-bottom: 1px solid #f0f2f5 ;
+      }
+
+      tr:last-child td {
+        border-bottom: none;
+      }
+
+      th {
+        font-weight: bold;
+        background-color: #f5f7fa ;
+      }
+      .container {
+        padding-top: 5px;
+        padding-left: 0px;
+        padding-right: 0px;
+        padding-bottom: 35px;
+      }
+    </style>
+  </head>
   <body>
     <div class="header">
       <div class="header-left">
-        <h2>Reporte del Lote #${id}</h2>
-        <div>
-          <div>
-            <strong>Fecha de generación:</strong> <br/>${new Date().toLocaleString()}
-          </div>
-          <br />
-          <strong>Generado por:</strong> <br/> ${user.name} ${
-    user.first_last_name
-  }
-          ${user.second_last_name || ""}
+        <h2>REPORTE DEL LOTE #${id}</h2>
+        <div class="meta">
+          <strong>Fecha de generación:</strong>
+          ${new Date().toLocaleString()}
+        </div>
+        <div class="meta">
+          <strong>Generado por:</strong>
+          ${user.name} ${user.first_last_name} ${user.second_last_name || ""}
         </div>
       </div>
-
       <div class="header-right">
-        <div class="logo">
-        <img src="${"https://storage.googleapis.com/disriego-442ff.firebasestorage.app/uploads/logos/167ae5d1-ea27-4f4d-aca1-3de9bf198267.jpg"}" alt="Logo" width="80" />
+        <div class="company-logo">
+          <img
+            src="https://firebasestorage.googleapis.com/v0/b/disriego-442ff.firebasestorage.app/o/uploads%2Flogos%2Flogo.png?alt=media&token=92730c47-e5a0-4cfb-a1d4-711ee69e27cf"
+            alt="Logo"
+          />
         </div>
-        <div class="generateby">
-          ${locationNames.city}, ${locationNames.department}, ${
-    locationNames.country
-  }<br />
-          ${company.address}<br />
-          ${company.phone}<br />
-          ${company.nit}
+        <div class="company-info">
+          <div>
+            <strong>Dirección de la empresa:</strong>
+            ${company.address}, ${locationNames.city},
+            ${locationNames.department}
+          </div>
+          <div>
+            <strong>Correo electrónico de la empresa:</strong>
+            ${company.email}
+          </div>
         </div>
       </div>
     </div>
+
     <div class="container">
       <div class="section-title">Datos del dueño</div>
       <div class="owner-info">
@@ -196,97 +329,7 @@ export async function generateLotPDF(lotData: {
       </table>
     </div>
   </body>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-        margin: 0;
-  padding: 0;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background-color: #F2F2F7;
-    padding-top: 35px;
-      padding-left: 35px;
-      padding-right: 35px;
-      padding-bottom: 20px;
-      color: #F2F2F7;
-      font-size: 17px;
-    }
-    .header-left {
-      display: flex;
-      flex-direction: column;
-      color: #292929;
-      font-size: 17px;
-    }
-    .header-right {
-      text-align: right;
-    }
-    .generateby {
-      color: #595959;
-    }
-    .logo img {
-     display: inline;
-     max-width: 100px;
-     max-height: 50px;
-    }
-    .section-title {
-      font-weight: bold;
-      margin-top: 20px;
-      color: #292929;
-      font-size: 20;
-    }
-    .name-complete {
-      color: #595959;
-    }
-    .owner-info {
-      display: flex;
-      justify-content: space-between;
-      color: #5e6470;
-     font-size: 17px;
-    }
-    .column {
-      width: 48%;
-    }
-    .custom-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-      border-radius: 10px;
-      overflow: hidden;
-      border: 1px solid rgb(234, 236, 240);
-    }
-
-    th,
-    td {
-      padding: 10px;
-      text-align: left;
-      background-color: #ffffff;
-      color: #595959;
-      border-bottom: 1px solid #eaecf0; /* Solo línea horizontal */
-    }
-
-    tr:last-child td {
-      border-bottom: none; /* Elimina la línea en la última fila */
-    }
-
-    th {
-      font-weight: bold;
-      background-color: #F2F2F7;
-    }
-    .container {
-        padding-top: 5px;
-      padding-left: 35px;
-      padding-right: 35px;
-      padding-bottom: 35px;
-    }
-  </style>
-</html>
-
-
-
-`;
+</html>`;
 
   try {
     const { uri } = await Print.printToFileAsync({ html: htmlContent });
