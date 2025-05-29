@@ -250,6 +250,7 @@ export default function DetailsLots() {
                     maintenanceDate={device.estimated_maintenance_date}
                     statusName={device.status_name}
                     statusId={device.status}
+                    deviceTypeName={device.device_type_name}
                     onPress={() => {
                       setSelectedDevice(device);
                       setCurrentValveId(device.id);
@@ -263,6 +264,7 @@ export default function DetailsLots() {
                     installDate={device.installation_date}
                     maintenanceDate={device.estimated_maintenance_date}
                     status={device.status_name}
+                    deviceTypeName={device.device_type_name}
                     onPress={() => {
                       setSelectedDevice(device);
                       setCurrentDeviceId(device.id);
