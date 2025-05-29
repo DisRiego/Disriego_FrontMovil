@@ -3,7 +3,6 @@ import axios from "axios";
 import { getUserData } from "@/services/auth";
 import { API_URL_FACT } from "@/services/config";
 
-// Tipo que representa el consumo por predio
 export interface PropertyConsumption {
   property_id: number;
   property_name: string;
@@ -12,7 +11,6 @@ export interface PropertyConsumption {
   registered_consumption: number;
 }
 
-// Tipo que representa el consumo por lote
 export interface LotConsumption {
   property_id: number;
   property_name: string;
@@ -23,7 +21,6 @@ export interface LotConsumption {
   billing_end_date: string;
 }
 
-// Tipo para mediciones recientes por lote
 export interface LotMeasurement {
   property_id: number;
   property_name: string;
@@ -32,6 +29,8 @@ export interface LotMeasurement {
   measurement_date: string;
   final_volume: number;
 }
+
+type ProjectedAvg = Record<string, number>;
 
 interface ConsumptionContextType {
   loading: boolean;
@@ -42,6 +41,13 @@ interface ConsumptionContextType {
   lotsConsumption: LotConsumption[];
   fetchLotsConsumption: () => Promise<void>;
   fetchLotMeasurements: (lotId: number) => Promise<LotMeasurement[]>;
+  predictLotConsumption: (lotId: number) => Promise<number>;
+  selectedLot: LotConsumption | null;
+  setSelectedLot: (lot: LotConsumption | null) => void;
+  recentMeasurements: LotMeasurement[];
+  fetchRecentMeasurements: () => Promise<void>;
+  projectedMonthlyAvg: ProjectedAvg;
+  fetchProjectedMonthlyAvg: () => Promise<void>;
 }
 
 const ConsumptionContext = createContext<ConsumptionContextType>({
@@ -53,6 +59,13 @@ const ConsumptionContext = createContext<ConsumptionContextType>({
   lotsConsumption: [],
   fetchLotsConsumption: async () => {},
   fetchLotMeasurements: async () => [],
+  predictLotConsumption: async () => 0,
+  selectedLot: null,
+  setSelectedLot: () => {},
+  recentMeasurements: [],
+  fetchRecentMeasurements: async () => {},
+  projectedMonthlyAvg: {},
+  fetchProjectedMonthlyAvg: async () => {},
 });
 
 export const ConsumptionProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -62,16 +75,22 @@ export const ConsumptionProvider: React.FC<{ children: React.ReactNode }> = ({
     PropertyConsumption[]
   >([]);
   const [lotsConsumption, setLotsConsumption] = useState<LotConsumption[]>([]);
+  const [recentMeasurements, setRecentMeasurements] = useState<
+    LotMeasurement[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const [selectedProperty, setSelectedProperty] =
     useState<PropertyConsumption | null>(null);
+  const [selectedLot, setSelectedLot] = useState<LotConsumption | null>(null);
+  const [projectedMonthlyAvg, setProjectedMonthlyAvg] = useState<ProjectedAvg>(
+    {}
+  );
 
   const fetchPropertiesConsumption = async () => {
     try {
       setLoading(true);
       const user = await getUserData();
       if (!user?.id) return;
-
       const res = await axios.get(
         `${API_URL_FACT}/consumption/users/${user.id}/properties/consumption_total`
       );
@@ -88,7 +107,6 @@ export const ConsumptionProvider: React.FC<{ children: React.ReactNode }> = ({
       setLoading(true);
       const user = await getUserData();
       if (!user?.id) return;
-
       const res = await axios.get(
         `${API_URL_FACT}/consumption/users/${user.id}/lots/consumptions`
       );
@@ -97,6 +115,19 @@ export const ConsumptionProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error("Error al obtener consumo por lote:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRecentMeasurements = async () => {
+    try {
+      const user = await getUserData();
+      if (!user?.id) return;
+      const res = await axios.get(
+        `${API_URL_FACT}/consumption/users/${user.id}/lots/measurements`
+      );
+      setRecentMeasurements(res.data);
+    } catch (err) {
+      console.error("Error al obtener mediciones recientes:", err);
     }
   };
 
@@ -114,9 +145,38 @@ export const ConsumptionProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const predictLotConsumption = async (lotId: number): Promise<number> => {
+    try {
+      const res = await axios.post(
+        `${API_URL_FACT}/facturations/predict-consumption`,
+        { lot_id: lotId }
+      );
+      return res.data.consumo_ajustado_final;
+    } catch (err) {
+      console.error("Error al predecir consumo del lote:", err);
+      return 0;
+    }
+  };
+
+  const fetchProjectedMonthlyAvg = async () => {
+    try {
+      const user = await getUserData();
+      if (!user?.id) return;
+      const currentYear = new Date().getFullYear();
+      const res = await axios.get(
+        `${API_URL_FACT}/consumption/users/${user.id}/projected_avg_by_month/${currentYear}`
+      );
+      setProjectedMonthlyAvg(res.data.projected_monthly_avg || {});
+    } catch (err) {
+      console.error("Error al obtener promedio proyectado mensual:", err);
+    }
+  };
+
   useEffect(() => {
     fetchPropertiesConsumption();
     fetchLotsConsumption();
+    fetchRecentMeasurements();
+    fetchProjectedMonthlyAvg();
   }, []);
 
   return (
@@ -130,6 +190,13 @@ export const ConsumptionProvider: React.FC<{ children: React.ReactNode }> = ({
         lotsConsumption,
         fetchLotsConsumption,
         fetchLotMeasurements,
+        predictLotConsumption,
+        selectedLot,
+        setSelectedLot,
+        recentMeasurements,
+        fetchRecentMeasurements,
+        projectedMonthlyAvg,
+        fetchProjectedMonthlyAvg,
       }}
     >
       {children}
