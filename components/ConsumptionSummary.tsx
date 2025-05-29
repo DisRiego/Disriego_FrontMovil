@@ -1,3 +1,4 @@
+import { colors } from "@/config/theme";
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 
@@ -14,11 +15,10 @@ const MonthlyDetailCard: React.FC<MonthlyDetailCardProps> = ({
 }) => {
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Detalle Mensual</Text>
       <View style={styles.row}>
         <DetailItem
           labelLine1="Consumo"
-          labelLine2="Promedio"
+          labelLine2="Registrado"
           value={`${average} m³`}
         />
         <Divider />
@@ -49,15 +49,25 @@ const DetailItem = ({
   labelLine2: string;
   value: string;
   highlight?: boolean;
-}) => (
-  <View style={styles.item}>
-    <Text style={[styles.value, highlight && styles.highlightValue]}>
-      {value}
-    </Text>
-    <Text style={styles.label}>{labelLine1}</Text>
-    <Text style={styles.label}>{labelLine2}</Text>
-  </View>
-);
+}) => {
+  const isNegative = value.startsWith("-");
+
+  return (
+    <View style={styles.item}>
+      <Text
+        style={[
+          styles.value,
+          highlight &&
+            (isNegative ? styles.negativeValue : styles.positiveValue),
+        ]}
+      >
+        {value}
+      </Text>
+      <Text style={styles.label}>{labelLine1}</Text>
+      <Text style={styles.label}>{labelLine2}</Text>
+    </View>
+  );
+};
 
 const Divider = () => <View style={styles.divider} />;
 
@@ -67,7 +77,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginVertical: 12,
-    shadowColor: "#000",
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: colors.border,
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
@@ -99,8 +111,11 @@ const styles = StyleSheet.create({
     color: "#000",
     marginBottom: 4,
   },
-  highlightValue: {
-    color: "#2E7D32", // verde
+  positiveValue: {
+    color: "#2E7D32",
+  },
+  negativeValue: {
+    color: "#D32F2F",
   },
   divider: {
     width: 1,
