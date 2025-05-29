@@ -16,32 +16,27 @@ import ConsumptionCard from "@/components/ConsumptionCard";
 import LotConsumptionCard from "@/components/LotConsumptionCard";
 import LotConsumptionDetailsModal from "@/components/LotConsumptionDetailsModal";
 import { useConsumption } from "@/context/ConsumptionContext";
+import { LotConsumption } from "@/context/ConsumptionContext"; // para tipado
 
 const formatDate = (iso: string): string => {
   return new Date(iso).toLocaleDateString("es-CO");
 };
 
-type Lot = {
-  id: string;
-  name: string;
-  consumption: string;
-  billingEndDate: string;
-};
-
 export default function ConsumptionDetailsScreen() {
   const router = useRouter();
-  const { selectedProperty, lotsConsumption } = useConsumption();
+  const {
+    selectedProperty,
+    lotsConsumption,
+    setSelectedLot, // ahora desde el contexto
+  } = useConsumption();
 
-  const [selectedLot, setSelectedLot] = useState<Lot | null>(null);
+  const [modalLot, setModalLot] = useState<LotConsumption | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const handleOpenLotModal = (lot: Lot) => {
-    setSelectedLot(lot);
+  const handleOpenLotModal = (lot: LotConsumption) => {
+    setModalLot(lot);
     setModalVisible(true);
   };
-
-  console.log("🔍 selectedProperty:", selectedProperty);
-  console.log("📦 lotsConsumption:", lotsConsumption);
 
   const filteredLots = lotsConsumption.filter(
     (lot) =>
@@ -94,14 +89,7 @@ export default function ConsumptionDetailsScreen() {
                   name={lot.lot_name}
                   consumption={String(lot.total_consumption)}
                   billingEndDate={lot.billing_end_date}
-                  onPress={() =>
-                    handleOpenLotModal({
-                      id: String(lot.lot_id),
-                      name: lot.lot_name,
-                      consumption: String(lot.total_consumption),
-                      billingEndDate: lot.billing_end_date,
-                    })
-                  }
+                  onPress={() => handleOpenLotModal(lot)}
                 />
               ))
             ) : (
@@ -117,25 +105,19 @@ export default function ConsumptionDetailsScreen() {
           </View>
         </ScrollView>
 
-        {selectedLot && (
+        {modalLot && (
           <LotConsumptionDetailsModal
             isVisible={modalVisible}
             onClose={() => setModalVisible(false)}
-            name={selectedLot.name}
-            id={selectedLot.id}
-            consumption={selectedLot.consumption}
-            billingEndDate={selectedLot.billingEndDate}
+            name={modalLot.lot_name}
+            id={String(modalLot.lot_id)}
+            consumption={String(modalLot.total_consumption)}
+            billingEndDate={modalLot.billing_end_date}
             onDownload={() => console.log("Descargar PDF")}
             onViewDetails={() => {
               setModalVisible(false);
-              router.push({
-                pathname: "/consumption/lotConsumptionDetails",
-                params: {
-                  id: selectedLot.id,
-                  name: selectedLot.name,
-                  consumption: selectedLot.consumption,
-                },
-              });
+              setSelectedLot(modalLot);
+              router.push("/consumption/lotConsumptionDetails");
             }}
           />
         )}
