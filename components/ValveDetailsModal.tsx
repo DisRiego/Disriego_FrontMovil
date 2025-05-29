@@ -33,6 +33,7 @@ function getValveActionButton({
   closeValve,
   fetchDevicesByLot,
   styles,
+  currentLot,
 }: {
   statusId: number;
   requestStatusId: number | null;
@@ -45,6 +46,7 @@ function getValveActionButton({
   closeValve: (deviceId: number) => Promise<boolean>;
   fetchDevicesByLot: (lotId: string) => Promise<void>;
   styles: any;
+  currentLot?: any;
 }) {
   const handleOpen = async () => {
     Alert.alert("Confirmar apertura", "¿Deseas abrir la válvula?", [
@@ -103,12 +105,12 @@ function getValveActionButton({
     isWithinWindow,
   });
 
-  // Mostrar "Crear solicitud" si el dispositivo está No Operativo (12) y la solicitud es Aprobada o Pendiente
+  // Mostrar "Crear solicitud" si el dispositivo está No Operativo (12) y la solicitud es Aprobada
   if (
     statusId === 12 &&
     (requestStatusId === null ||
       requestStatusId === 17 ||
-      requestStatusId === 18)
+      requestStatusId === 19)
   ) {
     return (
       <TouchableOpacity
