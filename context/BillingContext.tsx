@@ -145,7 +145,7 @@ export const BillingProvider = ({
             expirationDate: invoice.expiration_date,
             issuanceDate: invoice.issuance_date,
             amount: `$${invoice.total_amount.toLocaleString("es-CO")}`,
-            status: formatStatus(invoice.status),
+            status: formatStatus(invoice.invoice_status),
             lotId: invoice.lot_id.toString(),
             propertyId: invoice.property_id.toString(),
             lotName: invoice.lot_name,

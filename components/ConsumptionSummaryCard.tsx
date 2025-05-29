@@ -1,0 +1,130 @@
+import { colors } from "@/config/theme";
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
+
+interface MobileSummaryCardProps {
+  average: number;
+  projected: number;
+  variation: number;
+  title?: string;
+}
+
+const MobileSummaryCard: React.FC<MobileSummaryCardProps> = ({
+  average,
+  projected,
+  variation,
+  title,
+}) => {
+  return (
+    <View style={styles.card}>
+      {title && <Text style={styles.title}>{title}</Text>}
+      <View style={styles.row}>
+        <DetailItem
+          labelLine1="Consumo"
+          labelLine2="promedio"
+          value={`${average} m³`}
+        />
+        <Divider />
+        <DetailItem
+          labelLine1="Consumo"
+          labelLine2="Proyectado"
+          value={`${projected} m³`}
+        />
+        <Divider />
+        <DetailItem
+          labelLine1="Variación"
+          labelLine2="Esperada"
+          value={`${variation > 0 ? "+" : ""}${variation.toFixed(2)}%`}
+          highlight
+        />
+      </View>
+    </View>
+  );
+};
+
+const DetailItem = ({
+  labelLine1,
+  labelLine2,
+  value,
+  highlight = false,
+}: {
+  labelLine1: string;
+  labelLine2: string;
+  value: string;
+  highlight?: boolean;
+}) => {
+  const isNegative = value.startsWith("-");
+
+  return (
+    <View style={styles.item}>
+      <Text
+        style={[
+          styles.value,
+          highlight &&
+            (isNegative ? styles.negativeValue : styles.positiveValue),
+        ]}
+      >
+        {value}
+      </Text>
+      <Text style={styles.label}>{labelLine1}</Text>
+      <Text style={styles.label}>{labelLine2}</Text>
+    </View>
+  );
+};
+
+const Divider = () => <View style={styles.divider} />;
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    marginVertical: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: colors.border,
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#222",
+    marginBottom: 14,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  item: {
+    flex: 1,
+    alignItems: "center",
+  },
+  label: {
+    fontSize: 13,
+    color: "#555",
+    textAlign: "center",
+    lineHeight: 18,
+  },
+  value: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#000",
+    marginBottom: 4,
+  },
+  positiveValue: {
+    color: "#2E7D32",
+  },
+  negativeValue: {
+    color: "#D32F2F",
+  },
+  divider: {
+    width: 1,
+    height: "60%",
+    backgroundColor: "#e0e0e0",
+  },
+});
+
+export default MobileSummaryCard;

@@ -4,34 +4,26 @@ import { colors } from "@/config/theme";
 import { typography } from "@/config/typography";
 import { Ionicons } from "@expo/vector-icons";
 
-interface ValveCardProps {
-  model: string;
-  statusName: string;
-  statusId?: number;
-  serialNumber: string;
-  installDate?: string;
-  maintenanceDate?: string;
-  deviceTypeName?: string;
+interface ConsumptionCardProps {
+  name: string;
+  id: string;
+  extension: string;
+  startDate: string;
+  endDate: string;
+  consumption: string;
   onPress?: () => void;
 }
 
-export default function ValveCard({
-  model,
-  statusName,
-  statusId,
-  serialNumber,
-  installDate,
-  maintenanceDate,
-  deviceTypeName,
+const ConsumptionCard: React.FC<ConsumptionCardProps> = ({
+  name,
+  id,
+  extension,
+  startDate,
+  endDate,
+  consumption,
   onPress,
-}: ValveCardProps) {
+}) => {
   const Container = onPress ? TouchableOpacity : View;
-
-  const displayStatus = [17, 18, 19, 20].includes(statusId ?? -1)
-    ? "No Operativo"
-    : [21, 22].includes(statusId ?? -1)
-    ? "Operativo"
-    : statusName || "Desconocido";
 
   return (
     <Container
@@ -39,36 +31,31 @@ export default function ValveCard({
       {...(onPress && { onPress, accessibilityRole: "button" })}
     >
       <View style={styles.header}>
-        <Text style={styles.title}>{model}</Text>
+        <Text style={styles.title}>{name}</Text>
         {onPress && (
           <Ionicons name="chevron-forward" size={20} color={colors.gray} />
         )}
       </View>
 
-      <Text style={styles.idText}>Serial: {serialNumber}</Text>
+      <Text style={styles.idText}>#{id}</Text>
 
       <View style={styles.infoRow}>
-        <Text style={styles.label}>Estado</Text>
-        <Text style={styles.value}>{displayStatus}</Text>
+        <Text style={styles.label}>Extensión (m²)</Text>
+        <Text style={styles.value}>{extension}</Text>
       </View>
 
       <View style={styles.infoRow}>
-        <Text style={styles.label}>Tipo de dispositivo</Text>
-        <Text style={styles.value}>{deviceTypeName || "Desconocido"}</Text>
+        <Text style={styles.label}>Último consumo</Text>
+        <Text style={styles.value}>{endDate}</Text>
       </View>
 
       <View style={styles.infoRow}>
-        <Text style={styles.label}>Fecha instalación</Text>
-        <Text style={styles.value}>{installDate || "N/A"}</Text>
-      </View>
-
-      <View style={styles.infoRow}>
-        <Text style={styles.label}>Fecha mantenimiento</Text>
-        <Text style={styles.value}>{maintenanceDate || "N/A"}</Text>
+        <Text style={styles.label}>Consumo Registrado</Text>
+        <Text style={styles.value}>{consumption} m³</Text>
       </View>
     </Container>
   );
-}
+};
 
 const styles = StyleSheet.create({
   card: {
@@ -116,3 +103,5 @@ const styles = StyleSheet.create({
     color: colors.darkGray,
   },
 });
+
+export default ConsumptionCard;

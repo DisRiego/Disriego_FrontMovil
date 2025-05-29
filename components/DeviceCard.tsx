@@ -10,6 +10,7 @@ interface DeviceCardProps {
   serialNumber: string;
   installDate?: string;
   maintenanceDate?: string;
+  deviceTypeName?: string;
   onPress?: () => void;
 }
 
@@ -19,6 +20,7 @@ export default function DeviceCard({
   serialNumber,
   installDate,
   maintenanceDate,
+  deviceTypeName,
   onPress,
 }: DeviceCardProps) {
   const Container = onPress ? TouchableOpacity : View;
@@ -40,6 +42,11 @@ export default function DeviceCard({
       <View style={styles.infoRow}>
         <Text style={styles.label}>Estado</Text>
         <Text style={styles.value}>{status || "N/A"}</Text>
+      </View>
+
+      <View style={styles.infoRow}>
+        <Text style={styles.label}>Tipo de dispositivo</Text>
+        <Text style={styles.value}>{deviceTypeName || "Desconocido"}</Text>
       </View>
 
       <View style={styles.infoRow}>
